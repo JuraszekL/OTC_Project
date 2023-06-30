@@ -1,0 +1,10 @@
+[submodule "components/lvgl"]
+	path = components/lvgl
+	url = https://github.com/lvgl/lvgl.git
+	branch = release/v8.3
+[submodule "components/esp_lcd_ili9488"]
+	path = components/esp_lcd_ili9488
+	url = https://github.com/atanisoft/esp_lcd_ili9488.git
+[submodule "components/FT6X36_Driver"]
+	path = components/FT6X36_Driver
+	url = https://github.com/JuraszekL/FT6X36_Driver.git
