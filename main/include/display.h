@@ -9,9 +9,7 @@
 #define MAIN_INCLUDE_DISPLAY_H_
 
 /**************************************************************
- *
  * Display configuration
- *
  ***************************************************************/
 #define LCD_HORIZONTAL_RES		320U
 #define LCD_VERTICAL_RES		480U
@@ -47,9 +45,7 @@
 #define LCD_D15_GPIO 			GPIO_NUM_4
 
 /**************************************************************
- *
  * Public functions
- *
  ***************************************************************/
 void Disp_PeriphInit(void);
 void Display_Task(void *arg);

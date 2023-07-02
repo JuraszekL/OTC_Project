@@ -19,6 +19,7 @@
 #include "ft6x36.h"
 
 #include "display.h"
+#include "touchpad.h"
 
 /**************************************************************
  *
@@ -29,6 +30,7 @@ static void lvgl_init(void);
 static bool lcd_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx);
 static void lcd_flush(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
 static void lcd_LVGL_tick(void *arg);
+static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
 
 /**************************************************************
  *
@@ -40,7 +42,7 @@ static esp_lcd_i80_bus_handle_t lcd_bus_handle;
 static esp_lcd_panel_io_handle_t lcd_panel_io_handle;
 static esp_lcd_panel_handle_t lcd_panel_handle;
 
-	// LVGL init
+	// LVGL lcd init
 static lv_disp_draw_buf_t lcd_buff;
 static lv_disp_drv_t lcd_driver;
 static lv_disp_t *disp;
@@ -48,97 +50,14 @@ static lv_disp_t *disp;
 	// LVGL timer
 static esp_timer_handle_t lvgl_tick_timer;
 
+	// LVGL touch init
+static lv_indev_drv_t touch_driver;
+static lv_indev_t *touch;
+
 	// LVGL buffers
 static EXT_RAM_BSS_ATTR lv_color_t buf1[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(lv_color_t)];
 static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(lv_color_t)];
 
-/**************************************************************
- *
- * Constant data
- *
- ***************************************************************/
-	// GPIO
-const gpio_config_t lcd_backlight_pin_config = {
-
-	.pin_bit_mask = (1ULL << LCD_BACKLIGHT_GPIO),
-	.mode = GPIO_MODE_OUTPUT,
-	.pull_up_en = GPIO_PULLUP_DISABLE,
-	.pull_down_en = GPIO_PULLDOWN_DISABLE,
-	.intr_type = GPIO_INTR_DISABLE
-};
-
-const gpio_config_t lcd_rd_pin_config = {
-
-	.pin_bit_mask = (1ULL << LCD_RD_GPIO),
-	.mode = GPIO_MODE_OUTPUT,
-	.pull_up_en = GPIO_PULLUP_DISABLE,
-	.pull_down_en = GPIO_PULLDOWN_DISABLE,
-	.intr_type = GPIO_INTR_DISABLE
-};
-
-	// LCD peripherials
-const esp_lcd_i80_bus_config_t lcd_bus_config = {
-
-	.dc_gpio_num = LCD_DC_GPIO,
-	.wr_gpio_num = LCD_WR_GPIO,
-	.clk_src = LCD_CLK_SRC_DEFAULT,
-	.data_gpio_nums = {
-
-		LCD_D0_GPIO,
-		LCD_D1_GPIO,
-		LCD_D2_GPIO,
-		LCD_D3_GPIO,
-		LCD_D4_GPIO,
-		LCD_D5_GPIO,
-		LCD_D6_GPIO,
-		LCD_D7_GPIO,
-		LCD_D8_GPIO,
-		LCD_D9_GPIO,
-		LCD_D10_GPIO,
-		LCD_D11_GPIO,
-		LCD_D12_GPIO,
-		LCD_D13_GPIO,
-		LCD_D14_GPIO,
-		LCD_D15_GPIO,
-	},
-	.bus_width = 16U,
-	.max_transfer_bytes = LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(uint16_t),
-	.psram_trans_align = PSRAM_DATA_ALIGNMENT,
-	.sram_trans_align = 4
-};
-
-const esp_lcd_panel_io_i80_config_t lcd_panel_io_config = {
-
-	.cs_gpio_num = -1,
-	.pclk_hz = LCD_PIXEL_CLOCK_HZ,
-	.trans_queue_depth = 10,
-	.on_color_trans_done = lcd_flush_ready,
-	.user_ctx = &lcd_driver,
-	.lcd_cmd_bits = LCD_CMD_BITS,
-	.lcd_param_bits = LCD_PARAM_BITS,
-	.dc_levels = {
-		.dc_idle_level = 0,
-		.dc_cmd_level = 0,
-		.dc_dummy_level = 0,
-		.dc_data_level = 1,
-	}
-};
-
-const esp_lcd_panel_dev_config_t lcd_panel_config = {
-
-	.reset_gpio_num = -1,
-	.rgb_endian = LCD_RGB_ENDIAN_BGR,
-	.bits_per_pixel = 16U,
-	.flags.reset_active_high = 1,
-	.vendor_config = 0,
-};
-
-	// LVGL timer
-const esp_timer_create_args_t lcd_LVGL_timer_args = {
-
-	.callback = lcd_LVGL_tick,
-    .name = "lvgl_tick"
-};
 
 /******************************************************************************************************************
  *
@@ -166,16 +85,73 @@ void Display_Task(void *arg){
 /* Initialize display peripherials */
 void Disp_PeriphInit(void){
 
+	gpio_config_t lcd_backlight_pin_config, lcd_rd_pin_config;
+	esp_lcd_i80_bus_config_t lcd_bus_config;
+	esp_lcd_panel_io_i80_config_t lcd_panel_io_config;
+	esp_lcd_panel_dev_config_t lcd_panel_config;
+
 	// config GPIO
-	ESP_ERROR_CHECK(gpio_config(&lcd_rd_pin_config));
-	gpio_set_level(LCD_RD_GPIO, 1U);
+	lcd_backlight_pin_config.pin_bit_mask = (1ULL << LCD_BACKLIGHT_GPIO);
+	lcd_backlight_pin_config.mode = GPIO_MODE_OUTPUT;
+	lcd_backlight_pin_config.pull_up_en = GPIO_PULLUP_DISABLE;
+	lcd_backlight_pin_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	lcd_backlight_pin_config.intr_type = GPIO_INTR_DISABLE;
 	ESP_ERROR_CHECK(gpio_config(&lcd_backlight_pin_config));
 
+	lcd_rd_pin_config.pin_bit_mask = (1ULL << LCD_RD_GPIO);
+	lcd_rd_pin_config.mode = GPIO_MODE_OUTPUT;
+	lcd_rd_pin_config.pull_up_en = GPIO_PULLUP_DISABLE;
+	lcd_rd_pin_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	lcd_rd_pin_config.intr_type = GPIO_INTR_DISABLE;
+	ESP_ERROR_CHECK(gpio_config(&lcd_rd_pin_config));
+	gpio_set_level(LCD_RD_GPIO, 1U);
+
 	// config lcd I/O and I8080 bus
+	lcd_bus_config.dc_gpio_num = LCD_DC_GPIO;
+	lcd_bus_config.wr_gpio_num = LCD_WR_GPIO;
+	lcd_bus_config.clk_src = LCD_CLK_SRC_DEFAULT;
+	lcd_bus_config.data_gpio_nums[0] = LCD_D0_GPIO;
+	lcd_bus_config.data_gpio_nums[1] = LCD_D1_GPIO;
+	lcd_bus_config.data_gpio_nums[2] = LCD_D2_GPIO;
+	lcd_bus_config.data_gpio_nums[3] = LCD_D3_GPIO;
+	lcd_bus_config.data_gpio_nums[4] = LCD_D4_GPIO;
+	lcd_bus_config.data_gpio_nums[5] = LCD_D5_GPIO;
+	lcd_bus_config.data_gpio_nums[6] = LCD_D6_GPIO;
+	lcd_bus_config.data_gpio_nums[7] = LCD_D7_GPIO;
+	lcd_bus_config.data_gpio_nums[8] = LCD_D8_GPIO;
+	lcd_bus_config.data_gpio_nums[9] = LCD_D9_GPIO;
+	lcd_bus_config.data_gpio_nums[10] = LCD_D10_GPIO;
+	lcd_bus_config.data_gpio_nums[11] = LCD_D11_GPIO;
+	lcd_bus_config.data_gpio_nums[12] = LCD_D12_GPIO;
+	lcd_bus_config.data_gpio_nums[13] = LCD_D13_GPIO;
+	lcd_bus_config.data_gpio_nums[14] = LCD_D14_GPIO;
+	lcd_bus_config.data_gpio_nums[15] = LCD_D15_GPIO;
+	lcd_bus_config.bus_width = 16U;
+	lcd_bus_config.max_transfer_bytes = LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(uint16_t);
+	lcd_bus_config.psram_trans_align = PSRAM_DATA_ALIGNMENT,
+	lcd_bus_config.sram_trans_align = 4;
 	ESP_ERROR_CHECK(esp_lcd_new_i80_bus(&lcd_bus_config, &lcd_bus_handle));
+
+	lcd_panel_io_config.cs_gpio_num = -1;
+	lcd_panel_io_config.pclk_hz = LCD_PIXEL_CLOCK_HZ;
+	lcd_panel_io_config.trans_queue_depth = 10;
+	lcd_panel_io_config.on_color_trans_done = lcd_flush_ready;
+	lcd_panel_io_config.user_ctx = &lcd_driver;
+	lcd_panel_io_config.lcd_cmd_bits = LCD_CMD_BITS;
+	lcd_panel_io_config.lcd_param_bits = LCD_PARAM_BITS;
+	lcd_panel_io_config.dc_levels.dc_idle_level = 0;
+	lcd_panel_io_config.dc_levels.dc_cmd_level = 0;
+	lcd_panel_io_config.dc_levels.dc_dummy_level = 0;
+	lcd_panel_io_config.dc_levels.dc_data_level = 1;
 	ESP_ERROR_CHECK(esp_lcd_new_panel_io_i80(lcd_bus_handle, &lcd_panel_io_config, &lcd_panel_io_handle));
-	ESP_ERROR_CHECK(esp_lcd_new_panel_ili9488(lcd_panel_io_handle, &lcd_panel_config, LCD_HORIZONTAL_RES * 20 * sizeof(lv_color_t),
-			&lcd_panel_handle));
+
+	lcd_panel_config.reset_gpio_num = -1;
+	lcd_panel_config.rgb_endian = LCD_RGB_ENDIAN_BGR;
+	lcd_panel_config.bits_per_pixel = 16U;
+	lcd_panel_config.flags.reset_active_high = 1;
+	lcd_panel_config.vendor_config = 0;
+	ESP_ERROR_CHECK(esp_lcd_new_panel_ili9488(lcd_panel_io_handle, &lcd_panel_config,
+			LCD_HORIZONTAL_RES * 20 * sizeof(lv_color_t), &lcd_panel_handle));
 
 	// reset and initialize display
     esp_lcd_panel_reset(lcd_panel_handle);
@@ -194,6 +170,8 @@ void Disp_PeriphInit(void){
 /* Initialize LVGL and connect lcd driver */
 static void lvgl_init(void){
 
+	esp_timer_create_args_t lcd_LVGL_timer_args;
+
 	// LVGL init
 	lv_init();
 	lv_disp_draw_buf_init(&lcd_buff, buf1, buf2, (LCD_HORIZONTAL_RES * LCD_VERTICAL_RES));
@@ -206,8 +184,16 @@ static void lvgl_init(void){
     disp = lv_disp_drv_register(&lcd_driver);
 
     // timer for LVGL ticks
+    lcd_LVGL_timer_args.callback = lcd_LVGL_tick;
     ESP_ERROR_CHECK(esp_timer_create(&lcd_LVGL_timer_args, &lvgl_tick_timer));
     ESP_ERROR_CHECK(esp_timer_start_periodic(lvgl_tick_timer, LVGL_TICK_MS * 1000));
+
+    // touch driver for LVGL
+    lv_indev_drv_init(&touch_driver);
+    touch_driver.type = LV_INDEV_TYPE_POINTER;
+    touch_driver.read_cb = lcd_get_touch_data;
+    touch_driver.disp = disp;
+    touch = lv_indev_drv_register(&touch_driver);
 }
 
 /* Inform LVGL that all data were sent to display */
@@ -234,4 +220,24 @@ static void lcd_flush(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, 
 static void lcd_LVGL_tick(void *arg){
 
     lv_tick_inc(LVGL_TICK_MS);
+}
+
+static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data){
+
+	TouchPad_Data_t tp = {0};
+	esp_err_t res;
+
+	res = xQueueReceive(TouchPad_QueueHandle, &tp, 0);
+	if((pdFALSE == res) || (lifted_up == tp.evt) || (no_event == tp.evt)){
+
+		data->state = LV_INDEV_STATE_RELEASED;
+		return;
+	}
+	else {
+
+		data->state = LV_INDEV_STATE_PRESSED;
+		data->point.x = tp.x;
+		data->point.y = tp.y;
+		return;
+	}
 }
