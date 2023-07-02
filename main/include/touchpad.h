@@ -9,7 +9,7 @@
 #define I2C_PORT_NR			I2C_NUM_0
 #define I2C_SCL_GPIO		GPIO_NUM_39
 #define I2C_SDA_GPIO		GPIO_NUM_38
-#define I2C_CLK_FREQ		100000U
+#define I2C_CLK_FREQ		400000U
 
 /**************************************************************
  * Touchpad interrupt configuration

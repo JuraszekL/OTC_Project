@@ -20,6 +20,7 @@
 
 #include "display.h"
 #include "touchpad.h"
+#include "ui.h"
 
 /**************************************************************
  *
@@ -67,6 +68,8 @@ static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * 
 void Display_Task(void *arg){
 
 	lvgl_init();
+
+	ui_init();
 
 	while(1){
 
@@ -222,6 +225,7 @@ static void lcd_LVGL_tick(void *arg){
     lv_tick_inc(LVGL_TICK_MS);
 }
 
+/* check the queue for new data from touchpad */
 static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data){
 
 	TouchPad_Data_t tp = {0};
