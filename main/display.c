@@ -21,6 +21,7 @@
 #include "display.h"
 #include "touchpad.h"
 #include "ui.h"
+#include "animations.h"
 
 /**************************************************************
  *
@@ -67,9 +68,24 @@ static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * 
  ******************************************************************************************************************/
 void Display_Task(void *arg){
 
-	lvgl_init();
+//	lv_style_t Style_Invisible;
 
-	ui_init();
+	lvgl_init();
+//
+//	lv_style_init(&Style_Invisible);
+//	lv_style_set_bg_opa(&Style_Invisible, 0);
+
+
+//	ui_init();
+	ui_InitScreen_screen_init();
+	lv_obj_set_style_bg_opa(ui_InitScreenPanel, 0, 0);
+	lv_obj_set_style_text_opa(ui_OnlineTableClockLabel, 0, 0);
+	lv_obj_set_style_text_opa(ui_ByJuraszekLLabel, 0, 0);
+	lv_obj_set_style_shadow_opa(ui_InitScreenPanel, 0, 0);
+	lv_disp_load_scr(ui_InitScreen);
+
+
+	Anm_InitScr1200msOpa();
 
 	while(1){
 

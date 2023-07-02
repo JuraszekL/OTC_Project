@@ -5,6 +5,8 @@
 #include "display.h"
 #include "touchpad.h"
 
+#include "ui.h"
+
 void app_main(void){
 
 	Disp_PeriphInit();

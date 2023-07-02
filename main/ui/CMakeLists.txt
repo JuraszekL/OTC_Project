@@ -1,6 +1,8 @@
-SET(SOURCES screens/ui_Screen1.c
+SET(SOURCES screens/ui_InitScreen.c
     ui.c
     ui_helpers.c
-    ui_events.c)
+    fonts/ui_font_Varino12.c
+    fonts/ui_font_Varino18.c
+    fonts/ui_font_Varino30.c)
 
 add_library(ui ${SOURCES})

@@ -3,7 +3,7 @@
 file(GLOB_RECURSE UI_SOURCES ui/*.c)
 
 idf_component_register(
-    SRCS "main.c" "display.c" "touchpad.c" ${UI_SOURCES}      # list the source files of this component
+    SRCS "main.c" "display.c" "touchpad.c" "animations.c" ${UI_SOURCES}      # list the source files of this component
     INCLUDE_DIRS "include" "ui"      # optional, add here public include directories
     PRIV_INCLUDE_DIRS   # optional, add here private include directories
     REQUIRES            # optional, list the public requirements (component names)
