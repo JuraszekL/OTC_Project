@@ -15,7 +15,9 @@ lv_obj_t * ui_InitScreenPanel;
 lv_obj_t * ui_OTCPROJECTLabel;
 lv_obj_t * ui_OnlineTableClockLabel;
 lv_obj_t * ui_ByJuraszekLLabel;
+lv_obj_t * ui_Image2;
 lv_obj_t * ui____initial_actions0;
+const lv_img_dsc_t * ui_imgset_all[2] = {&ui_img_all2_png, &ui_img_all3_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16

@@ -21,7 +21,11 @@ extern lv_obj_t * ui_InitScreenPanel;
 extern lv_obj_t * ui_OTCPROJECTLabel;
 extern lv_obj_t * ui_OnlineTableClockLabel;
 extern lv_obj_t * ui_ByJuraszekLLabel;
+extern lv_obj_t * ui_Image2;
 extern lv_obj_t * ui____initial_actions0;
+
+LV_IMG_DECLARE(ui_img_all3_png);    // assets/all3.png
+LV_IMG_DECLARE(ui_img_all2_png);    // assets/all2.png
 
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);

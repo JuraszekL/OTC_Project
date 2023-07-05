@@ -62,4 +62,12 @@ void ui_InitScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_ByJuraszekLLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_ByJuraszekLLabel, &ui_font_Varino12, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_Image2 = lv_img_create(ui_InitScreen);
+    lv_img_set_src(ui_Image2, &ui_img_all3_png);
+    lv_obj_set_width(ui_Image2, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_Image2, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_Image2, LV_ALIGN_BOTTOM_MID);
+    lv_obj_add_flag(ui_Image2, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_Image2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
 }
