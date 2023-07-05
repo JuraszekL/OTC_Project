@@ -4,20 +4,20 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
+#include "freertos/event_groups.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_timer.h"
-
 #include "driver/gpio.h"
 
 #include "esp_lcd_ili9488.h"
 #include "lvgl.h"
 #include "ft6x36.h"
 
+#include "main.h"
 #include "display.h"
 #include "touchpad.h"
 #include "ui.h"
@@ -84,6 +84,7 @@ void Display_Task(void *arg){
 	lv_obj_add_flag(ui_Image2, LV_OBJ_FLAG_HIDDEN);
 	lv_disp_load_scr(ui_InitScreen);
 
+//	xEventGroupSync(AppStartSyncEvt, DISPLAY_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
 	Anm_InitScr1200msOpa();
 

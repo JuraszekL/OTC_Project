@@ -1,12 +1,13 @@
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-
+#include "freertos/event_groups.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 
 #include "ft6x36.h"
 
+#include "main.h"
 #include "touchpad.h"
 
 /**************************************************************
@@ -41,6 +42,8 @@ void TouchPad_Task(void *arg){
 	TouchPad_Data_t data;
 
 	touchpad_init();
+
+//	xEventGroupSync(AppStartSyncEvt, TOUCHPAD_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
 	while(1){
 
