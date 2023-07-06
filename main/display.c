@@ -20,7 +20,6 @@
 #include "main.h"
 #include "display.h"
 #include "touchpad.h"
-#include "ui.h"
 #include "animations.h"
 
 /**************************************************************
@@ -33,7 +32,6 @@ static bool lcd_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io
 static void lcd_flush(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
 static void lcd_LVGL_tick(void *arg);
 static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
-static void lcd_icons_on(lv_timer_t * timer);
 
 /**************************************************************
  *
@@ -69,29 +67,19 @@ static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * 
  ******************************************************************************************************************/
 void Display_Task(void *arg){
 
-	lv_timer_t * timer;
-
 	lvgl_init();
 
-	timer = lv_timer_create(lcd_icons_on, 2500, NULL);
-	lv_timer_set_repeat_count(timer, 1);
-//	ui_init();
-	ui_InitScreen_screen_init();
-	lv_obj_set_style_bg_opa(ui_InitScreenPanel, 0, 0);
-	lv_obj_set_style_text_opa(ui_OnlineTableClockLabel, 0, 0);
-	lv_obj_set_style_text_opa(ui_ByJuraszekLLabel, 0, 0);
-	lv_obj_set_style_shadow_opa(ui_InitScreenPanel, 0, 0);
-	lv_obj_add_flag(ui_Image2, LV_OBJ_FLAG_HIDDEN);
-	lv_disp_load_scr(ui_InitScreen);
+//    lv_theme_t * theme = lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
+//                                               false, LV_FONT_DEFAULT);
+//    lv_disp_set_theme(disp, theme);
 
-//	xEventGroupSync(AppStartSyncEvt, DISPLAY_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
-
-	Anm_InitScr1200msOpa();
+	// wait for synchronization
+	xEventGroupSync(AppStartSyncEvt, DISPLAY_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
 	while(1){
 
     	lv_timer_handler();
-    	vTaskDelay(pdMS_TO_TICKS(10));
+    	vTaskDelay(1);
 	}
 }
 
@@ -261,9 +249,4 @@ static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data
 		data->point.y = tp.y;
 		return;
 	}
-}
-
-static void lcd_icons_on(lv_timer_t * timer){
-
-	lv_obj_clear_flag(ui_Image2, LV_OBJ_FLAG_HIDDEN);
 }

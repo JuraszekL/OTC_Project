@@ -7,13 +7,18 @@
 #include "main.h"
 #include "display.h"
 #include "touchpad.h"
-#include "ui.h"
+#include "ui_task.h"
 
 EventGroupHandle_t AppStartSyncEvt;
 const char tag[] = "main.c";
 
 void app_main(void){
 
+	// initialize hardware for peripherials
+	Disp_PeriphInit();
+	TouchPad_PeriphInit();
+
+	// create synchronization point
 	AppStartSyncEvt = xEventGroupCreate();
 	if(NULL == AppStartSyncEvt){
 
@@ -21,17 +26,15 @@ void app_main(void){
 		esp_restart();
 	}
 
-	Disp_PeriphInit();
-	TouchPad_PeriphInit();
-
-	xTaskCreate(Display_Task, "", 4096, NULL, 1, NULL);
+	// create the tasks
+	xTaskCreate(Display_Task, "", 8192, NULL, 1, NULL);
 	xTaskCreate(TouchPad_Task, "", 4096, NULL, 1, NULL);
+	xTaskCreate(UI_Task, "", 8192, NULL, 1, NULL);
 
-//	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
+	// wait for synchronization
+	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
-	while(1){
-
-    	vTaskDelay(pdMS_TO_TICKS(1000));
-
-    }
+	// delete resources and kill app_main task
+	vEventGroupDelete(AppStartSyncEvt);
+	vTaskDelete(NULL);
 }

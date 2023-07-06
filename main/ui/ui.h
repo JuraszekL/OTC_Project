@@ -14,18 +14,22 @@ extern "C" {
 
 #include "ui_helpers.h"
 #include "ui_events.h"
-// SCREEN: ui_InitScreen
-void ui_InitScreen_screen_init(void);
-extern lv_obj_t * ui_InitScreen;
-extern lv_obj_t * ui_InitScreenPanel;
+// SCREEN: ui_StartupScreen
+void ui_StartupScreen_screen_init(void);
+extern lv_obj_t * ui_StartupScreen;
+extern lv_obj_t * ui_StartupScreenPanel;
 extern lv_obj_t * ui_OTCPROJECTLabel;
 extern lv_obj_t * ui_OnlineTableClockLabel;
 extern lv_obj_t * ui_ByJuraszekLLabel;
-extern lv_obj_t * ui_Image2;
+extern lv_obj_t * ui_LogosImage;
+extern lv_obj_t * ui_VersionLabel;
 extern lv_obj_t * ui____initial_actions0;
 
-LV_IMG_DECLARE(ui_img_all3_png);    // assets/all3.png
+LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 LV_IMG_DECLARE(ui_img_all2_png);    // assets/all2.png
+LV_IMG_DECLARE(ui_img_all3_png);    // assets/all3.png
+LV_IMG_DECLARE(ui_img_all4_png);    // assets/all4.png
+LV_IMG_DECLARE(ui_img_all5_png);    // assets/all5.png
 
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);

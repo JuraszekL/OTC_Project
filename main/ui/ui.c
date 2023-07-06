@@ -8,16 +8,17 @@
 
 ///////////////////// VARIABLES ////////////////////
 
-// SCREEN: ui_InitScreen
-void ui_InitScreen_screen_init(void);
-lv_obj_t * ui_InitScreen;
-lv_obj_t * ui_InitScreenPanel;
+// SCREEN: ui_StartupScreen
+void ui_StartupScreen_screen_init(void);
+lv_obj_t * ui_StartupScreen;
+lv_obj_t * ui_StartupScreenPanel;
 lv_obj_t * ui_OTCPROJECTLabel;
 lv_obj_t * ui_OnlineTableClockLabel;
 lv_obj_t * ui_ByJuraszekLLabel;
-lv_obj_t * ui_Image2;
+lv_obj_t * ui_LogosImage;
+lv_obj_t * ui_VersionLabel;
 lv_obj_t * ui____initial_actions0;
-const lv_img_dsc_t * ui_imgset_all[2] = {&ui_img_all2_png, &ui_img_all3_png};
+const lv_img_dsc_t * ui_imgset_all[4] = {&ui_img_all2_png, &ui_img_all3_png, &ui_img_all4_png, &ui_img_all5_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -39,7 +40,7 @@ void ui_init(void)
     lv_theme_t * theme = lv_theme_default_init(dispp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
                                                false, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
-    ui_InitScreen_screen_init();
+    ui_StartupScreen_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
-    lv_disp_load_scr(ui_InitScreen);
+    lv_disp_load_scr(ui_StartupScreen);
 }
