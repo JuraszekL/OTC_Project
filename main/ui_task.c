@@ -47,6 +47,12 @@ void UI_Task(void *arg){
 	// run startup screen
 	startup_screen();
 
+	ui_MainScreen_screen_init();
+	vTaskDelay(1);
+
+	lv_label_set_text(ui_WeatherIcon, "\uF001");
+	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
+
 	while(1){
 
 		vTaskDelay(pdMS_TO_TICKS(1000));

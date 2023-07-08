@@ -23,17 +23,21 @@ extern lv_obj_t * ui_OnlineTableClockLabel;
 extern lv_obj_t * ui_ByJuraszekLLabel;
 extern lv_obj_t * ui_LogosImage;
 extern lv_obj_t * ui_VersionLabel;
+// SCREEN: ui_MainScreen
+void ui_MainScreen_screen_init(void);
+extern lv_obj_t * ui_MainScreen;
+extern lv_obj_t * ui_ClockLabel;
+extern lv_obj_t * ui_DateLabel;
+extern lv_obj_t * ui_WeatherIcon;
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
-LV_IMG_DECLARE(ui_img_all2_png);    // assets/all2.png
-LV_IMG_DECLARE(ui_img_all3_png);    // assets/all3.png
-LV_IMG_DECLARE(ui_img_all4_png);    // assets/all4.png
-LV_IMG_DECLARE(ui_img_all5_png);    // assets/all5.png
 
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
+LV_FONT_DECLARE(ui_font_digital144);
+LV_FONT_DECLARE(ui_font_weather100);
 
 void ui_init(void);
 

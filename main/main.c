@@ -27,9 +27,9 @@ void app_main(void){
 	}
 
 	// create the tasks
-	xTaskCreate(Display_Task, "", 8192, NULL, 1, NULL);
-	xTaskCreate(TouchPad_Task, "", 4096, NULL, 1, NULL);
-	xTaskCreate(UI_Task, "", 8192, NULL, 1, NULL);
+	xTaskCreatePinnedToCore(Display_Task, "", 8192, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(TouchPad_Task, "", 4096, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(UI_Task, "", 8192, NULL, 1, NULL, 1);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);

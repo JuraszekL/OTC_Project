@@ -17,8 +17,14 @@ lv_obj_t * ui_OnlineTableClockLabel;
 lv_obj_t * ui_ByJuraszekLLabel;
 lv_obj_t * ui_LogosImage;
 lv_obj_t * ui_VersionLabel;
+
+// SCREEN: ui_MainScreen
+void ui_MainScreen_screen_init(void);
+lv_obj_t * ui_MainScreen;
+lv_obj_t * ui_ClockLabel;
+lv_obj_t * ui_DateLabel;
+lv_obj_t * ui_WeatherIcon;
 lv_obj_t * ui____initial_actions0;
-const lv_img_dsc_t * ui_imgset_all[4] = {&ui_img_all2_png, &ui_img_all3_png, &ui_img_all4_png, &ui_img_all5_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16
@@ -41,6 +47,7 @@ void ui_init(void)
                                                false, LV_FONT_DEFAULT);
     lv_disp_set_theme(dispp, theme);
     ui_StartupScreen_screen_init();
+    ui_MainScreen_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_StartupScreen);
 }
