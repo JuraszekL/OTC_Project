@@ -12,6 +12,7 @@
 #include "main.h"
 #include "animations.h"
 #include "ui_task.h"
+#include "wifi.h"
 
 /**************************************************************
  *
@@ -47,6 +48,9 @@ void UI_Task(void *arg){
 	// run startup screen
 	startup_screen();
 
+	// notify wifi task to start wifi initialization when nothing happens on the screen
+	xTaskNotifyGive(Wifi_TaskHandle);
+
 	ui_MainScreen_screen_init();
 	vTaskDelay(1);
 
@@ -71,7 +75,6 @@ void startup_screen(void){
 
 	// init startup screen
 	ui_StartupScreen_screen_init();
-	vTaskDelay(1);
 
 	// hide all elements
 	lv_obj_set_style_bg_opa(ui_StartupScreenPanel, 0, 0);
