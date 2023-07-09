@@ -7,6 +7,7 @@
 
 #include "main.h"
 #include "esp_wifi.h"
+#include "ui_task.h"
 
 static void network_init(void);
 static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
@@ -91,17 +92,19 @@ static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t eve
 
 	if((WIFI_EVENT == event_base) && (WIFI_EVENT_STA_START == event_id)){
 
+		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
 		xTaskNotifyGive(Wifi_TaskHandle);
 
 	}
 	else if((WIFI_EVENT == event_base) && (WIFI_EVENT_STA_DISCONNECTED == event_id)){
 
+		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
 		xTaskNotifyGive(Wifi_TaskHandle);
 	}
 
 	else if((IP_EVENT == event_base) && (IP_EVENT_STA_GOT_IP == event_id)){
 
-		// coś
+		UI_ReportEvt(UI_EVT_WIFI_CONNECTED, NULL);
 	}
 
 }

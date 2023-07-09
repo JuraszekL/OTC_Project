@@ -29,6 +29,8 @@ extern lv_obj_t * ui_MainScreen;
 extern lv_obj_t * ui_ClockLabel;
 extern lv_obj_t * ui_DateLabel;
 extern lv_obj_t * ui_WeatherIcon;
+extern lv_obj_t * ui_WiFiIconLabel;
+extern lv_obj_t * ui_Panel2;
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
@@ -38,6 +40,7 @@ LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
 LV_FONT_DECLARE(ui_font_weather100);
+LV_FONT_DECLARE(ui_font_UIIcons20);
 
 void ui_init(void);
 

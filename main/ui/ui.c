@@ -24,6 +24,8 @@ lv_obj_t * ui_MainScreen;
 lv_obj_t * ui_ClockLabel;
 lv_obj_t * ui_DateLabel;
 lv_obj_t * ui_WeatherIcon;
+lv_obj_t * ui_WiFiIconLabel;
+lv_obj_t * ui_Panel2;
 lv_obj_t * ui____initial_actions0;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////

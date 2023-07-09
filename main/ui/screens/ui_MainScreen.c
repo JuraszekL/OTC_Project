@@ -45,4 +45,22 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_WeatherIcon, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_WeatherIcon, &ui_font_weather100, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_WiFiIconLabel = lv_label_create(ui_MainScreen);
+    lv_obj_set_width(ui_WiFiIconLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WiFiIconLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WiFiIconLabel, 8);
+    lv_obj_set_y(ui_WiFiIconLabel, 8);
+    lv_label_set_text(ui_WiFiIconLabel, "B");
+    lv_obj_set_style_text_color(ui_WiFiIconLabel, lv_color_hex(0xF2921D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WiFiIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WiFiIconLabel, &ui_font_UIIcons20, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_Panel2 = lv_obj_create(ui_MainScreen);
+    lv_obj_set_width(ui_Panel2, 320);
+    lv_obj_set_height(ui_Panel2, 2);
+    lv_obj_set_x(ui_Panel2, 0);
+    lv_obj_set_y(ui_Panel2, 35);
+    lv_obj_set_align(ui_Panel2, LV_ALIGN_TOP_MID);
+    lv_obj_clear_flag(ui_Panel2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
 }
