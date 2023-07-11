@@ -11,6 +11,7 @@
 #include "touchpad.h"
 #include "ui_task.h"
 #include "wifi.h"
+#include "sntp.h"
 
 EventGroupHandle_t AppStartSyncEvt;
 const char tag[] = "main.c";
@@ -36,14 +37,11 @@ void app_main(void){
 
 	// create synchronization point
 	AppStartSyncEvt = xEventGroupCreate();
-	if(NULL == AppStartSyncEvt){
-
-		ESP_LOGE(tag, "xEventGroupCreate returned NULL");
-		esp_restart();
-	}
+	assert(AppStartSyncEvt);
 
 	// create the tasks fo core 0
 	xTaskCreatePinnedToCore(Wifi_Task, "", 8192, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(SNTP_Task, "", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks fo core 1
 	xTaskCreatePinnedToCore(Display_Task, "", 8192, NULL, 1, NULL, 1);

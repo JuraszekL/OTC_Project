@@ -6,14 +6,16 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
+#include <sys/time.h>
+#include "esp_log.h"
 
 #include "lvgl.h"
 #include "ui.h"
 
 #include "main.h"
 #include "animations.h"
-#include "ui_task.h"
 #include "wifi.h"
+#include "ui_task.h"
 
 /**************************************************************
  *
@@ -43,6 +45,7 @@ struct ui_queue_data {
 static void startup_screen(void);
 static void ui_event_wifi_disconnected(void *arg);
 static void ui_event_wifi_connected(void *arg);
+static void ui_event_time_changed(void *arg);
 
 /**************************************************************
  *
@@ -54,9 +57,22 @@ const ui_event event_tab[] = {
 
 		[UI_EVT_WIFI_CONNECTED] = ui_event_wifi_connected,
 		[UI_EVT_WIFI_DISCONNECTED] = ui_event_wifi_disconnected,
+		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 };
 
+extern const char *Eng_DayName[7];
+extern const char *Eng_MonthName_3char[12];
+
 static QueueHandle_t ui_queue_handle;
+static struct {
+
+	uint8_t	tm_min;
+	uint8_t	tm_hour;
+	uint8_t	tm_mday;
+	uint8_t	tm_mon;
+	uint8_t	tm_wday;
+
+} last_displayed_time;
 
 /******************************************************************************************************************
  *
@@ -158,4 +174,53 @@ static void ui_event_wifi_disconnected(void *arg){
 static void ui_event_wifi_connected(void *arg){
 
 	lv_label_set_text(ui_WiFiIconLabel, ICON_WIFI);
+}
+
+static void ui_event_time_changed(void *arg){
+
+	struct tm *changed_time = (struct tm *)arg;
+	uint8_t set_time = 0, set_date = 0;
+
+	// check for differences
+	if(last_displayed_time.tm_min != changed_time->tm_min){
+
+		set_time = 1;
+		last_displayed_time.tm_min = changed_time->tm_min;
+	}
+
+	if(last_displayed_time.tm_hour != changed_time->tm_hour){
+
+		set_time = 1;
+		last_displayed_time.tm_hour = changed_time->tm_hour;
+	}
+
+	if(last_displayed_time.tm_wday != changed_time->tm_wday){
+
+		set_date = 1;
+		last_displayed_time.tm_wday = changed_time->tm_wday;
+	}
+
+	if(last_displayed_time.tm_mday != changed_time->tm_mday){
+
+		set_date = 1;
+		last_displayed_time.tm_mday = changed_time->tm_mday;
+	}
+
+	if(last_displayed_time.tm_mon != changed_time->tm_mon){
+
+		set_date = 1;
+		last_displayed_time.tm_mon = changed_time->tm_mon;
+	}
+
+	// set required values to lvgl labels
+	if(1 == set_time){
+
+		lv_label_set_text_fmt(ui_ClockLabel, "%02d:%02d", last_displayed_time.tm_hour, last_displayed_time.tm_min);
+	}
+
+	if(1 == set_date){
+
+		lv_label_set_text_fmt(ui_DateLabel, "%s\n%02d %s", Eng_DayName[last_displayed_time.tm_wday], last_displayed_time.tm_mday,
+				Eng_MonthName_3char[last_displayed_time.tm_mon]);
+	}
 }

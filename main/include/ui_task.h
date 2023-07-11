@@ -9,6 +9,7 @@ typedef enum {
 
 	UI_EVT_WIFI_CONNECTED = 0,
 	UI_EVT_WIFI_DISCONNECTED,
+	UI_EVT_TIME_CHANGED,
 
 } UI_EventType_t;
 

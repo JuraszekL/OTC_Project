@@ -4,15 +4,17 @@
 #include "freertos/event_groups.h"
 #include "esp_log.h"
 #include "driver/gptimer.h"
+#include "esp_wifi.h"
 
 #include "main.h"
-#include "esp_wifi.h"
 #include "ui_task.h"
+#include "wifi.h"
 
 static void network_init(void);
 static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
 TaskHandle_t Wifi_TaskHandle;
+EventGroupHandle_t WifiEvents;
 
 static esp_netif_t *station_netif_obj;
 static wifi_config_t wifi_config = {
@@ -29,6 +31,10 @@ void Wifi_Task(void *arg){
 
 	uint32_t notification_value;
 
+	// create wifi events group
+	WifiEvents = xEventGroupCreate();
+	assert(WifiEvents);
+
 	// initialize WiFi and NETIF
 	network_init();
 
@@ -37,10 +43,7 @@ void Wifi_Task(void *arg){
 
 	// wait for the moment when nothing happens on the screen
 	notification_value = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
-	if(0 == notification_value){
-
-		abort();
-	}
+	assert(notification_value);
 
 	// start wifi
 	ESP_ERROR_CHECK(esp_wifi_start() );
@@ -92,18 +95,24 @@ static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t eve
 
 	if((WIFI_EVENT == event_base) && (WIFI_EVENT_STA_START == event_id)){
 
+		xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
+		xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
 		xTaskNotifyGive(Wifi_TaskHandle);
 
 	}
 	else if((WIFI_EVENT == event_base) && (WIFI_EVENT_STA_DISCONNECTED == event_id)){
 
+		xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
+		xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
 		xTaskNotifyGive(Wifi_TaskHandle);
 	}
 
 	else if((IP_EVENT == event_base) && (IP_EVENT_STA_GOT_IP == event_id)){
 
+		xEventGroupClearBits(WifiEvents, WIFI_DISCONNECTED_BIT);
+		xEventGroupSetBits(WifiEvents, WIFI_CONNECTED_BIT);
 		UI_ReportEvt(UI_EVT_WIFI_CONNECTED, NULL);
 	}
 

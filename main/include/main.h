@@ -10,9 +10,10 @@
 #define TOUCHPAD_TASK_BIT	(1 << 2)
 #define UI_TASK_BIT			(1 << 3)
 #define WIFI_TASK_BIT		(1 << 4)
+#define SNTP_TASK_BIT		(1 << 5)
 
 #define ALL_TASKS_BITS		(MAIN_TASK_BIT | DISPLAY_TASK_BIT | TOUCHPAD_TASK_BIT | UI_TASK_BIT \
-							| WIFI_TASK_BIT)
+							| WIFI_TASK_BIT |SNTP_TASK_BIT)
 
 extern EventGroupHandle_t AppStartSyncEvt;
 
