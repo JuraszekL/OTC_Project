@@ -54,7 +54,7 @@ void Wifi_Task(void *arg){
 		notification_value = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 		if(0 != notification_value){
 
-			vTaskDelay(pdMS_TO_TICKS(3000));
+			vTaskDelay(pdMS_TO_TICKS(1000));
 			esp_wifi_connect();
 		}
 	}
