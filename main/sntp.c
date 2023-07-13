@@ -45,6 +45,9 @@ static time_t now;
 static struct tm timeinfo;
 static TickType_t timer_next_ticks_value;
 static TimerHandle_t one_minute_timer_handle;
+static TaskHandle_t sntp_task_handle;
+
+static const char timezone[] = "CET-1CEST,M3.5.0,M10.5.0/3";
 
 /******************************************************************************************************************
  *
@@ -54,11 +57,17 @@ static TimerHandle_t one_minute_timer_handle;
 void SNTP_Task(void *arg){
 
 	EventBits_t bits = 0;
-	uint8_t is_sntp_running = 0;
+
+	// set timezone
+	setenv("TZ", timezone, 1);
+	tzset();
 
 	// create 1 minute timer
 	one_minute_timer_handle = xTimerCreate("", pdMS_TO_TICKS(1000), pdFALSE, NULL, one_minute_timer_callback);
 	assert(one_minute_timer_handle);
+
+	sntp_task_handle = xTaskGetCurrentTaskHandle();
+	assert(sntp_task_handle);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, SNTP_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
@@ -70,37 +79,22 @@ void SNTP_Task(void *arg){
 	esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
 	esp_sntp_setservername(0, SNTP_SERVER_NAME);
 	sntp_set_time_sync_notification_cb(time_sync_notification_cb);
-	sntp_set_sync_interval(SNTP_TIME_REFRESH_PERIOD_SEC);
 
 	while(1){
 
-		// if sntp is stopped
-		if(0 == is_sntp_running){
+		// wait for wifi
+		bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+		if(bits & WIFI_CONNECTED_BIT){
 
-			// wait until wifi is connected
-			bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-			if(bits & WIFI_CONNECTED_BIT){
+			// start or init sntp
+			if(0 == sntp_restart()){
 
-				// start or init sntp
-				if(0 == sntp_restart()){
-
-					esp_sntp_init();
-				}
-				is_sntp_running = 1;
+				esp_sntp_init();
 			}
 		}
-		// if sntp is running
-		else if(1 == is_sntp_running){
 
-			// check is wifi is not disconnected
-			bits = xEventGroupWaitBits(WifiEvents, WIFI_DISCONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-			if(bits & WIFI_DISCONNECTED_BIT){
-
-				// stop sntp if is
-				esp_sntp_stop();
-				is_sntp_running = 0;
-			}
-		}
+		// wait for next run
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	}
 }
 
@@ -131,12 +125,25 @@ static void update_time_and_timer(void){
 /* sntp time synchronised callback */
 static void time_sync_notification_cb(struct timeval *tv){
 
+	// stop timer to set it with new values
 	xTimerStop(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+
+	// stop sntp
+	esp_sntp_stop();
+
+	// update time
 	update_time_and_timer();
 }
 
 /* timer callback called right after minute value has changed */
 static void one_minute_timer_callback(TimerHandle_t xTimer){
 
+	// update time
 	update_time_and_timer();
+
+	// turn on sntp if the time has come
+	if((SNTP_REFRESH_HOUR == timeinfo.tm_hour) && (SNTP_RESFRESH_MINUTE == timeinfo.tm_min)){
+
+		xTaskNotifyGive(sntp_task_handle);
+	}
 }
