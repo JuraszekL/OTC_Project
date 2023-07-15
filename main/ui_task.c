@@ -101,6 +101,8 @@ void UI_Task(void *arg){
 //	vTaskDelay(1);
 
 	lv_label_set_text(ui_WeatherIcon, "\uF001");
+	lv_label_set_text(ui_ClockLabel, "--:--");
+	lv_label_set_text(ui_DateLabel, "date_not_set");
 	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
 
 	while(1){
@@ -117,7 +119,7 @@ void UI_Task(void *arg){
 
 /**************************************************************
  *
- * Private function definitions
+ * Public function definitions
  *
  ***************************************************************/
 

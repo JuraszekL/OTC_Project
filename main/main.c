@@ -11,7 +11,8 @@
 #include "touchpad.h"
 #include "ui_task.h"
 #include "wifi.h"
-#include "sntp.h"
+#include "clock.h"
+#include "online_requests.h"
 
 EventGroupHandle_t AppStartSyncEvt;
 const char tag[] = "main.c";
@@ -40,13 +41,14 @@ void app_main(void){
 	assert(AppStartSyncEvt);
 
 	// create the tasks fo core 0
-	xTaskCreatePinnedToCore(Wifi_Task, "", 8192, NULL, 1, NULL, 0);
-	xTaskCreatePinnedToCore(SNTP_Task, "", 4096, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 2048, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks fo core 1
-	xTaskCreatePinnedToCore(Display_Task, "", 8192, NULL, 1, NULL, 1);
-	xTaskCreatePinnedToCore(TouchPad_Task, "", 4096, NULL, 1, NULL, 1);
-	xTaskCreatePinnedToCore(UI_Task, "", 8192, NULL, 2, NULL, 1);
+	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(TouchPad_Task, "TouchPad_Task", 4096, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(UI_Task, "UI_Task", 8192, NULL, 2, NULL, 1);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
