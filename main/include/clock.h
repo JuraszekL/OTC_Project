@@ -5,6 +5,7 @@
 #define CLOCK_RESFRESH_MINUTE		36
 
 void Clock_TimeUpdated(void);
+void Clock_UpdateTimezone(const char *TimezoneString);
 
 void Clock_Task(void *arg);
 

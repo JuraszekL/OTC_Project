@@ -23,10 +23,11 @@ void ui_MainScreen_screen_init(void);
 lv_obj_t * ui_MainScreen;
 lv_obj_t * ui_ClockLabel;
 lv_obj_t * ui_DateLabel;
-lv_obj_t * ui_WeatherIcon;
 lv_obj_t * ui_WiFiIconLabel;
-lv_obj_t * ui_Panel2;
+lv_obj_t * ui_WhiteLineTop;
+lv_obj_t * ui_WeatherImage;
 lv_obj_t * ui____initial_actions0;
+const lv_img_dsc_t * ui_imgset_[96] = {&ui_img_day_113_png, &ui_img_day_116_png, &ui_img_day_119_png, &ui_img_day_122_png, &ui_img_day_143_png, &ui_img_day_176_png, &ui_img_day_179_png, &ui_img_day_182_png, &ui_img_day_185_png, &ui_img_day_200_png, &ui_img_day_227_png, &ui_img_day_230_png, &ui_img_day_248_png, &ui_img_day_260_png, &ui_img_day_263_png, &ui_img_day_266_png, &ui_img_day_281_png, &ui_img_day_284_png, &ui_img_day_293_png, &ui_img_day_296_png, &ui_img_day_299_png, &ui_img_day_302_png, &ui_img_day_305_png, &ui_img_day_308_png, &ui_img_day_311_png, &ui_img_day_314_png, &ui_img_day_317_png, &ui_img_day_320_png, &ui_img_day_323_png, &ui_img_day_326_png, &ui_img_day_329_png, &ui_img_day_332_png, &ui_img_day_335_png, &ui_img_day_338_png, &ui_img_day_350_png, &ui_img_day_353_png, &ui_img_day_356_png, &ui_img_day_359_png, &ui_img_day_362_png, &ui_img_day_365_png, &ui_img_day_368_png, &ui_img_day_371_png, &ui_img_day_374_png, &ui_img_day_377_png, &ui_img_day_386_png, &ui_img_day_389_png, &ui_img_day_392_png, &ui_img_day_395_png, &ui_img_night_113_png, &ui_img_night_116_png, &ui_img_night_119_png, &ui_img_night_122_png, &ui_img_night_143_png, &ui_img_night_176_png, &ui_img_night_179_png, &ui_img_night_182_png, &ui_img_night_185_png, &ui_img_night_200_png, &ui_img_night_227_png, &ui_img_night_230_png, &ui_img_night_248_png, &ui_img_night_260_png, &ui_img_night_263_png, &ui_img_night_266_png, &ui_img_night_281_png, &ui_img_night_284_png, &ui_img_night_293_png, &ui_img_night_296_png, &ui_img_night_299_png, &ui_img_night_302_png, &ui_img_night_305_png, &ui_img_night_308_png, &ui_img_night_311_png, &ui_img_night_314_png, &ui_img_night_317_png, &ui_img_night_320_png, &ui_img_night_323_png, &ui_img_night_326_png, &ui_img_night_329_png, &ui_img_night_332_png, &ui_img_night_335_png, &ui_img_night_338_png, &ui_img_night_350_png, &ui_img_night_353_png, &ui_img_night_356_png, &ui_img_night_359_png, &ui_img_night_362_png, &ui_img_night_365_png, &ui_img_night_368_png, &ui_img_night_371_png, &ui_img_night_374_png, &ui_img_night_377_png, &ui_img_night_386_png, &ui_img_night_389_png, &ui_img_night_392_png, &ui_img_night_395_png};
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
 #if LV_COLOR_DEPTH != 16

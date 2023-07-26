@@ -6,6 +6,8 @@
 #include "nvs_flash.h"
 #include "esp_event.h"
 
+#include "cJSON.h"
+
 #include "main.h"
 #include "display.h"
 #include "touchpad.h"
@@ -13,6 +15,9 @@
 #include "wifi.h"
 #include "clock.h"
 #include "online_requests.h"
+#include "weather.h"
+
+void * cJson_Malloc(size_t sz);
 
 EventGroupHandle_t AppStartSyncEvt;
 const char tag[] = "main.c";
@@ -20,6 +25,13 @@ const char tag[] = "main.c";
 void app_main(void){
 
 	esp_err_t ret;
+	cJSON_Hooks hooks = {
+
+			.malloc_fn = cJson_Malloc,
+			.free_fn = free,
+	};
+
+	cJSON_InitHooks(&hooks);
 
     // Initialize NVS
 	ret = nvs_flash_init();
@@ -44,6 +56,7 @@ void app_main(void){
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 2048, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(Weather_Task, "Weather_Task", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks fo core 1
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 1, NULL, 1);
@@ -56,4 +69,9 @@ void app_main(void){
 	// delete resources and kill app_main task
 	vEventGroupDelete(AppStartSyncEvt);
 	vTaskDelete(NULL);
+}
+
+void * IRAM_ATTR cJson_Malloc(size_t sz){
+
+	return heap_caps_calloc(sizeof(size_t), sz, MALLOC_CAP_SPIRAM);
 }

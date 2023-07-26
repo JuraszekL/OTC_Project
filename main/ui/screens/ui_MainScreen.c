@@ -34,17 +34,6 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_DateLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_DateLabel, &lv_font_montserrat_30, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_WeatherIcon = lv_label_create(ui_MainScreen);
-    lv_obj_set_width(ui_WeatherIcon, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_WeatherIcon, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_WeatherIcon, 65);
-    lv_obj_set_y(ui_WeatherIcon, 80);
-    lv_obj_set_align(ui_WeatherIcon, LV_ALIGN_CENTER);
-    lv_label_set_text(ui_WeatherIcon, "");
-    lv_obj_set_style_text_color(ui_WeatherIcon, lv_color_hex(0xF2811D), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_opa(ui_WeatherIcon, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_WeatherIcon, &ui_font_weather100, LV_PART_MAIN | LV_STATE_DEFAULT);
-
     ui_WiFiIconLabel = lv_label_create(ui_MainScreen);
     lv_obj_set_width(ui_WiFiIconLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WiFiIconLabel, LV_SIZE_CONTENT);    /// 1
@@ -55,12 +44,22 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_style_text_opa(ui_WiFiIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_WiFiIconLabel, &ui_font_UIIcons20, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    ui_Panel2 = lv_obj_create(ui_MainScreen);
-    lv_obj_set_width(ui_Panel2, 320);
-    lv_obj_set_height(ui_Panel2, 2);
-    lv_obj_set_x(ui_Panel2, 0);
-    lv_obj_set_y(ui_Panel2, 35);
-    lv_obj_set_align(ui_Panel2, LV_ALIGN_TOP_MID);
-    lv_obj_clear_flag(ui_Panel2, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_WhiteLineTop = lv_obj_create(ui_MainScreen);
+    lv_obj_set_width(ui_WhiteLineTop, 320);
+    lv_obj_set_height(ui_WhiteLineTop, 2);
+    lv_obj_set_x(ui_WhiteLineTop, 0);
+    lv_obj_set_y(ui_WhiteLineTop, 35);
+    lv_obj_set_align(ui_WhiteLineTop, LV_ALIGN_TOP_MID);
+    lv_obj_clear_flag(ui_WhiteLineTop, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+
+    ui_WeatherImage = lv_img_create(ui_MainScreen);
+    lv_obj_set_width(ui_WeatherImage, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherImage, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherImage, -50);
+    lv_obj_set_y(ui_WeatherImage, 80);
+    lv_obj_set_align(ui_WeatherImage, LV_ALIGN_RIGHT_MID);
+    lv_obj_add_flag(ui_WeatherImage, LV_OBJ_FLAG_ADV_HITTEST);     /// Flags
+    lv_obj_clear_flag(ui_WeatherImage, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_img_set_zoom(ui_WeatherImage, 512);
 
 }

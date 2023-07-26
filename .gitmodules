@@ -8,3 +8,6 @@
 [submodule "components/FT6X36_Driver"]
 	path = components/FT6X36_Driver
 	url = https://github.com/JuraszekL/FT6X36_Driver.git
+[submodule "components/json/cJSON"]
+	path = components/json/cJSON
+	url = https://github.com/DaveGamble/cJSON.git

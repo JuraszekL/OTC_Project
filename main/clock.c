@@ -43,8 +43,8 @@ static time_t now;
 static struct tm timeinfo;
 static TickType_t timer_next_ticks_value;
 static TimerHandle_t one_minute_timer_handle;
-
-static const char default_timezone[] = "CET-1CEST,M3.5.0,M10.5.0/3";
+static const char *current_timezone;
+static const char *default_timezone = "GMT0";
 
 /******************************************************************************************************************
  *
@@ -53,9 +53,13 @@ static const char default_timezone[] = "CET-1CEST,M3.5.0,M10.5.0/3";
  ******************************************************************************************************************/
 void Clock_Task(void *arg){
 
-	// set default timezone
-	setenv("TZ", default_timezone, 1);
-	tzset();
+	// set default timezone if current is not set
+	if(NULL == current_timezone){
+
+		setenv("TZ", default_timezone, 1);
+		tzset();
+	}
+
 
 	// create 1 minute timer
 	one_minute_timer_handle = xTimerCreate("", pdMS_TO_TICKS(1000), pdFALSE, NULL, update_time_and_timer);
@@ -80,6 +84,21 @@ void Clock_Task(void *arg){
 void Clock_TimeUpdated(void){
 
 	update_time_and_timer(NULL);
+}
+
+/* inform clock that timezone has been obtained */
+void Clock_UpdateTimezone(const char *TimezoneString){
+
+	if(current_timezone == TimezoneString) return;
+
+	current_timezone = TimezoneString;
+
+	if(NULL != TimezoneString){
+
+		setenv("TZ", current_timezone, 1);
+		tzset();
+		update_time_and_timer(NULL);
+	}
 }
 
 /**************************************************************
@@ -114,11 +133,24 @@ static void update_time_and_timer(TimerHandle_t xTimer){
 	xTimerChangePeriod(one_minute_timer_handle, timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 	xTimerStart(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 
+	// if no timezone is set, request timezone update
+	if(NULL == current_timezone){
+
+		OnlineRequest_Send(ONLINEREQ_TIMEZONE_UPDATE, NULL);
+	}
+
 	// if the time for daily sync has come request sntp sync
 	if((CLOCK_REFRESH_HOUR == timeinfo.tm_hour) && (CLOCK_RESFRESH_MINUTE == timeinfo.tm_min)){
 
 		OnlineRequest_Send(ONLINEREQ_CLOCK_UPDATE, NULL);
 	}
+
+//	if(CLOCK_RESFRESH_MINUTE == timeinfo.tm_min){
+//
+//		OnlineRequest_Send(ONLINEREQ_WEATHER_UPDATE, NULL);
+//	}
+
+	OnlineRequest_Send(ONLINEREQ_WEATHER_UPDATE, NULL);
 
 	// report new time value to UI
 	UI_ReportEvt(UI_EVT_TIME_CHANGED, &timeinfo);
