@@ -37,7 +37,7 @@ struct weather_icon {
  *	Function prototypes
  *
  ***************************************************************/
-void weather_simple_update(void *arg);
+void weather_basic_update(void *arg);
 void weather_detailed_update(void *arg);
 
 /**************************************************************
@@ -47,7 +47,7 @@ void weather_detailed_update(void *arg);
  ***************************************************************/
 static const weather_evt events_tab[] = {
 
-		[WEATHER_SIMPLE_UPDATE] = weather_simple_update,
+		[WEATHER_BASIC_UPDATE] = weather_basic_update,
 		[WEATHER_DETAILED_UPDATE] = weather_detailed_update,
 };
 
@@ -155,10 +155,10 @@ void Weather_EventReport(Weather_EventType_t Type, void *arg){
 	xQueueSend(weather_evt_queue_handle, &data, pdMS_TO_TICKS(50));
 }
 
-void weather_simple_update(void *arg){
+void weather_basic_update(void *arg){
 
 	int a;
-	Weather_SimpleData_t *data = (Weather_SimpleData_t *)arg;
+	Weather_BasicData_t *data = (Weather_BasicData_t *)arg;
 
 //	ESP_LOGI("", "is_day = %d, weather_code = %d", data->is_day, data->weather_code);
 

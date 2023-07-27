@@ -1,12 +1,9 @@
 #ifndef MAIN_INCLUDE_CLOCK_H_
 #define MAIN_INCLUDE_CLOCK_H_
 
-#define CLOCK_REFRESH_HOUR			22
-#define CLOCK_RESFRESH_MINUTE		36
+#define BASIC_DATA_RESFRESH_MINUTE		17
 
-void Clock_TimeUpdated(void);
-void Clock_UpdateTimezone(const char *TimezoneString);
-
+void Clock_Update(int TimeUnix, const char *TimezoneString);
 void Clock_Task(void *arg);
 
 #endif /* MAIN_INCLUDE_CLOCK_H_ */

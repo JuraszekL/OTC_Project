@@ -20,6 +20,10 @@
 // max time to put new command to timer's queue
 #define XTIMER_QUEUE_DELAY_MS	100
 
+// event bits
+#define BASIC_DATA_NEEDS_UPDATE_BIT	(1 << 0)
+#define BASIC_DATA_IS_UPDATED_BIT	(1 << 1)
+
 /**************************************************************
  *
  *	Macros
@@ -45,6 +49,7 @@ static TickType_t timer_next_ticks_value;
 static TimerHandle_t one_minute_timer_handle;
 static const char *current_timezone;
 static const char *default_timezone = "GMT0";
+static EventGroupHandle_t clock_events;
 
 /******************************************************************************************************************
  *
@@ -65,6 +70,13 @@ void Clock_Task(void *arg){
 	one_minute_timer_handle = xTimerCreate("", pdMS_TO_TICKS(1000), pdFALSE, NULL, update_time_and_timer);
 	assert(one_minute_timer_handle);
 
+	// create event group for clock routines
+	clock_events = xEventGroupCreate();
+	assert(clock_events);
+
+	// request an update rigth after program starts
+	xEventGroupSetBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, CLOCK_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
@@ -80,25 +92,38 @@ void Clock_Task(void *arg){
  *
  ***************************************************************/
 
-/* inform clock that something has changed an it should update itselfs */
-void Clock_TimeUpdated(void){
+void Clock_Update(int TimeUnix, const char *TimezoneString){
 
-	update_time_and_timer(NULL);
-}
+	struct timeval tv_rcvd, tv_now;
 
-/* inform clock that timezone has been obtained */
-void Clock_UpdateTimezone(const char *TimezoneString){
+	// put recieved unix time to the structure
+	tv_rcvd.tv_sec = TimeUnix;
+	tv_rcvd.tv_usec = 0;
+
+	// put actual unix time to the structure
+	time(&tv_now.tv_sec);
+	tv_now.tv_usec = 0;
+
+	// if adjusting time not possible
+	if(0 != adjtime(&tv_rcvd, &tv_now)){
+
+		// set time directly
+		settimeofday(&tv_rcvd, NULL);
+	}
 
 	if(current_timezone == TimezoneString) return;
-
 	current_timezone = TimezoneString;
-
 	if(NULL != TimezoneString){
 
+		// set recieved timezone
 		setenv("TZ", current_timezone, 1);
 		tzset();
-		update_time_and_timer(NULL);
 	}
+
+	xEventGroupSetBits(clock_events, BASIC_DATA_IS_UPDATED_BIT);
+	xEventGroupClearBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+
+	update_time_and_timer(NULL);
 }
 
 /**************************************************************
@@ -110,6 +135,8 @@ void Clock_UpdateTimezone(const char *TimezoneString){
 /* refresh time value on the screen */
 static void update_time_and_timer(TimerHandle_t xTimer){
 
+	EventBits_t bits = 0;
+
 	// stop timer to set it with new values
 	xTimerStop(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 
@@ -120,7 +147,8 @@ static void update_time_and_timer(TimerHandle_t xTimer){
 	// if time has been not set yet request sntp sync and exit
 	if(timeinfo.tm_year <= (int)(2020U - 1900U)){
 
-		OnlineRequest_Send(ONLINEREQ_CLOCK_UPDATE, NULL);
+		//TODO nowa funckcja do update
+		OnlineRequest_Send(ONLINEREQ_BASIC_UPDATE, NULL);
 		xTimerChangePeriod(one_minute_timer_handle, pdMS_TO_TICKS(5000), pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 		xTimerStart(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 		return;
@@ -133,24 +161,35 @@ static void update_time_and_timer(TimerHandle_t xTimer){
 	xTimerChangePeriod(one_minute_timer_handle, timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 	xTimerStart(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 
-	// if no timezone is set, request timezone update
+	// if timezone is NULL set default timezone
 	if(NULL == current_timezone){
 
-		OnlineRequest_Send(ONLINEREQ_TIMEZONE_UPDATE, NULL);
+		setenv("TZ", default_timezone, 1);
+		tzset();
 	}
 
-	// if the time for daily sync has come request sntp sync
-	if((CLOCK_REFRESH_HOUR == timeinfo.tm_hour) && (CLOCK_RESFRESH_MINUTE == timeinfo.tm_min)){
+	// if the time for refresh has come
+	if(BASIC_DATA_RESFRESH_MINUTE == timeinfo.tm_min){
 
-		OnlineRequest_Send(ONLINEREQ_CLOCK_UPDATE, NULL);
+		// set bit to inform that update is needed
+		xEventGroupSetBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+	}
+	else {
+
+		// in any other moment clear bit that protects multiple call for update within the same minute
+		xEventGroupClearBits(clock_events, BASIC_DATA_IS_UPDATED_BIT);
+		xEventGroupClearBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
 	}
 
-//	if(CLOCK_RESFRESH_MINUTE == timeinfo.tm_min){
-//
-//		OnlineRequest_Send(ONLINEREQ_WEATHER_UPDATE, NULL);
-//	}
+	// check current bits status
+	bits = xEventGroupGetBits(clock_events);
 
-	OnlineRequest_Send(ONLINEREQ_WEATHER_UPDATE, NULL);
+	// if data needs update and have been not updated yet
+	if((bits & BASIC_DATA_NEEDS_UPDATE_BIT) && !(bits & BASIC_DATA_IS_UPDATED_BIT)){
+
+		//TODO nowa funckcja do update
+		OnlineRequest_Send(ONLINEREQ_BASIC_UPDATE, NULL);
+	}
 
 	// report new time value to UI
 	UI_ReportEvt(UI_EVT_TIME_CHANGED, &timeinfo);
