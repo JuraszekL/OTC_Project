@@ -35,14 +35,17 @@ struct online_request_queue_data {
  *	Function prototypes
  *
  ***************************************************************/
+static void sntp_initialize(void);
+static void sntp_sync_cb(struct timeval *tv);
+
 static void basic_data_update_request(void *arg);
+static void time_sync_request(void *arg);
 static void detailed_data_update_request(void *arg);
 
-//static esp_err_t timezone_update_evt(esp_http_client_event_t *evt);
 static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt);
 
 static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day);
-static int parse_json_clock_basic(cJSON *json, int *unix_time, const char **timezone_string);
+static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
 
 /**************************************************************
  *
@@ -52,6 +55,7 @@ static int parse_json_clock_basic(cJSON *json, int *unix_time, const char **time
 static const online_request requests_tab[] = {
 
 		[ONLINEREQ_BASIC_UPDATE] = basic_data_update_request,
+		[ONLINEREQ_TIME_UPDATE] = time_sync_request,
 		[ONLINEREQ_DETAILED_UPDATE] = detailed_data_update_request,
 };
 
@@ -72,30 +76,29 @@ void OnlineRequests_Task(void *arg){
 	struct online_request_queue_data data;
 
 	// create online requests queue
-	online_requests_queue_handle = xQueueCreate(1U, sizeof(struct online_request_queue_data));
+	online_requests_queue_handle = xQueueCreate(3U, sizeof(struct online_request_queue_data));
 	assert(online_requests_queue_handle);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, ONLINEREQS_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
+	sntp_initialize();
+
+	// wait until wifi is connected
+	bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+
 	while(1){
 
-		// wait until wifi is connected
-		bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-		if(bits & WIFI_CONNECTED_BIT){
+		// wait for new requests
+		ret = xQueueReceive(online_requests_queue_handle, &data, portMAX_DELAY);
+		if(pdTRUE == ret){
 
-			// wait for new requests
-			ret = xQueueReceive(online_requests_queue_handle, &data, portMAX_DELAY);
-			if(pdTRUE == ret){
+			// check if wifi is connected again
+			bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(TIMEOUT_MS));
+			if(bits & WIFI_CONNECTED_BIT){
 
-				// check if wifi is connected again
-				bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, 0);
-				if(bits & WIFI_CONNECTED_BIT){
-
-					// call related function if wifi is connected
-					requests_tab[data.type](data.arg);
-				}
-
+				// call related function if wifi is connected
+				requests_tab[data.type](data.arg);
 			}
 		}
 	}
@@ -126,10 +129,35 @@ void OnlineRequest_Send(OnlineRequest_Type_t Type, void *arg){
  *
  ***************************************************************/
 
+/* initialize sntp */
+static void sntp_initialize(void){
+
+	esp_sntp_setoperatingmode(ESP_SNTP_OPMODE_POLL);
+	esp_sntp_setservername(0, SNTP_SERVER_NAME);
+	sntp_set_time_sync_notification_cb(sntp_sync_cb);
+}
+
+/* sntp time synchronised callback */
+static void sntp_sync_cb(struct timeval *tv){
+
+	esp_sntp_stop();
+	TimeUpdated();
+}
+
+/* run sntp to update system time */
+static void time_sync_request(void *arg){
+
+	// start or init sntp
+	if(0 == sntp_restart()){
+
+		esp_sntp_init();
+	}
+}
+
 /* request update of basic time/weather data */
 static void basic_data_update_request(void *arg){
 
-	int a, unix_time;
+	int a;
 	char *json_raw = 0, *html_url_buff = 0;
 	const char *timezonestr = 0;
 	esp_http_client_handle_t client = NULL;
@@ -138,11 +166,11 @@ static void basic_data_update_request(void *arg){
 	cJSON *recieved_json = 0;
 	Weather_BasicData_t weather_basic;
 
-	// prepare buffer for url address
+	// allocate buffer for url address
 	html_url_buff = heap_caps_calloc(sizeof(char), HTML_URL_LENGTH_MAX, MALLOC_CAP_SPIRAM);
 	if(0 == html_url_buff) return;
 
-	// set correct url address
+	// prepare correct url address
 	a = sprintf(html_url_buff, "%s%s%s%s%s", HTTP_WEATHER_URL, HTTP_WEATHER_METH_NOW,
 			HTTP_WEATHER_PAR_KEY, CONFIG_ESP_WEATHER_API_KEY, HTTP_WEATHER_QUERY);
 	if((0 == a) || (sizeof(html_url_buff) == a)) goto cleanup;
@@ -171,11 +199,11 @@ static void basic_data_update_request(void *arg){
 		Weather_EventReport(WEATHER_BASIC_UPDATE, &weather_basic);
 	}
 
-	// get the data about time
-	ret = parse_json_clock_basic(recieved_json, &unix_time, &timezonestr);
+	// get the timezone string (tz)
+	ret = parse_json_timezone_basic(recieved_json, &timezonestr);
 	if(0 == ret){
 
-		Clock_Update(unix_time, timezonestr);
+		Timezone_Update(timezonestr);
 	}
 
 	cleanup:
@@ -201,12 +229,7 @@ static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_
 
 	isday = cJSON_GetObjectItemCaseSensitive(current, "is_day");
 	if(0 == isday) return a;;
-
-	if((0 == cJSON_IsNumber(isday)) || (0 > isday->valueint) || (1 < isday->valueint)){
-
-		ESP_LOGE("", "isday = %d", isday->valueint);
-		return a;;
-	}
+	if((0 == cJSON_IsNumber(isday)) || (0 > isday->valueint) || (1 < isday->valueint)) return a;
 
 	// return value of day/night
 	*is_day = (uint8_t)isday->valueint;
@@ -216,12 +239,7 @@ static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_
 
 	code = cJSON_GetObjectItemCaseSensitive(condition, "code");
 	if(0 == code) return a;;
-
-	if((0 == cJSON_IsNumber(code)) || (1000U > code->valueint) || (1282U < code->valueint)){
-
-		ESP_LOGE("", "code = %d", code->valueint);
-		return a;;
-	}
+	if((0 == cJSON_IsNumber(code)) || (1000U > code->valueint) || (1282U < code->valueint)) return a;
 
 	// return weather code
 	*weather_code = code->valueint;
@@ -230,22 +248,15 @@ static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_
 	return a;
 }
 
-/* get time related data from parsed json */
-static int parse_json_clock_basic(cJSON *json, int *unix_time, const char **timezone_string){
+/* get timezone name from parsed json */
+static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 
 	int a = -1, i;
 	size_t len = 0;
-	cJSON *location = 0, *localtime_epoch = 0, *tz_id = 0;
+	cJSON *location = 0, *tz_id = 0;
 
 	location = cJSON_GetObjectItemCaseSensitive(json, "location");
 	if(0 == location) return a;
-
-	localtime_epoch = cJSON_GetObjectItemCaseSensitive(location, "localtime_epoch");
-	if(0 == localtime_epoch) return a;
-	if(0 == cJSON_IsNumber(localtime_epoch)) return a;
-
-	// return unix format time value
-	*unix_time = localtime_epoch->valueint;
 
 	tz_id = cJSON_GetObjectItemCaseSensitive(location, "tz_id");
 	if(0 == tz_id) return a;
@@ -274,7 +285,6 @@ static void detailed_data_update_request(void *arg){
 /* handler for http events */
 static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
 
-//	size_t rcvd_data_len = 0;
 	char **ptr = (char **)evt->user_data;
 	esp_err_t ret = ESP_OK;
 

@@ -8,9 +8,12 @@
 #define HTTP_WEATHER_PAR_KEY			"key="
 #define HTTP_WEATHER_QUERY				"&q=auto:ip"
 
+#define SNTP_SERVER_NAME				"ntp1.tp.pl"
+
 typedef enum {
 
 	ONLINEREQ_BASIC_UPDATE = 0,
+	ONLINEREQ_TIME_UPDATE,
 	ONLINEREQ_DETAILED_UPDATE,
 
 } OnlineRequest_Type_t;
