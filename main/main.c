@@ -54,7 +54,7 @@ void app_main(void){
 
 	// create the tasks fo core 0
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
-	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 2048, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Weather_Task, "Weather_Task", 4096, NULL, 1, NULL, 0);
 

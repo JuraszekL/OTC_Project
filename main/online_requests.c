@@ -56,6 +56,7 @@ static const online_request requests_tab[] = {
 };
 
 static QueueHandle_t online_requests_queue_handle;
+static int rcvd_data_len;
 
 extern const char *TimezonesNames[][2];
 
@@ -79,16 +80,22 @@ void OnlineRequests_Task(void *arg){
 
 	while(1){
 
-		// wait for new requests
-		ret = xQueueReceive(online_requests_queue_handle, &data, portMAX_DELAY);
-		if(pdTRUE == ret){
+		// wait until wifi is connected
+		bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+		if(bits & WIFI_CONNECTED_BIT){
 
-			// check if wifi is connected
-			bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
-			if(bits & WIFI_CONNECTED_BIT){
+			// wait for new requests
+			ret = xQueueReceive(online_requests_queue_handle, &data, portMAX_DELAY);
+			if(pdTRUE == ret){
 
-				// call related function if wifi is connected
-				requests_tab[data.type](data.arg);
+				// check if wifi is connected again
+				bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, 0);
+				if(bits & WIFI_CONNECTED_BIT){
+
+					// call related function if wifi is connected
+					requests_tab[data.type](data.arg);
+				}
+
 			}
 		}
 	}
@@ -255,7 +262,6 @@ static int parse_json_clock_basic(cJSON *json, int *unix_time, const char **time
 			break;
 		}
 	}
-
 	a = 0;
 	return a;
 }
@@ -268,7 +274,7 @@ static void detailed_data_update_request(void *arg){
 /* handler for http events */
 static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
 
-	size_t rcvd_data_len = 0;
+//	size_t rcvd_data_len = 0;
 	char **ptr = (char **)evt->user_data;
 	esp_err_t ret = ESP_OK;
 
@@ -278,32 +284,39 @@ static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
 	case HTTP_EVENT_ERROR:
 		if(0 != *ptr){
 
+			ESP_LOGE("", "http error!");
 			free(*ptr);
 			*ptr = 0;
+			rcvd_data_len = 0;
 		}
 		break;
 
 	// recieve the data from http
 	case HTTP_EVENT_ON_DATA:
-		if(0 != *ptr){
 
-			// check size of allocated memory
-			rcvd_data_len = heap_caps_get_allocated_size(*ptr);
-		}
-		if(0 == rcvd_data_len){
+		if(0 == *ptr){
+
+			// first call of function because *ptr is NULL
+			rcvd_data_len = 0;
 
 			// allocate memory if nothing has been allocated yet
-			*ptr = heap_caps_calloc(sizeof(char), evt->data_len, MALLOC_CAP_SPIRAM);
+			*ptr = heap_caps_calloc(sizeof(char), evt->data_len, (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
 		}
+
 		else{
 
 			// realocate memory for new data
-			*ptr = heap_caps_realloc(*ptr, (rcvd_data_len + evt->data_len), MALLOC_CAP_SPIRAM);
+			*ptr = heap_caps_realloc(*ptr, (rcvd_data_len + evt->data_len), (MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT));
 		}
-		if(0 == *ptr) return ESP_FAIL;
+		if(0 == *ptr) {
+
+			rcvd_data_len = 0;
+			return ESP_FAIL;
+		}
 
 		// copy new data to allocated memory
 		memcpy(*ptr + rcvd_data_len, evt->data, evt->data_len);
+		rcvd_data_len += evt->data_len;
 		break;
 
 	default:

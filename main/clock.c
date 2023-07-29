@@ -33,23 +33,41 @@
 
 /**************************************************************
  *
+ *	Typedefs
+ *
+ ***************************************************************/
+enum {clock_not_set = 0, clock_not_sync, clock_sync_pending, clock_sync};
+
+struct clock_data {
+
+	time_t now;
+	struct tm timeinfo;
+	TickType_t timer_next_ticks_value;
+	TimerHandle_t one_minute_timer_handle;
+	const char *current_timezone;
+	uint8_t status;
+};
+
+/**************************************************************
+ *
  *	Function prototypes
  *
  ***************************************************************/
-static void update_time_and_timer(TimerHandle_t xTimer);
+static void clock_not_set_routine(void);
+static void clock_not_sync_routine(void);
+static void clock_sync_routine(void);
+static void clock_sync_pending_routine(void);
+static void one_minute_timer_callback(TimerHandle_t xTimer);
 
 /**************************************************************
  *
  *	Global variables
  *
  ***************************************************************/
-static time_t now;
-static struct tm timeinfo;
-static TickType_t timer_next_ticks_value;
-static TimerHandle_t one_minute_timer_handle;
-static const char *current_timezone;
 static const char *default_timezone = "GMT0";
-static EventGroupHandle_t clock_events;
+
+static struct clock_data main_clock;
+static TaskHandle_t clock_task_handle;
 
 /******************************************************************************************************************
  *
@@ -59,31 +77,57 @@ static EventGroupHandle_t clock_events;
 void Clock_Task(void *arg){
 
 	// set default timezone if current is not set
-	if(NULL == current_timezone){
+	if(NULL == main_clock.current_timezone){
 
 		setenv("TZ", default_timezone, 1);
 		tzset();
 	}
 
-
 	// create 1 minute timer
-	one_minute_timer_handle = xTimerCreate("", pdMS_TO_TICKS(1000), pdFALSE, NULL, update_time_and_timer);
-	assert(one_minute_timer_handle);
+	main_clock.one_minute_timer_handle = xTimerCreate("", pdMS_TO_TICKS(60000), pdFALSE, NULL, one_minute_timer_callback);
+	assert(main_clock.one_minute_timer_handle);
 
-	// create event group for clock routines
-	clock_events = xEventGroupCreate();
-	assert(clock_events);
+	clock_task_handle = xTaskGetCurrentTaskHandle();
+	assert(clock_task_handle);
 
-	// request an update rigth after program starts
-	xEventGroupSetBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+	main_clock.status = clock_not_set;
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, CLOCK_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
-	// read system time to global variables + set and start one minute timer
-	update_time_and_timer(NULL);
+	while(1){
 
-	vTaskDelete(NULL);
+		// stop timer to set it with new values
+		xTimerStop(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+
+		// get current system time
+		time(&main_clock.now);
+		localtime_r(&main_clock.now, &main_clock.timeinfo);
+
+		switch(main_clock.status){
+
+		case clock_not_set:
+			 clock_not_set_routine();
+			break;
+
+		case clock_not_sync:
+			 clock_not_sync_routine();
+			break;
+
+		case clock_sync_pending:
+			 clock_sync_pending_routine();
+			break;
+
+		case clock_sync:
+			 clock_sync_routine();
+			break;
+
+		default:
+			break;
+		}
+
+		ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
+	}
 }
 
 /**************************************************************
@@ -106,24 +150,24 @@ void Clock_Update(int TimeUnix, const char *TimezoneString){
 
 	// if adjusting time not possible
 	if(0 != adjtime(&tv_rcvd, &tv_now)){
-
 		// set time directly
 		settimeofday(&tv_rcvd, NULL);
 	}
 
-	if(current_timezone == TimezoneString) return;
-	current_timezone = TimezoneString;
-	if(NULL != TimezoneString){
+	if(main_clock.current_timezone != TimezoneString){
 
-		// set recieved timezone
-		setenv("TZ", current_timezone, 1);
-		tzset();
+		main_clock.current_timezone = TimezoneString;
+		if(NULL != TimezoneString){
+
+			// set recieved timezone
+			setenv("TZ", main_clock.current_timezone, 1);
+			tzset();
+		}
 	}
 
-	xEventGroupSetBits(clock_events, BASIC_DATA_IS_UPDATED_BIT);
-	xEventGroupClearBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+	main_clock.status = clock_sync;
 
-	update_time_and_timer(NULL);
+	xTaskNotifyGive(clock_task_handle);
 }
 
 /**************************************************************
@@ -132,65 +176,73 @@ void Clock_Update(int TimeUnix, const char *TimezoneString){
  *
  ***************************************************************/
 
-/* refresh time value on the screen */
-static void update_time_and_timer(TimerHandle_t xTimer){
+/* function called when clock has not_set state */
+static void clock_not_set_routine(void){
 
-	EventBits_t bits = 0;
+	if(main_clock.timeinfo.tm_year <= (int)(2020U - 1900U)) {
 
-	// stop timer to set it with new values
-	xTimerStop(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
-
-	// get current system time
-	time(&now);
-	localtime_r(&now, &timeinfo);
-
-	// if time has been not set yet request sntp sync and exit
-	if(timeinfo.tm_year <= (int)(2020U - 1900U)){
-
-		//TODO nowa funckcja do update
 		OnlineRequest_Send(ONLINEREQ_BASIC_UPDATE, NULL);
-		xTimerChangePeriod(one_minute_timer_handle, pdMS_TO_TICKS(5000), pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
-		xTimerStart(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
-		return;
-	}
-
-	// calculate remaining seconds to call timer right after new minute value
-	timer_next_ticks_value = TICKS_TO_NEXT_MINUTE(timeinfo.tm_sec);
-
-	// set the timer with calculated value and start it
-	xTimerChangePeriod(one_minute_timer_handle, timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
-	xTimerStart(one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
-
-	// if timezone is NULL set default timezone
-	if(NULL == current_timezone){
-
-		setenv("TZ", default_timezone, 1);
-		tzset();
-	}
-
-	// if the time for refresh has come
-	if(BASIC_DATA_RESFRESH_MINUTE == timeinfo.tm_min){
-
-		// set bit to inform that update is needed
-		xEventGroupSetBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+		xTimerChangePeriod(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(20000), pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+		xTimerStart(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 	}
 	else {
 
-		// in any other moment clear bit that protects multiple call for update within the same minute
-		xEventGroupClearBits(clock_events, BASIC_DATA_IS_UPDATED_BIT);
-		xEventGroupClearBits(clock_events, BASIC_DATA_NEEDS_UPDATE_BIT);
+		main_clock.status = clock_not_sync;
+		xTaskNotifyGive(clock_task_handle);
 	}
+}
 
-	// check current bits status
-	bits = xEventGroupGetBits(clock_events);
+/* function called when clock has not_sync state */
+static void clock_not_sync_routine(void){
 
-	// if data needs update and have been not updated yet
-	if((bits & BASIC_DATA_NEEDS_UPDATE_BIT) && !(bits & BASIC_DATA_IS_UPDATED_BIT)){
+	OnlineRequest_Send(ONLINEREQ_BASIC_UPDATE, NULL);
 
-		//TODO nowa funckcja do update
+	// calculate remaining seconds to call timer right after new minute value
+	main_clock.timer_next_ticks_value = TICKS_TO_NEXT_MINUTE(main_clock.timeinfo.tm_sec);
+
+	// set the timer with calculated value and start it
+	xTimerChangePeriod(main_clock.one_minute_timer_handle, main_clock.timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+	xTimerStart(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+
+	UI_ReportEvt(UI_EVT_TIME_CHANGED, &main_clock.timeinfo);
+}
+
+static void clock_sync_routine(void){
+
+	if(BASIC_DATA_RESFRESH_MINUTE == main_clock.timeinfo.tm_min){
+
 		OnlineRequest_Send(ONLINEREQ_BASIC_UPDATE, NULL);
+		main_clock.status = clock_sync_pending;
+		xTimerChangePeriod(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(5000), pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+		xTimerStart(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+	}
+	else{
+
+		// calculate remaining seconds to call timer right after new minute value
+		main_clock.timer_next_ticks_value = TICKS_TO_NEXT_MINUTE(main_clock.timeinfo.tm_sec);
+
+		// set the timer with calculated value and start it
+		xTimerChangePeriod(main_clock.one_minute_timer_handle, main_clock.timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+		xTimerStart(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
 	}
 
-	// report new time value to UI
-	UI_ReportEvt(UI_EVT_TIME_CHANGED, &timeinfo);
+	UI_ReportEvt(UI_EVT_TIME_CHANGED, &main_clock.timeinfo);
+}
+
+static void clock_sync_pending_routine(void){
+
+	main_clock.status = clock_not_sync;
+
+	// calculate remaining seconds to call timer right after new minute value
+	main_clock.timer_next_ticks_value = TICKS_TO_NEXT_MINUTE(main_clock.timeinfo.tm_sec);
+
+	// set the timer with calculated value and start it
+	xTimerChangePeriod(main_clock.one_minute_timer_handle, main_clock.timer_next_ticks_value, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+	xTimerStart(main_clock.one_minute_timer_handle, pdMS_TO_TICKS(XTIMER_QUEUE_DELAY_MS));
+}
+
+/* notify clock_task to perform clock routine */
+static void one_minute_timer_callback(TimerHandle_t xTimer){
+
+	xTaskNotifyGive(clock_task_handle);
 }
