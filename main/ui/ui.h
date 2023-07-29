@@ -131,11 +131,11 @@ LV_IMG_DECLARE(ui_img_night_389_png);    // assets/night/389.png
 LV_IMG_DECLARE(ui_img_night_392_png);    // assets/night/392.png
 LV_IMG_DECLARE(ui_img_night_395_png);    // assets/night/395.png
 
-LV_FONT_DECLARE(ui_font_UIIcons20);
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
+LV_FONT_DECLARE(ui_font_UIIcons44);
 
 void ui_init(void);
 

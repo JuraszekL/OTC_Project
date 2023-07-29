@@ -1,15 +1,18 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
-#define ICON_WIFI		"A"
-#define ICON_NO_WIFI	"B"
-#define ICON_WIFI_ERR	"C"
+#define ICON_WIFI		'A'
+#define ICON_NO_WIFI	'B'
+#define ICON_SYNC		'C'
+#define ICON_NO_SYNC	'D'
 
 typedef enum {
 
 	UI_EVT_WIFI_CONNECTED = 0,
 	UI_EVT_WIFI_DISCONNECTED,
 	UI_EVT_TIME_CHANGED,
+	UI_EVT_CLOCK_NOT_SYNC,
+	UI_EVT_CLOCK_SYNC,
 
 } UI_EventType_t;
 

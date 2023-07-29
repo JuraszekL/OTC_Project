@@ -37,15 +37,20 @@ struct ui_queue_data {
 	void *arg;
 };
 
+enum {wifi_icon = 0, sync_icon = 3};
+
 /**************************************************************
  *
  *	Function prototypes
  *
  ***************************************************************/
 static void startup_screen(void);
+
 static void ui_event_wifi_disconnected(void *arg);
 static void ui_event_wifi_connected(void *arg);
 static void ui_event_time_changed(void *arg);
+static void ui_event_clock_not_sync(void *arg);
+static void ui_event_clock_sync(void *arg);
 
 /**************************************************************
  *
@@ -58,6 +63,8 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFI_CONNECTED] = ui_event_wifi_connected,
 		[UI_EVT_WIFI_DISCONNECTED] = ui_event_wifi_disconnected,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
+		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
+		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
 };
 
 extern const char *Eng_DayName[7];
@@ -100,7 +107,8 @@ void UI_Task(void *arg){
 	ui_MainScreen_screen_init();
 
 	lv_label_set_text(ui_ClockLabel, "--:--");
-	lv_label_set_text(ui_DateLabel, "date_not_set");
+	lv_label_set_text(ui_DateLabel, "");
+	lv_label_set_text(ui_WiFiIconLabel, "    ");
 	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
 
 	while(1){
@@ -166,14 +174,49 @@ static void startup_screen(void){
 	lv_obj_clear_flag(ui_VersionLabel, LV_OBJ_FLAG_HIDDEN);
 }
 
+/* set icon within area of ui_WiFiIconLabel
+ *
+ * format of ui_WiFiIconLabel is char-space-space-char-null, each one charactes is a single icon,
+ * correct string should contain 4 characters and null character at the end
+ * icon_type is an enum that sets correct position for different icons (0 or 3)
+ * icon is a character that represents an icon within font
+ * */
+static void wifi_label_set(uint8_t icon_type, char icon){
+
+	size_t len = 0;
+	char buff[5] = {0};
+	char *text = lv_label_get_text(ui_WiFiIconLabel);
+	if(0 != text){
+
+		len = strnlen(text, 5);
+		if(4 == len){
+
+			// if correct format "%c  %c\0"
+			if(text[icon_type] == icon) return;
+			else{
+
+				// set correct icon to correct position
+				text[icon_type] = icon;
+				lv_label_set_text(ui_WiFiIconLabel, text);
+			}
+		}
+		else{
+
+			sprintf(buff, "    ");
+			buff[icon_type] = icon;
+			lv_label_set_text(ui_WiFiIconLabel, buff);
+		}
+	}
+}
+
 static void ui_event_wifi_disconnected(void *arg){
 
-	lv_label_set_text(ui_WiFiIconLabel, ICON_NO_WIFI);
+	wifi_label_set(wifi_icon, ICON_NO_WIFI);
 }
 
 static void ui_event_wifi_connected(void *arg){
 
-	lv_label_set_text(ui_WiFiIconLabel, ICON_WIFI);
+	wifi_label_set(wifi_icon, ICON_WIFI);
 }
 
 static void ui_event_time_changed(void *arg){
@@ -223,4 +266,15 @@ static void ui_event_time_changed(void *arg){
 		lv_label_set_text_fmt(ui_DateLabel, "%s\n%02d %s", Eng_DayName[last_displayed_time.tm_wday], last_displayed_time.tm_mday,
 				Eng_MonthName_3char[last_displayed_time.tm_mon]);
 	}
+}
+
+static void ui_event_clock_not_sync(void *arg){
+
+	wifi_label_set(sync_icon, ICON_NO_SYNC);
+}
+
+
+static void ui_event_clock_sync(void *arg){
+
+	wifi_label_set(sync_icon, ICON_SYNC);
 }

@@ -16,7 +16,7 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_width(ui_ClockLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_ClockLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_ClockLabel, 0);
-    lv_obj_set_y(ui_ClockLabel, 50);
+    lv_obj_set_y(ui_ClockLabel, 60);
     lv_obj_set_align(ui_ClockLabel, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_ClockLabel, "22:34");
     lv_obj_set_style_text_color(ui_ClockLabel, lv_color_hex(0xF26B1D), LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -38,17 +38,17 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_width(ui_WiFiIconLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WiFiIconLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WiFiIconLabel, 8);
-    lv_obj_set_y(ui_WiFiIconLabel, 8);
-    lv_label_set_text(ui_WiFiIconLabel, "B");
+    lv_obj_set_y(ui_WiFiIconLabel, 6);
+    lv_label_set_text(ui_WiFiIconLabel, "B  D");
     lv_obj_set_style_text_color(ui_WiFiIconLabel, lv_color_hex(0xF2921D), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_opa(ui_WiFiIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui_WiFiIconLabel, &ui_font_UIIcons20, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WiFiIconLabel, &ui_font_UIIcons44, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_WhiteLineTop = lv_obj_create(ui_MainScreen);
     lv_obj_set_width(ui_WhiteLineTop, 320);
     lv_obj_set_height(ui_WhiteLineTop, 2);
     lv_obj_set_x(ui_WhiteLineTop, 0);
-    lv_obj_set_y(ui_WhiteLineTop, 35);
+    lv_obj_set_y(ui_WhiteLineTop, 45);
     lv_obj_set_align(ui_WhiteLineTop, LV_ALIGN_TOP_MID);
     lv_obj_clear_flag(ui_WhiteLineTop, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 

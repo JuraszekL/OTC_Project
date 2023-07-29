@@ -70,7 +70,7 @@ static void next_minute_timer_start(struct clock_data *clock);
  ***************************************************************/
 static const char *default_timezone = "GMT0";
 
-static struct clock_data main_clock;
+static struct clock_data main_clock;//TODO mutex!
 static TaskHandle_t clock_task_handle;
 static EventGroupHandle_t clock_bits_handle;
 
@@ -186,6 +186,7 @@ static void clock_not_set_routine(void){
 
 			xEventGroupSetBits(clock_bits_handle, TIME_SET_BIT);
 			main_clock.status = clock_not_sync;
+			UI_ReportEvt(UI_EVT_CLOCK_NOT_SYNC, 0);
 		}
 
 	}
@@ -193,6 +194,7 @@ static void clock_not_set_routine(void){
 
 		xEventGroupSetBits(clock_bits_handle, TIME_SET_BIT);
 		main_clock.status = clock_not_sync;
+		UI_ReportEvt(UI_EVT_CLOCK_NOT_SYNC, 0);
 	}
 
 	xTaskNotifyGive(clock_task_handle);
@@ -229,6 +231,7 @@ static void clock_sync_pending_routine(void){
 
 		// if time and timezone has been sync
 		main_clock.status = clock_sync;
+		UI_ReportEvt(UI_EVT_CLOCK_SYNC, 0);
 		xTaskNotifyGive(clock_task_handle);
 
 	}
@@ -236,6 +239,7 @@ static void clock_sync_pending_routine(void){
 
 		// wait till next minute if no
 		main_clock.status = clock_not_sync;
+		UI_ReportEvt(UI_EVT_CLOCK_NOT_SYNC, 0);
 		next_minute_timer_start(&main_clock);
 	}
 }

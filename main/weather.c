@@ -160,7 +160,7 @@ void weather_basic_update(void *arg){
 	int a;
 	Weather_BasicData_t *data = (Weather_BasicData_t *)arg;
 
-//	ESP_LOGI("", "is_day = %d, weather_code = %d", data->is_day, data->weather_code);
+	ESP_LOGI("", "is_day = %d, weather_code = %d", data->is_day, data->weather_code);
 
 	for(a = 0; 0 != icons[a].code; a++){
 
