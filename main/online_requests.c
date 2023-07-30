@@ -12,7 +12,6 @@
 #include "main.h"
 #include "wifi.h"
 #include "clock.h"
-#include "weather.h"
 #include "online_requests.h"
 
 #define HTML_URL_LENGTH_MAX		1024U
@@ -44,7 +43,7 @@ static void detailed_data_update_request(void *arg);
 
 static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt);
 
-static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day);
+//static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day);
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
 
 /**************************************************************
@@ -164,7 +163,6 @@ static void basic_data_update_request(void *arg){
 	esp_http_client_config_t config = {0};
 	esp_err_t ret;
 	cJSON *recieved_json = 0;
-	Weather_BasicData_t weather_basic;
 
 	// allocate buffer for url address
 	html_url_buff = heap_caps_calloc(sizeof(char), HTML_URL_LENGTH_MAX, MALLOC_CAP_SPIRAM);
@@ -192,12 +190,12 @@ static void basic_data_update_request(void *arg){
 	recieved_json = cJSON_Parse(json_raw);
 	if(0 == recieved_json) goto cleanup;
 
-	// get the data about weather
-	ret = parse_json_weather_basic(recieved_json, &weather_basic.weather_code, &weather_basic.is_day);
-	if(0 == ret){
-
-		Weather_EventReport(WEATHER_BASIC_UPDATE, &weather_basic);
-	}
+//	// get the data about weather
+//	ret = parse_json_weather_basic(recieved_json, &weather_basic.weather_code, &weather_basic.is_day);
+//	if(0 == ret){
+//
+//		//TODO ui report weather updated
+//	}
 
 	// get the timezone string (tz)
 	ret = parse_json_timezone_basic(recieved_json, &timezonestr);
@@ -217,36 +215,36 @@ static void basic_data_update_request(void *arg){
 		}
 }
 
-/* get weather rekated data from parsed json */
-static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day){
-
-	int a = -1;
-	cJSON *current = 0, *isday = 0,
-			*condition = 0, *code = 0;
-
-	current = cJSON_GetObjectItemCaseSensitive(json, "current");
-	if(0 == current) return a;;
-
-	isday = cJSON_GetObjectItemCaseSensitive(current, "is_day");
-	if(0 == isday) return a;;
-	if((0 == cJSON_IsNumber(isday)) || (0 > isday->valueint) || (1 < isday->valueint)) return a;
-
-	// return value of day/night
-	*is_day = (uint8_t)isday->valueint;
-
-	condition = cJSON_GetObjectItemCaseSensitive(current, "condition");
-	if(0 == condition) return a;;
-
-	code = cJSON_GetObjectItemCaseSensitive(condition, "code");
-	if(0 == code) return a;;
-	if((0 == cJSON_IsNumber(code)) || (1000U > code->valueint) || (1282U < code->valueint)) return a;
-
-	// return weather code
-	*weather_code = code->valueint;
-
-	a = 0;
-	return a;
-}
+///* get weather rekated data from parsed json */
+//static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day){
+//
+//	int a = -1;
+//	cJSON *current = 0, *isday = 0,
+//			*condition = 0, *code = 0;
+//
+//	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+//	if(0 == current) return a;;
+//
+//	isday = cJSON_GetObjectItemCaseSensitive(current, "is_day");
+//	if(0 == isday) return a;;
+//	if((0 == cJSON_IsNumber(isday)) || (0 > isday->valueint) || (1 < isday->valueint)) return a;
+//
+//	// return value of day/night
+//	*is_day = (uint8_t)isday->valueint;
+//
+//	condition = cJSON_GetObjectItemCaseSensitive(current, "condition");
+//	if(0 == condition) return a;;
+//
+//	code = cJSON_GetObjectItemCaseSensitive(condition, "code");
+//	if(0 == code) return a;;
+//	if((0 == cJSON_IsNumber(code)) || (1000U > code->valueint) || (1282U < code->valueint)) return a;
+//
+//	// return weather code
+//	*weather_code = code->valueint;
+//
+//	a = 0;
+//	return a;
+//}
 
 /* get timezone name from parsed json */
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){

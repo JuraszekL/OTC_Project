@@ -15,7 +15,6 @@
 #include "wifi.h"
 #include "clock.h"
 #include "online_requests.h"
-#include "weather.h"
 
 void * cJson_Malloc(size_t sz);
 
@@ -56,7 +55,6 @@ void app_main(void){
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
-	xTaskCreatePinnedToCore(Weather_Task, "Weather_Task", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks fo core 1
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 1, NULL, 1);

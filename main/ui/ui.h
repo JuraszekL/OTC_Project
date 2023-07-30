@@ -34,108 +34,12 @@ extern lv_obj_t * ui_WeatherImage;
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
-LV_IMG_DECLARE(ui_img_day_113_png);    // assets/day/113.png
-LV_IMG_DECLARE(ui_img_day_116_png);    // assets/day/116.png
-LV_IMG_DECLARE(ui_img_day_119_png);    // assets/day/119.png
-LV_IMG_DECLARE(ui_img_day_122_png);    // assets/day/122.png
-LV_IMG_DECLARE(ui_img_day_143_png);    // assets/day/143.png
-LV_IMG_DECLARE(ui_img_day_176_png);    // assets/day/176.png
-LV_IMG_DECLARE(ui_img_day_179_png);    // assets/day/179.png
-LV_IMG_DECLARE(ui_img_day_182_png);    // assets/day/182.png
-LV_IMG_DECLARE(ui_img_day_185_png);    // assets/day/185.png
-LV_IMG_DECLARE(ui_img_day_200_png);    // assets/day/200.png
-LV_IMG_DECLARE(ui_img_day_227_png);    // assets/day/227.png
-LV_IMG_DECLARE(ui_img_day_230_png);    // assets/day/230.png
-LV_IMG_DECLARE(ui_img_day_248_png);    // assets/day/248.png
-LV_IMG_DECLARE(ui_img_day_260_png);    // assets/day/260.png
-LV_IMG_DECLARE(ui_img_day_263_png);    // assets/day/263.png
-LV_IMG_DECLARE(ui_img_day_266_png);    // assets/day/266.png
-LV_IMG_DECLARE(ui_img_day_281_png);    // assets/day/281.png
-LV_IMG_DECLARE(ui_img_day_284_png);    // assets/day/284.png
-LV_IMG_DECLARE(ui_img_day_293_png);    // assets/day/293.png
-LV_IMG_DECLARE(ui_img_day_296_png);    // assets/day/296.png
-LV_IMG_DECLARE(ui_img_day_299_png);    // assets/day/299.png
-LV_IMG_DECLARE(ui_img_day_302_png);    // assets/day/302.png
-LV_IMG_DECLARE(ui_img_day_305_png);    // assets/day/305.png
-LV_IMG_DECLARE(ui_img_day_308_png);    // assets/day/308.png
-LV_IMG_DECLARE(ui_img_day_311_png);    // assets/day/311.png
-LV_IMG_DECLARE(ui_img_day_314_png);    // assets/day/314.png
-LV_IMG_DECLARE(ui_img_day_317_png);    // assets/day/317.png
-LV_IMG_DECLARE(ui_img_day_320_png);    // assets/day/320.png
-LV_IMG_DECLARE(ui_img_day_323_png);    // assets/day/323.png
-LV_IMG_DECLARE(ui_img_day_326_png);    // assets/day/326.png
-LV_IMG_DECLARE(ui_img_day_329_png);    // assets/day/329.png
-LV_IMG_DECLARE(ui_img_day_332_png);    // assets/day/332.png
-LV_IMG_DECLARE(ui_img_day_335_png);    // assets/day/335.png
-LV_IMG_DECLARE(ui_img_day_338_png);    // assets/day/338.png
-LV_IMG_DECLARE(ui_img_day_350_png);    // assets/day/350.png
-LV_IMG_DECLARE(ui_img_day_353_png);    // assets/day/353.png
-LV_IMG_DECLARE(ui_img_day_356_png);    // assets/day/356.png
-LV_IMG_DECLARE(ui_img_day_359_png);    // assets/day/359.png
-LV_IMG_DECLARE(ui_img_day_362_png);    // assets/day/362.png
-LV_IMG_DECLARE(ui_img_day_365_png);    // assets/day/365.png
-LV_IMG_DECLARE(ui_img_day_368_png);    // assets/day/368.png
-LV_IMG_DECLARE(ui_img_day_371_png);    // assets/day/371.png
-LV_IMG_DECLARE(ui_img_day_374_png);    // assets/day/374.png
-LV_IMG_DECLARE(ui_img_day_377_png);    // assets/day/377.png
-LV_IMG_DECLARE(ui_img_day_386_png);    // assets/day/386.png
-LV_IMG_DECLARE(ui_img_day_389_png);    // assets/day/389.png
-LV_IMG_DECLARE(ui_img_day_392_png);    // assets/day/392.png
-LV_IMG_DECLARE(ui_img_day_395_png);    // assets/day/395.png
-LV_IMG_DECLARE(ui_img_night_113_png);    // assets/night/113.png
-LV_IMG_DECLARE(ui_img_night_116_png);    // assets/night/116.png
-LV_IMG_DECLARE(ui_img_night_119_png);    // assets/night/119.png
-LV_IMG_DECLARE(ui_img_night_122_png);    // assets/night/122.png
-LV_IMG_DECLARE(ui_img_night_143_png);    // assets/night/143.png
-LV_IMG_DECLARE(ui_img_night_176_png);    // assets/night/176.png
-LV_IMG_DECLARE(ui_img_night_179_png);    // assets/night/179.png
-LV_IMG_DECLARE(ui_img_night_182_png);    // assets/night/182.png
-LV_IMG_DECLARE(ui_img_night_185_png);    // assets/night/185.png
-LV_IMG_DECLARE(ui_img_night_200_png);    // assets/night/200.png
-LV_IMG_DECLARE(ui_img_night_227_png);    // assets/night/227.png
-LV_IMG_DECLARE(ui_img_night_230_png);    // assets/night/230.png
-LV_IMG_DECLARE(ui_img_night_248_png);    // assets/night/248.png
-LV_IMG_DECLARE(ui_img_night_260_png);    // assets/night/260.png
-LV_IMG_DECLARE(ui_img_night_263_png);    // assets/night/263.png
-LV_IMG_DECLARE(ui_img_night_266_png);    // assets/night/266.png
-LV_IMG_DECLARE(ui_img_night_281_png);    // assets/night/281.png
-LV_IMG_DECLARE(ui_img_night_284_png);    // assets/night/284.png
-LV_IMG_DECLARE(ui_img_night_293_png);    // assets/night/293.png
-LV_IMG_DECLARE(ui_img_night_296_png);    // assets/night/296.png
-LV_IMG_DECLARE(ui_img_night_299_png);    // assets/night/299.png
-LV_IMG_DECLARE(ui_img_night_302_png);    // assets/night/302.png
-LV_IMG_DECLARE(ui_img_night_305_png);    // assets/night/305.png
-LV_IMG_DECLARE(ui_img_night_308_png);    // assets/night/308.png
-LV_IMG_DECLARE(ui_img_night_311_png);    // assets/night/311.png
-LV_IMG_DECLARE(ui_img_night_314_png);    // assets/night/314.png
-LV_IMG_DECLARE(ui_img_night_317_png);    // assets/night/317.png
-LV_IMG_DECLARE(ui_img_night_320_png);    // assets/night/320.png
-LV_IMG_DECLARE(ui_img_night_323_png);    // assets/night/323.png
-LV_IMG_DECLARE(ui_img_night_326_png);    // assets/night/326.png
-LV_IMG_DECLARE(ui_img_night_329_png);    // assets/night/329.png
-LV_IMG_DECLARE(ui_img_night_332_png);    // assets/night/332.png
-LV_IMG_DECLARE(ui_img_night_335_png);    // assets/night/335.png
-LV_IMG_DECLARE(ui_img_night_338_png);    // assets/night/338.png
-LV_IMG_DECLARE(ui_img_night_350_png);    // assets/night/350.png
-LV_IMG_DECLARE(ui_img_night_353_png);    // assets/night/353.png
-LV_IMG_DECLARE(ui_img_night_356_png);    // assets/night/356.png
-LV_IMG_DECLARE(ui_img_night_359_png);    // assets/night/359.png
-LV_IMG_DECLARE(ui_img_night_362_png);    // assets/night/362.png
-LV_IMG_DECLARE(ui_img_night_365_png);    // assets/night/365.png
-LV_IMG_DECLARE(ui_img_night_368_png);    // assets/night/368.png
-LV_IMG_DECLARE(ui_img_night_371_png);    // assets/night/371.png
-LV_IMG_DECLARE(ui_img_night_374_png);    // assets/night/374.png
-LV_IMG_DECLARE(ui_img_night_377_png);    // assets/night/377.png
-LV_IMG_DECLARE(ui_img_night_386_png);    // assets/night/386.png
-LV_IMG_DECLARE(ui_img_night_389_png);    // assets/night/389.png
-LV_IMG_DECLARE(ui_img_night_392_png);    // assets/night/392.png
-LV_IMG_DECLARE(ui_img_night_395_png);    // assets/night/395.png
 
+LV_FONT_DECLARE(ui_font_UIIcons44);
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
-LV_FONT_DECLARE(ui_font_UIIcons44);
 
 void ui_init(void);
 
