@@ -12,6 +12,7 @@
 #include "main.h"
 #include "wifi.h"
 #include "clock.h"
+#include "ui_task.h"
 #include "online_requests.h"
 
 #define HTML_URL_LENGTH_MAX		1024U
@@ -43,7 +44,7 @@ static void detailed_data_update_request(void *arg);
 
 static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt);
 
-//static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day);
+static int parse_json_weather_basic(cJSON *json, char **icon_path);
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
 
 /**************************************************************
@@ -157,7 +158,7 @@ static void time_sync_request(void *arg){
 static void basic_data_update_request(void *arg){
 
 	int a;
-	char *json_raw = 0, *html_url_buff = 0;
+	char *json_raw = 0, *html_url_buff = 0, *weather_icon_path = 0;
 	const char *timezonestr = 0;
 	esp_http_client_handle_t client = NULL;
 	esp_http_client_config_t config = {0};
@@ -171,7 +172,7 @@ static void basic_data_update_request(void *arg){
 	// prepare correct url address
 	a = sprintf(html_url_buff, "%s%s%s%s%s", HTTP_WEATHER_URL, HTTP_WEATHER_METH_NOW,
 			HTTP_WEATHER_PAR_KEY, CONFIG_ESP_WEATHER_API_KEY, HTTP_WEATHER_QUERY);
-	if((0 == a) || (sizeof(html_url_buff) == a)) goto cleanup;
+	if((0 == a) || (sizeof(html_url_buff) == a)) goto cleanup;//TODO ogarnać bo jest bez sensu
 
 	// configure http connection
 	config.url = html_url_buff;
@@ -190,14 +191,14 @@ static void basic_data_update_request(void *arg){
 	recieved_json = cJSON_Parse(json_raw);
 	if(0 == recieved_json) goto cleanup;
 
-//	// get the data about weather
-//	ret = parse_json_weather_basic(recieved_json, &weather_basic.weather_code, &weather_basic.is_day);
-//	if(0 == ret){
-//
-//		//TODO ui report weather updated
-//	}
+	// set the weather icon
+	ret = parse_json_weather_basic(recieved_json, &weather_icon_path);
+	if(0 == ret){
 
-	// get the timezone string (tz)
+		UI_ReportEvt(UI_EVT_WEATHER_BASIC_UPDATE, weather_icon_path);
+	}
+
+	// set the timezone string (tz)
 	ret = parse_json_timezone_basic(recieved_json, &timezonestr);
 	if(0 == ret){
 
@@ -215,36 +216,52 @@ static void basic_data_update_request(void *arg){
 		}
 }
 
-///* get weather rekated data from parsed json */
-//static int parse_json_weather_basic(cJSON *json, int *weather_code, uint8_t *is_day){
-//
-//	int a = -1;
-//	cJSON *current = 0, *isday = 0,
-//			*condition = 0, *code = 0;
-//
-//	current = cJSON_GetObjectItemCaseSensitive(json, "current");
-//	if(0 == current) return a;;
-//
-//	isday = cJSON_GetObjectItemCaseSensitive(current, "is_day");
-//	if(0 == isday) return a;;
-//	if((0 == cJSON_IsNumber(isday)) || (0 > isday->valueint) || (1 < isday->valueint)) return a;
-//
-//	// return value of day/night
-//	*is_day = (uint8_t)isday->valueint;
-//
-//	condition = cJSON_GetObjectItemCaseSensitive(current, "condition");
-//	if(0 == condition) return a;;
-//
-//	code = cJSON_GetObjectItemCaseSensitive(condition, "code");
-//	if(0 == code) return a;;
-//	if((0 == cJSON_IsNumber(code)) || (1000U > code->valueint) || (1282U < code->valueint)) return a;
-//
-//	// return weather code
-//	*weather_code = code->valueint;
-//
-//	a = 0;
-//	return a;
-//}
+/* get weather icon path from parsed json */
+static int parse_json_weather_basic(cJSON *json, char **icon_path){
+
+	int a = -1, i, j = 0;
+	cJSON *current = 0, *condition = 0, *icon = 0;
+	size_t len = 0;
+
+	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+	if(0 == current) return a;;
+
+	condition = cJSON_GetObjectItemCaseSensitive(current, "condition");
+	if(0 == condition) return a;;
+
+	icon = cJSON_GetObjectItemCaseSensitive(condition, "icon");	// online icon path cdn.weatherapi.com/weather/64x64/day/116.png
+	if(0 == icon) return a;;
+	if((0 == cJSON_IsString(icon)) || (icon->valuestring == 0)) return a;
+
+	// get whole string lenght
+	len = strnlen(icon->valuestring, 256) + 1;
+	if(256 == len) return a;
+
+	// find second '/' character from back of obtained address
+	// //cdn.weatherapi.com/weather/64x64/day/116.png
+	// result should point to the '/' character right after 64 number
+	for(i = len; i >= 0; i--){
+
+		if('/' == icon->valuestring[i]){
+
+			j++;
+			if(2 == j) break;
+		}
+	}
+
+	// get string lenht from second '/' character
+	len = strnlen(&icon->valuestring[i], 64) + 1;
+	if(64 == len) return a;
+
+	// allocate buffer and copy the shortened string
+	*icon_path = malloc(len);
+	if(0 == *icon_path) return a;
+
+	memcpy(*icon_path, &icon->valuestring[i], len);	// result = /day/116.png
+
+	a = 0;
+	return a;
+}
 
 /* get timezone name from parsed json */
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
@@ -256,7 +273,7 @@ static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 	location = cJSON_GetObjectItemCaseSensitive(json, "location");
 	if(0 == location) return a;
 
-	tz_id = cJSON_GetObjectItemCaseSensitive(location, "tz_id");
+	tz_id = cJSON_GetObjectItemCaseSensitive(location, "tz_id");	// timezone Europe/Berlin
 	if(0 == tz_id) return a;
 	if (0 == cJSON_IsString(tz_id) || (tz_id->valuestring == 0)) return a;
 	len = strnlen(tz_id->valuestring, 64) + 1;
@@ -267,7 +284,7 @@ static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 		if(0 == memcmp(TimezonesNames[i][0], tz_id->valuestring, len)){
 
 			// return unix timezone string
-			*timezone_string = TimezonesNames[i][1];
+			*timezone_string = TimezonesNames[i][1];	// result = CET-1CEST,M3.5.0,M10.5.0/3
 			break;
 		}
 	}

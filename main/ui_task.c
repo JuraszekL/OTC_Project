@@ -10,6 +10,7 @@
 #include "esp_log.h"
 
 #include "lvgl.h"
+#include "lv_conf.h"
 #include "ui.h"
 
 #include "main.h"
@@ -51,6 +52,7 @@ static void ui_event_wifi_connected(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
+static void ui_event_weather_basic_update(void *arg);
 
 /**************************************************************
  *
@@ -65,6 +67,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
+		[UI_EVT_WEATHER_BASIC_UPDATE] = ui_event_weather_basic_update,
 };
 
 extern const char *Eng_DayName[7];
@@ -178,8 +181,8 @@ static void startup_screen(void){
  *
  * format of ui_WiFiIconLabel is char-space-space-char-null, each one charactes is a single icon,
  * correct string should contain 4 characters and null character at the end
- * icon_type is an enum that sets correct position for different icons (0 or 3)
- * icon is a character that represents an icon within font
+ * par. icon_type is an enum that sets correct position for different icons (0 or 3)
+ * par. icon is a character that represents an icon within font
  * */
 static void wifi_label_set(uint8_t icon_type, char icon){
 
@@ -277,4 +280,37 @@ static void ui_event_clock_not_sync(void *arg){
 static void ui_event_clock_sync(void *arg){
 
 	wifi_label_set(sync_icon, ICON_SYNC);
+
+}
+
+/* function sets weather basic data on the main screen */
+static void ui_event_weather_basic_update(void *arg){
+
+	if(0 == arg) return;
+
+	char *path = (char *)arg;
+	char *buff = 0;
+	size_t len;
+	int a;
+
+	// allocate buffer for image path
+	len = strnlen(path, 64);
+	if(64 == len) goto cleanup;
+	buff = malloc(len + 3);
+	if(0 == buff) goto cleanup;
+
+	// prepare path string
+	a = sprintf(buff, "%c:%s", LV_FS_STDIO_LETTER, path);
+	if(a != (len + 2)) goto cleanup;
+
+	// set image from path
+	lv_img_set_src(ui_WeatherImage, buff);
+
+	cleanup:
+		if(buff){
+			if(heap_caps_get_allocated_size(buff)) free(buff);
+		}
+		if(path){
+			if(heap_caps_get_allocated_size(path)) free(path);
+		}
 }

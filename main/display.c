@@ -32,6 +32,7 @@ static bool lcd_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io
 static void lcd_flush(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p);
 static void lcd_LVGL_tick(void *arg);
 static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data);
+static void lvgl_log_cb(const char * buf);
 
 /**************************************************************
  *
@@ -202,6 +203,12 @@ static void lvgl_init(void){
     touch_driver.read_cb = lcd_get_touch_data;
     touch_driver.disp = disp;
     touch = lv_indev_drv_register(&touch_driver);
+
+    // register logging function
+	lv_log_register_print_cb(lvgl_log_cb);
+
+    // initialize png converter
+    lv_png_init();
 }
 
 /* Inform LVGL that all data were sent to display */
@@ -249,4 +256,10 @@ static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data
 		data->point.y = tp.y;
 		return;
 	}
+}
+
+/* logging function wrapper */
+static void lvgl_log_cb(const char * buf){
+
+	ESP_LOGW("lvgl", "%s", buf);
 }

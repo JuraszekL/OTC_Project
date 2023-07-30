@@ -15,8 +15,7 @@
 #include "wifi.h"
 #include "clock.h"
 #include "online_requests.h"
-
-void * cJson_Malloc(size_t sz);
+#include "sdcard.h"
 
 EventGroupHandle_t AppStartSyncEvt;
 const char tag[] = "main.c";
@@ -26,10 +25,11 @@ void app_main(void){
 	esp_err_t ret;
 	cJSON_Hooks hooks = {
 
-			.malloc_fn = cJson_Malloc,
+			.malloc_fn = lvgl_malloc,
 			.free_fn = free,
 	};
 
+	// set functions for json library
 	cJSON_InitHooks(&hooks);
 
     // Initialize NVS
@@ -51,15 +51,16 @@ void app_main(void){
 	AppStartSyncEvt = xEventGroupCreate();
 	assert(AppStartSyncEvt);
 
-	// create the tasks fo core 0
+	// create the tasks for core 0
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
 
-	// create the tasks fo core 1
+	// create the tasks for core 1
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(TouchPad_Task, "TouchPad_Task", 4096, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(UI_Task, "UI_Task", 8192, NULL, 2, NULL, 1);
+	xTaskCreatePinnedToCore(SDCard_Task, "SDCard_Task", 8192, NULL, 1, NULL, 1);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
@@ -69,7 +70,18 @@ void app_main(void){
 	vTaskDelete(NULL);
 }
 
-void * IRAM_ATTR cJson_Malloc(size_t sz){
+/* wrappers to use external RAM for LVGL and JSON */
+void * IRAM_ATTR lvgl_malloc(size_t size){
 
-	return heap_caps_calloc(sizeof(size_t), sz, MALLOC_CAP_SPIRAM);
+	return heap_caps_malloc(size, MALLOC_CAP_SPIRAM);
+}
+
+void IRAM_ATTR lvgl_free(void * data){
+
+	free(data);
+}
+
+void * IRAM_ATTR lvgl_realloc(void * data_p, size_t new_size){
+
+	return heap_caps_realloc(data_p, new_size, MALLOC_CAP_SPIRAM);
 }
