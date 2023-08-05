@@ -5,6 +5,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
+#include "freertos/semphr.h"
 #include "esp_err.h"
 #include "esp_log.h"
 #include "esp_lcd_panel_io.h"
@@ -60,6 +61,7 @@ static lv_indev_t *touch;
 static EXT_RAM_BSS_ATTR lv_color_t buf1[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(lv_color_t)];
 static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * sizeof(lv_color_t)];
 
+SemaphoreHandle_t LVGL_MutexHandle;
 
 /******************************************************************************************************************
  *
@@ -68,7 +70,12 @@ static EXT_RAM_BSS_ATTR lv_color_t buf2[LCD_HORIZONTAL_RES * LCD_VERTICAL_RES * 
  ******************************************************************************************************************/
 void Display_Task(void *arg){
 
+	BaseType_t res;
+
 	lvgl_init();
+
+	LVGL_MutexHandle = xSemaphoreCreateMutex();
+	assert(LVGL_MutexHandle);
 
 //    lv_theme_t * theme = lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
 //                                               false, LV_FONT_DEFAULT);
@@ -79,7 +86,13 @@ void Display_Task(void *arg){
 
 	while(1){
 
-    	lv_timer_handler();
+		res = xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
+		if(pdTRUE == res){
+
+	    	lv_timer_handler();
+	    	xSemaphoreGive(LVGL_MutexHandle);
+		}
+
     	vTaskDelay(1);
 	}
 }

@@ -5,7 +5,12 @@
 
 #include "ui.h"
 
-void toggle_backlight(lv_event_t * e)
-{
-	// Your code here
-}
+//void toggle_backlight(lv_event_t * e)
+//{
+//	// Your code here
+//}
+//
+//void WetaherScreen_BackButtonClicked(lv_event_t * e)
+//{
+//	// Your code here
+//}

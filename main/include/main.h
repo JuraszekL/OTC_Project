@@ -1,6 +1,8 @@
 #ifndef MAIN_INCLUDE_MAIN_H_
 #define MAIN_INCLUDE_MAIN_H_
 
+#define LV_KCONFIG_IGNORE
+
 #define VERSION_MAJOR		"0"
 #define VERSION_MINOR		"0"
 #define VERSION_PATCH		"4"

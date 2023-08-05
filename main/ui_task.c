@@ -6,6 +6,7 @@
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include <sys/time.h>
 #include "esp_log.h"
 
@@ -16,6 +17,8 @@
 #include "main.h"
 #include "animations.h"
 #include "wifi.h"
+#include "display.h"
+#include "online_requests.h"
 #include "ui_task.h"
 
 /**************************************************************
@@ -52,7 +55,13 @@ static void ui_event_wifi_connected(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
-static void ui_event_weather_basic_update(void *arg);
+static void ui_event_basic_weather_icon_update(void *arg);
+static void ui_event_basic_weather_values_update(void *arg);
+static void ui_event_weather_city_update(void *arg);
+static void ui_event_weather_country_update(void *arg);
+static void ui_event_weather_icon_update(void *arg);
+
+static void set_weater_icon(char *path, lv_obj_t * obj);
 
 /**************************************************************
  *
@@ -67,7 +76,11 @@ const ui_event event_tab[] = {
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
-		[UI_EVT_WEATHER_BASIC_UPDATE] = ui_event_weather_basic_update,
+		[UI_EVT_BASIC_WEATHER_ICON_UPDATE] = ui_event_basic_weather_icon_update,
+		[UI_EVT_BASIC_WEATHER_VALUES_UPDATE] = ui_event_basic_weather_values_update,
+		[UI_EVT_WEATHER_CITY_UPDATE] = ui_event_weather_city_update,
+		[UI_EVT_WEATHER_COUNTRY_UPDATE] = ui_event_weather_country_update,
+		[UI_EVT_WEATHER_ICON_UPDATE] = ui_event_weather_icon_update,
 };
 
 extern const char *Eng_DayName[7];
@@ -107,12 +120,15 @@ void UI_Task(void *arg){
 	// notify wifi task to start wifi initialization when nothing happens on the screen
 	xTaskNotifyGive(Wifi_TaskHandle);
 
+	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 	ui_MainScreen_screen_init();
+	ui_WeatherDetailsScrren_screen_init();
 
 	lv_label_set_text(ui_ClockLabel, "--:--");
 	lv_label_set_text(ui_DateLabel, "");
 	lv_label_set_text(ui_WiFiIconLabel, "    ");
 	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
+	xSemaphoreGive(LVGL_MutexHandle);
 
 	while(1){
 
@@ -120,7 +136,12 @@ void UI_Task(void *arg){
 		ret = xQueueReceive(ui_queue_handle, &data, portMAX_DELAY);
 		if(pdTRUE == ret){
 
-			event_tab[data.type](data.arg);
+			ret = xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
+			if(pdTRUE == ret){
+
+				event_tab[data.type](data.arg);
+		    	xSemaphoreGive(LVGL_MutexHandle);
+			}
 		}
 	}
 
@@ -135,11 +156,18 @@ void UI_Task(void *arg){
 void UI_ReportEvt(UI_EventType_t Type, void *arg){
 
 	struct ui_queue_data data;
+	BaseType_t res;
 
 	data.type = Type;
 	data.arg = arg;
 
-	xQueueSend(ui_queue_handle, &data, pdMS_TO_TICKS(50));
+	res = xQueueSend(ui_queue_handle, &data, pdMS_TO_TICKS(50));
+	if(pdPASS != res){
+
+		if(arg){
+			if(heap_caps_get_allocated_size(arg)) free(arg);
+		}
+	}
 }
 
 /**************************************************************
@@ -266,7 +294,7 @@ static void ui_event_time_changed(void *arg){
 
 	if(1 == set_date){
 
-		lv_label_set_text_fmt(ui_DateLabel, "%s\n%02d %s", Eng_DayName[last_displayed_time.tm_wday], last_displayed_time.tm_mday,
+		lv_label_set_text_fmt(ui_DateLabel, "%s, %02d %s", Eng_DayName[last_displayed_time.tm_wday], last_displayed_time.tm_mday,
 				Eng_MonthName_3char[last_displayed_time.tm_mon]);
 	}
 }
@@ -283,15 +311,11 @@ static void ui_event_clock_sync(void *arg){
 
 }
 
-/* function sets weather basic data on the main screen */
-static void ui_event_weather_basic_update(void *arg){
+static void set_weater_icon(char *path, lv_obj_t * obj){
 
-	if(0 == arg) return;
-
-	char *path = (char *)arg;
-	char *buff = 0;
 	size_t len;
 	int a;
+	char *buff = 0;
 
 	// allocate buffer for image path
 	len = strnlen(path, 64);
@@ -304,7 +328,7 @@ static void ui_event_weather_basic_update(void *arg){
 	if(a != (len + 2)) goto cleanup;
 
 	// set image from path
-	lv_img_set_src(ui_WeatherImage, buff);
+	lv_img_set_src(obj, buff);
 
 	cleanup:
 		if(buff){
@@ -313,4 +337,61 @@ static void ui_event_weather_basic_update(void *arg){
 		if(path){
 			if(heap_caps_get_allocated_size(path)) free(path);
 		}
+}
+
+/* function sets weather basic data on the main screen */
+static void ui_event_basic_weather_icon_update(void *arg){
+
+	if(0 == arg) return;
+
+	set_weater_icon((char *)arg, ui_WeatherImage);
+}
+
+static void ui_event_basic_weather_values_update(void *arg){
+
+	if(0 == arg) return;
+
+	UI_WeatherValues_t *ptr = (UI_WeatherValues_t *)arg;
+
+	lv_label_set_text_fmt(ui_WeatherLabel, "%d°C\n%dhPa\n%d%%", ptr->temp, ptr->press, ptr->hum);
+
+	if(ptr){
+		if(heap_caps_get_allocated_size(ptr)) free(ptr);
+	}
+}
+
+static void ui_event_weather_city_update(void *arg){
+
+	if(arg){
+
+		lv_label_set_text(ui_WeatherScreenCity, (char *)arg);
+		if(heap_caps_get_allocated_size(arg)) free(arg);
+	}
+}
+
+static void ui_event_weather_country_update(void *arg){
+
+	if(arg){
+
+		lv_label_set_text(ui_WeatherScreenCountry, (char *)arg);
+		if(heap_caps_get_allocated_size(arg)) free(arg);
+	}
+}
+
+static void ui_event_weather_icon_update(void *arg){
+
+	if(0 == arg) return;
+
+	set_weater_icon((char *)arg, ui_WeatherScreenIcon);
+}
+
+void WetaherScreen_BackButtonClicked(lv_event_t * e){
+
+//	ESP_LOGI("", "clicked");
+}
+
+void MainScreen_WeatherIconClicked(lv_event_t * e){
+
+	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
+	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
 }
