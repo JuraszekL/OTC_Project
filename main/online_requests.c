@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <math.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -54,6 +55,7 @@ static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
 
 static int parse_json_forecast_day_0(cJSON *json, cJSON **_day_0);
 static int parse_json_forecast_city_country(cJSON *json, char **city_name, char **country_name);
+static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
 
 
 
@@ -212,7 +214,7 @@ static void basic_data_update_request(void *arg){
 
 static void detailed_data_update_request(void *arg){
 
-	int ret;
+	int ret, avg_temp;;
 	char *json_raw = 0, *city_name = 0, *country_name = 0, *icon_path = 0;
 	cJSON *recieved_json = 0, *day_0 = 0;
 
@@ -231,6 +233,12 @@ static void detailed_data_update_request(void *arg){
 	if(0 == ret){
 
 		UI_ReportEvt(UI_EVT_WEATHER_ICON_UPDATE, icon_path);
+	}
+
+	ret = parse_json_forecast_avg_temp(day_0, &avg_temp);
+	if(0 == ret){
+
+		UI_ReportEvt(UI_EVT_WEATHER_AVG_TEMP_UPDATE, (void *)avg_temp);
 	}
 
 	cleanup:
@@ -426,7 +434,7 @@ static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path){
 	return a;
 }
 
-/* get weather values from parsed json */
+/* get current weather values from parsed json */
 static int parse_json_current_weather_values(cJSON *json, UI_WeatherValues_t **icon_values){
 
 	int a = -1, temp, press, hum;
@@ -491,7 +499,7 @@ static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 	return a;
 }
 
-
+/* get pointer to current day's json */
 static int parse_json_forecast_day_0(cJSON *json, cJSON **day_0){
 
 	cJSON *forecast = 0, *forecastday = 0;
@@ -549,3 +557,17 @@ static int parse_json_forecast_city_country(cJSON *json, char **city_name, char 
 		return -1;
 }
 
+static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp){
+
+	cJSON *day = 0, *avgtemp_c = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return -1;
+
+	avgtemp_c = cJSON_GetObjectItemCaseSensitive(day, "avgtemp_c");
+	if(0 == avgtemp_c) return -1;
+	if(0 == cJSON_IsNumber(avgtemp_c)) return -1;
+	*avg_temp = (int)round(avgtemp_c->valuedouble);
+
+	return 0;
+}

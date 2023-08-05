@@ -10,6 +10,7 @@
 #include <sys/time.h>
 #include "esp_log.h"
 
+
 #include "lvgl.h"
 #include "lv_conf.h"
 #include "ui.h"
@@ -60,6 +61,7 @@ static void ui_event_basic_weather_values_update(void *arg);
 static void ui_event_weather_city_update(void *arg);
 static void ui_event_weather_country_update(void *arg);
 static void ui_event_weather_icon_update(void *arg);
+static void ui_event_weather_avg_temp_update(void *arg);
 
 static void set_weater_icon(char *path, lv_obj_t * obj);
 
@@ -81,6 +83,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_WEATHER_CITY_UPDATE] = ui_event_weather_city_update,
 		[UI_EVT_WEATHER_COUNTRY_UPDATE] = ui_event_weather_country_update,
 		[UI_EVT_WEATHER_ICON_UPDATE] = ui_event_weather_icon_update,
+		[UI_EVT_WEATHER_AVG_TEMP_UPDATE] = ui_event_weather_avg_temp_update,
 };
 
 extern const char *Eng_DayName[7];
@@ -383,6 +386,52 @@ static void ui_event_weather_icon_update(void *arg){
 	if(0 == arg) return;
 
 	set_weater_icon((char *)arg, ui_WeatherScreenIcon);
+}
+
+static void ui_event_weather_avg_temp_update(void *arg){
+
+	int avg_temp = (int)arg;
+	char buff[6];
+	uint8_t r, g, b, diff;
+
+	if(((int)-50 > avg_temp) || ((int)50 < avg_temp)) return;
+
+	sprintf(buff, "%+d°C", avg_temp);
+	lv_label_set_text(ui_WeatherScreenTemp, buff);
+	lv_arc_set_value(ui_WeatherScreenTempArc, avg_temp);
+
+	if((int)-10 >= avg_temp){
+
+		r = 0;
+		b = 255;
+		diff = abs((int)-50 - avg_temp);
+		g = ((unsigned int)(diff * 255))/(unsigned int)40;
+	}
+	else if(((int)-10 < avg_temp) && ((int)10 >= avg_temp)){
+
+		r = 0;
+		g = 255;
+		diff = abs((int)10 - avg_temp);
+		b = ((unsigned int)(diff * 255))/(unsigned int)20;
+	}
+	else if(((int)10 < avg_temp) && ((int)25 >= avg_temp)){
+
+		g = 255;
+		b = 0;
+		diff = abs(avg_temp - (int)10);
+		r = ((unsigned int)(diff * 255))/(unsigned int)15;
+	}
+	else{
+
+		r = 255;
+		b = 0;
+		diff = abs((int)50 - avg_temp);
+		g = ((unsigned int)(diff * 255))/(unsigned int)25;
+	}
+
+	lv_obj_set_style_arc_color(ui_WeatherScreenTempArc, lv_color_make(r, g, b), LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_arc_color(ui_WeatherScreenTempArc, lv_color_make(r, g, b), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+
 }
 
 void WetaherScreen_BackButtonClicked(lv_event_t * e){

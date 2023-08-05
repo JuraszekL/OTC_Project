@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
+#include "esp_random.h"
 
 #include "cJSON.h"
 
@@ -17,7 +18,11 @@
 #include "online_requests.h"
 #include "sdcard.h"
 
+static void one_second_timer_callback(TimerHandle_t xTimer);
+
 EventGroupHandle_t AppStartSyncEvt;
+TimerHandle_t OneSecondTimer;
+
 const char tag[] = "main.c";
 
 void app_main(void){
@@ -65,6 +70,9 @@ void app_main(void){
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
+	OneSecondTimer = xTimerCreate("", pdMS_TO_TICKS(1000), pdFALSE, NULL, one_second_timer_callback);
+	assert(OneSecondTimer);
+
 	// delete resources and kill app_main task
 	vEventGroupDelete(AppStartSyncEvt);
 	vTaskDelete(NULL);
@@ -84,4 +92,9 @@ void IRAM_ATTR lvgl_free(void * data){
 void * IRAM_ATTR lvgl_realloc(void * data_p, size_t new_size){
 
 	return heap_caps_realloc(data_p, new_size, MALLOC_CAP_SPIRAM);
+}
+
+static void one_second_timer_callback(TimerHandle_t xTimer){
+
+
 }

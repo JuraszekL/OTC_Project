@@ -22,6 +22,7 @@
 #define TIMEOUT_MS				5000
 
 extern EventGroupHandle_t AppStartSyncEvt;
+extern TimerHandle_t OneSecondTimer;
 
 void * lvgl_malloc(size_t size);
 void lvgl_free(void * data);
