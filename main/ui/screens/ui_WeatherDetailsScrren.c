@@ -93,6 +93,112 @@ void ui_WeatherDetailsScrren_screen_init(void)
     lv_obj_set_style_text_opa(ui_WeatherScreenTemp, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_WeatherScreenTemp, &lv_font_montserrat_30, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_WeatherScreenTempMinMax = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenTempMinMax, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenTempMinMax, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_WeatherScreenTempMinMax, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenTempMinMax, "min/max\n+12°C / +29°C");
+    lv_obj_set_style_text_color(ui_WeatherScreenTempMinMax, lv_color_hex(0xF2F2F2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenTempMinMax, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenTempMinMax, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenTempMinMax, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenSunriseIconLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenSunriseIconLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenSunriseIconLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenSunriseIconLabel, -110);
+    lv_obj_set_y(ui_WeatherScreenSunriseIconLabel, 60);
+    lv_obj_set_align(ui_WeatherScreenSunriseIconLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenSunriseIconLabel, "I");
+    lv_obj_set_style_text_color(ui_WeatherScreenSunriseIconLabel, lv_color_hex(0xF26B1D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenSunriseIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenSunriseIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenSunriseIconLabel, &ui_font_UIIconsNew36, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenRainIconLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenRainIconLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenRainIconLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenRainIconLabel, -110);
+    lv_obj_set_y(ui_WeatherScreenRainIconLabel, 120);
+    lv_obj_set_align(ui_WeatherScreenRainIconLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenRainIconLabel, "J");
+    lv_obj_set_style_text_color(ui_WeatherScreenRainIconLabel, lv_color_hex(0xF26B1D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenRainIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenRainIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenRainIconLabel, &ui_font_UIIconsNew36, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenSnowIconLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenSnowIconLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenSnowIconLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenSnowIconLabel, 50);
+    lv_obj_set_y(ui_WeatherScreenSnowIconLabel, 120);
+    lv_obj_set_align(ui_WeatherScreenSnowIconLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenSnowIconLabel, "L");
+    lv_obj_set_style_text_color(ui_WeatherScreenSnowIconLabel, lv_color_hex(0xF26B1D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenSnowIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenSnowIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenSnowIconLabel, &ui_font_UIIconsNew36, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenWindIconLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenWindIconLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenWindIconLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenWindIconLabel, 50);
+    lv_obj_set_y(ui_WeatherScreenWindIconLabel, 60);
+    lv_obj_set_align(ui_WeatherScreenWindIconLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenWindIconLabel, "K");
+    lv_obj_set_style_text_color(ui_WeatherScreenWindIconLabel, lv_color_hex(0xF26B1D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenWindIconLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenWindIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenWindIconLabel, &ui_font_UIIconsNew36, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenSunriseLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenSunriseLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenSunriseLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenSunriseLabel, -50);
+    lv_obj_set_y(ui_WeatherScreenSunriseLabel, 60);
+    lv_obj_set_align(ui_WeatherScreenSunriseLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenSunriseLabel, "06:03\n21:12");
+    lv_obj_set_style_text_color(ui_WeatherScreenSunriseLabel, lv_color_hex(0xF2F2F2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenSunriseLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenSunriseLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenSunriseLabel, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenRainLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenRainLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenRainLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenRainLabel, -50);
+    lv_obj_set_y(ui_WeatherScreenRainLabel, 120);
+    lv_obj_set_align(ui_WeatherScreenRainLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenRainLabel, "15mm\n87%");
+    lv_obj_set_style_text_color(ui_WeatherScreenRainLabel, lv_color_hex(0xF2F2F2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenRainLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenRainLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenRainLabel, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenWindLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenWindLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenWindLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenWindLabel, 110);
+    lv_obj_set_y(ui_WeatherScreenWindLabel, 60);
+    lv_obj_set_align(ui_WeatherScreenWindLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenWindLabel, "6km/h\n22km/h");
+    lv_obj_set_style_text_color(ui_WeatherScreenWindLabel, lv_color_hex(0xF2F2F2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenWindLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenWindLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenWindLabel, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_WeatherScreenSnowLabel = lv_label_create(ui_WeatherDetailsScrren);
+    lv_obj_set_width(ui_WeatherScreenSnowLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WeatherScreenSnowLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WeatherScreenSnowLabel, 110);
+    lv_obj_set_y(ui_WeatherScreenSnowLabel, 120);
+    lv_obj_set_align(ui_WeatherScreenSnowLabel, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_WeatherScreenSnowLabel, "0cm\n0%");
+    lv_obj_set_style_text_color(ui_WeatherScreenSnowLabel, lv_color_hex(0xF2F2F2), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_WeatherScreenSnowLabel, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(ui_WeatherScreenSnowLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_WeatherScreenSnowLabel, &lv_font_montserrat_14, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_WeatherScreenBackButton, ui_event_WeatherScreenBackButton, LV_EVENT_ALL, NULL);
 
 }

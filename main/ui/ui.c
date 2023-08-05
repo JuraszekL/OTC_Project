@@ -40,6 +40,15 @@ lv_obj_t * ui_WeatherScreenCountry;
 lv_obj_t * ui_WeatherScreenIcon;
 lv_obj_t * ui_WeatherScreenTempArc;
 lv_obj_t * ui_WeatherScreenTemp;
+lv_obj_t * ui_WeatherScreenTempMinMax;
+lv_obj_t * ui_WeatherScreenSunriseIconLabel;
+lv_obj_t * ui_WeatherScreenRainIconLabel;
+lv_obj_t * ui_WeatherScreenSnowIconLabel;
+lv_obj_t * ui_WeatherScreenWindIconLabel;
+lv_obj_t * ui_WeatherScreenSunriseLabel;
+lv_obj_t * ui_WeatherScreenRainLabel;
+lv_obj_t * ui_WeatherScreenWindLabel;
+lv_obj_t * ui_WeatherScreenSnowLabel;
 lv_obj_t * ui____initial_actions0;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////

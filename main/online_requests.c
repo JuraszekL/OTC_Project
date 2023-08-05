@@ -39,23 +39,27 @@ struct online_request_queue_data {
 static void sntp_initialize(void);
 static void sntp_sync_cb(struct timeval *tv);
 
-static void basic_data_update_request(void *arg);
-static void time_sync_request(void *arg);
-static void detailed_data_update_request(void *arg);
+static void request_basic_data_update(void *arg);
+static void request_time_update(void *arg);
+static void request_detailed_weather_update(void *arg);
 
 static int http_get_weather_json(const char *method, char **json_raw, cJSON **recieved_json);
-static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt);
+static int http_perform_evt_handler(esp_http_client_event_t *evt);
 
-static int parse_json_icon(cJSON *json, char **icon_path);
 static int parse_json_current_weather_icon(cJSON *json, char **icon_path);
 static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path);
+static int parse_json_icon(cJSON *json, char **icon_path);
 
-static int parse_json_current_weather_values(cJSON *json, UI_WeatherValues_t **icon_values);
+static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum);
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
 
 static int parse_json_forecast_day_0(cJSON *json, cJSON **_day_0);
 static int parse_json_forecast_city_country(cJSON *json, char **city_name, char **country_name);
 static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
+static int parse_json_forecast_min_max_temp(cJSON *json, int *min_temp, int *max_temp);
+static int parse_json_forecast_sunrise_sunset_time(cJSON *json, char **sunrise_time, char **sunset_time);
+
+static int convert_time_string_format(char *from, char **to);
 
 
 
@@ -66,9 +70,9 @@ static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
  ***************************************************************/
 static const online_request requests_tab[] = {
 
-		[ONLINEREQ_BASIC_UPDATE] = basic_data_update_request,
-		[ONLINEREQ_TIME_UPDATE] = time_sync_request,
-		[ONLINEREQ_DETAILED_UPDATE] = detailed_data_update_request,
+		[ONLINEREQ_BASIC_UPDATE] = request_basic_data_update,
+		[ONLINEREQ_TIME_UPDATE] = request_time_update,
+		[ONLINEREQ_DETAILED_UPDATE] = request_detailed_weather_update,
 };
 
 static QueueHandle_t online_requests_queue_handle;
@@ -153,15 +157,8 @@ static void sntp_initialize(void){
 	sntp_set_time_sync_notification_cb(sntp_sync_cb);
 }
 
-/* sntp time synchronised callback */
-static void sntp_sync_cb(struct timeval *tv){
-
-	esp_sntp_stop();
-	TimeUpdated();
-}
-
 /* run sntp to update system time */
-static void time_sync_request(void *arg){
+static void request_time_update(void *arg){
 
 	// start or init sntp
 	if(0 == sntp_restart()){
@@ -170,81 +167,122 @@ static void time_sync_request(void *arg){
 	}
 }
 
+/* sntp time synchronised callback */
+static void sntp_sync_cb(struct timeval *tv){
+
+	esp_sntp_stop();
+	TimeUpdated();
+}
+
 /*****************************
  * Online requests
  * ***************************/
 
 /* request update of basic time/weather data */
-static void basic_data_update_request(void *arg){
+static void request_basic_data_update(void *arg){
 
-	char *json_raw = 0, *weather_icon_path = 0;
+	char *json_raw = 0;
 	const char *timezonestr = 0;
 	int ret;
 	cJSON *recieved_json = 0;
-	UI_WeatherValues_t *weather_values = 0;
+	UI_BasicWeatherValues_t *data = 0;
 
-	if(0 != http_get_weather_json(HTTP_WEATHER_METH_NOW, &json_raw, &recieved_json)) goto cleanup;
+	// get data from http
+	ret = http_get_weather_json(HTTP_WEATHER_METH_NOW, &json_raw, &recieved_json);
+	if(0 != ret) goto error;
 
-	// set the weather icon
-	ret = parse_json_current_weather_icon(recieved_json, &weather_icon_path);
-	if(0 == ret){
+	// allocate memory for output values
+	data = malloc(sizeof(UI_BasicWeatherValues_t));
+	if(0 == data) goto error;
 
-		UI_ReportEvt(UI_EVT_BASIC_WEATHER_ICON_UPDATE, weather_icon_path);
-	}
+	// get the weather icon path
+	ret = parse_json_current_weather_icon(recieved_json, &data->icon_path);
+	if(0 != ret) goto error;
 
-	ret = parse_json_current_weather_values(recieved_json, &weather_values);
-	if(0 == ret){
+	// get weather values
+	ret = parse_json_current_weather_values(recieved_json, &data->temp, &data->press, &data->hum);
+	if(0 != ret) goto error;
 
-		UI_ReportEvt(UI_EVT_BASIC_WEATHER_VALUES_UPDATE, weather_values);
-	}
-
-	// set the timezone string (tz)
+	// get the timezone string (tz)
 	ret = parse_json_timezone_basic(recieved_json, &timezonestr);
-	if(0 == ret){
+	if(0 != ret) goto error;
 
-		Timezone_Update(timezonestr);
-	}
+	// if everything was fine use obtained data to:
 
-	cleanup:
+	// set timezone
+	Timezone_Update(timezonestr);
+	// update weather data on main screen
+	UI_ReportEvt(UI_EVT_BASIC_WEATHER_UPDATE, data);
+
+	// cleanup
+	cJSON_Delete(recieved_json);
+	free(json_raw);
+	return;
+
+	error:
 		if(recieved_json) cJSON_Delete(recieved_json);
 		if(json_raw){
 			if(heap_caps_get_allocated_size(json_raw)) free(json_raw);
 		}
+		if(data){
+			if(heap_caps_get_allocated_size(data)) free(data);
+		}
 }
 
-static void detailed_data_update_request(void *arg){
+/* request update of detailed weather data */
+static void request_detailed_weather_update(void *arg){
 
-	int ret, avg_temp;;
-	char *json_raw = 0, *city_name = 0, *country_name = 0, *icon_path = 0;
+	int ret;
+	char *json_raw = 0;
 	cJSON *recieved_json = 0, *day_0 = 0;
+	UI_DetailedWeatherValues_t *data = 0;
 
-	if(0 != http_get_weather_json(HTTP_WEATHER_METH_FORECAST, &json_raw, &recieved_json)) goto cleanup;
+	// get data from http
+	ret = http_get_weather_json(HTTP_WEATHER_METH_FORECAST, &json_raw, &recieved_json);
+	if(0 != ret) goto error;
 
-	if(0 != parse_json_forecast_day_0(recieved_json, &day_0)) goto cleanup;
+	// get pointer to data of today's weather
+	ret = parse_json_forecast_day_0(recieved_json, &day_0);
+	if(0 != ret) goto error;
 
-	ret = parse_json_forecast_city_country(recieved_json, &city_name, &country_name);
-	if(0 == ret){
+	// allocate memory for output values
+	data = malloc(sizeof(UI_DetailedWeatherValues_t));
+	if(0 == data) goto error;
 
-		UI_ReportEvt(UI_EVT_WEATHER_CITY_UPDATE, city_name);
-		UI_ReportEvt(UI_EVT_WEATHER_COUNTRY_UPDATE, country_name);
-	}
+	// get name of city and country
+	ret = parse_json_forecast_city_country(recieved_json, &data->city_name, &data->country_name);
+	if(0 != ret) goto error;
 
-	ret = parse_json_forecast_weather_icon(day_0, &icon_path);
-	if(0 == ret){
+	// get weather icon path
+	ret = parse_json_forecast_weather_icon(day_0, &data->icon_path);
+	if(0 != ret) goto error;
 
-		UI_ReportEvt(UI_EVT_WEATHER_ICON_UPDATE, icon_path);
-	}
+	// get avg temperature
+	ret = parse_json_forecast_avg_temp(day_0, &data->average_temp);
+	if(0 != ret) goto error;
 
-	ret = parse_json_forecast_avg_temp(day_0, &avg_temp);
-	if(0 == ret){
+	// get min/max temperature
+	ret = parse_json_forecast_min_max_temp(day_0, &data->min_temp, &data->max_temp);
+	if(0 != ret) goto error;
 
-		UI_ReportEvt(UI_EVT_WEATHER_AVG_TEMP_UPDATE, (void *)avg_temp);
-	}
+	ret = parse_json_forecast_sunrise_sunset_time(day_0, &data->sunrise_time, &data->sunset_time);
+	if(0 != ret) goto error;
 
-	cleanup:
+	// if everything was fine send obtained data to weather screen
+	UI_ReportEvt(UI_EVT_DETAILED_WEATHER_UPDATE, data);
+
+	// cleanup
+	cJSON_Delete(recieved_json);
+	free(json_raw);
+	return;
+
+	error:
 		if(recieved_json) cJSON_Delete(recieved_json);
 		if(json_raw){
 			if(heap_caps_get_allocated_size(json_raw)) free(json_raw);
+		}
+		if(data){
+			if(heap_caps_get_allocated_size(data)) free(data);
 		}
 }
 
@@ -255,8 +293,7 @@ static void detailed_data_update_request(void *arg){
 /* general function to get json from weatherapi.com */
 static int http_get_weather_json(const char *method, char **json_raw, cJSON **recieved_json){
 
-	int len;
-	esp_err_t ret;
+	int len, ret;
 	char *html_url_buff = 0;
 	esp_http_client_handle_t client = NULL;
 	esp_http_client_config_t config = {0};
@@ -281,7 +318,7 @@ static int http_get_weather_json(const char *method, char **json_raw, cJSON **re
 
 	// perform http data transfer
 	ret = esp_http_client_perform(client);
-	if((ESP_OK != ret) || (0 == *json_raw)) goto error;
+	if((0 != ret) || (0 == *json_raw)) goto error;
 
 	// parse json
 	*recieved_json = cJSON_Parse(*json_raw);
@@ -303,10 +340,9 @@ static int http_get_weather_json(const char *method, char **json_raw, cJSON **re
 }
 
 /* handler for http events */
-static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
+static int http_perform_evt_handler(esp_http_client_event_t *evt){
 
 	char **ptr = (char **)evt->user_data;
-	esp_err_t ret = ESP_OK;
 
 	switch(evt->event_id){
 
@@ -341,7 +377,7 @@ static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
 		if(0 == *ptr) {
 
 			rcvd_data_len = 0;
-			return ESP_FAIL;
+			return -1;
 		}
 
 		// copy new data to allocated memory
@@ -353,12 +389,43 @@ static esp_err_t http_perform_evt_handler(esp_http_client_event_t *evt){
 		break;
 	}
 
-	return ret;
+	return 0;
 }
 
 /*****************************
  * JSON operations
  * ***************************/
+
+
+/* get weather icon path from current weather json */
+static int parse_json_current_weather_icon(cJSON *json, char **icon_path){
+
+	int a = -1;
+	cJSON *current = 0;
+
+	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+	if(0 == current) return a;
+
+	if(0 != parse_json_icon(current, icon_path)) return a;
+
+	a = 0;
+	return a;
+}
+
+/* get weather icon path from current weather json */
+static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path){
+
+	int a = -1;
+	cJSON *day = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return a;
+
+	if(0 != parse_json_icon(day, icon_path)) return a;
+
+	a = 0;
+	return a;
+}
 
 /* find the icon file path from JSON, general */
 static int parse_json_icon(cJSON *json, char **icon_path){
@@ -404,42 +471,11 @@ static int parse_json_icon(cJSON *json, char **icon_path){
 	return a;
 }
 
-/* get weather icon path from current weather json */
-static int parse_json_current_weather_icon(cJSON *json, char **icon_path){
-
-	int a = -1;
-	cJSON *current = 0;
-
-	current = cJSON_GetObjectItemCaseSensitive(json, "current");
-	if(0 == current) return a;
-
-	if(0 != parse_json_icon(current, icon_path)) return a;
-
-	a = 0;
-	return a;
-}
-
-/* get weather icon path from current weather json */
-static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path){
-
-	int a = -1;
-	cJSON *day = 0;
-
-	day = cJSON_GetObjectItemCaseSensitive(json, "day");
-	if(0 == day) return a;
-
-	if(0 != parse_json_icon(day, icon_path)) return a;
-
-	a = 0;
-	return a;
-}
-
 /* get current weather values from parsed json */
-static int parse_json_current_weather_values(cJSON *json, UI_WeatherValues_t **icon_values){
+static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum){
 
-	int a = -1, temp, press, hum;
+	int a = -1;
 	cJSON *current = 0, *temp_c = 0, *pressure_mb = 0, *humidity = 0;
-	UI_WeatherValues_t *values = 0;
 
 	current = cJSON_GetObjectItemCaseSensitive(json, "current");
 	if(0 == current) return a;
@@ -447,24 +483,17 @@ static int parse_json_current_weather_values(cJSON *json, UI_WeatherValues_t **i
 	temp_c = cJSON_GetObjectItemCaseSensitive(current, "temp_c");
 	if(0 == temp_c) return a;
 	if(0 == cJSON_IsNumber(temp_c)) return a;
-	temp = temp_c->valueint;
+	*temp = temp_c->valueint;
 
 	pressure_mb = cJSON_GetObjectItemCaseSensitive(current, "pressure_mb");
 	if(0 == pressure_mb) return a;
 	if(0 == cJSON_IsNumber(pressure_mb)) return a;
-	press = pressure_mb->valueint;
+	*press = pressure_mb->valueint;
 
 	humidity = cJSON_GetObjectItemCaseSensitive(current, "humidity");
 	if(0 == humidity) return a;
 	if(0 == cJSON_IsNumber(humidity)) return a;
-	hum = humidity->valueint;
-
-	values = malloc(sizeof(UI_WeatherValues_t));
-	if(0 == values) return a;
-	values->temp = temp;
-	values->press = press;
-	values->hum = hum;
-	*icon_values = values;
+	*hum = humidity->valueint;
 
 	a = 0;
 	return a;
@@ -557,6 +586,7 @@ static int parse_json_forecast_city_country(cJSON *json, char **city_name, char 
 		return -1;
 }
 
+/* get average temperature from json */
 static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp){
 
 	cJSON *day = 0, *avgtemp_c = 0;
@@ -568,6 +598,93 @@ static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp){
 	if(0 == avgtemp_c) return -1;
 	if(0 == cJSON_IsNumber(avgtemp_c)) return -1;
 	*avg_temp = (int)round(avgtemp_c->valuedouble);
+
+	return 0;
+}
+
+/* get minimum and maximum temperature from json */
+static int parse_json_forecast_min_max_temp(cJSON *json, int *min_temp, int *max_temp){
+
+	cJSON *day = 0, *mintemp_c = 0, *maxtemp_c = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return -1;
+
+	mintemp_c = cJSON_GetObjectItemCaseSensitive(day, "mintemp_c");
+	if(0 == mintemp_c) return -1;
+	if(0 == cJSON_IsNumber(mintemp_c)) return -1;
+	*min_temp = (int)round(mintemp_c->valuedouble);
+
+	maxtemp_c = cJSON_GetObjectItemCaseSensitive(day, "maxtemp_c");
+	if(0 == maxtemp_c) return -1;
+	if(0 == cJSON_IsNumber(maxtemp_c)) return -1;
+	*max_temp = (int)round(maxtemp_c->valuedouble);
+
+	return 0;
+}
+
+/* get sunrise and sunset time as strings from json */
+static int parse_json_forecast_sunrise_sunset_time(cJSON *json, char **sunrise_time, char **sunset_time){
+
+	cJSON *astro = 0, *sunrise = 0, *sunset = 0;
+
+	astro = cJSON_GetObjectItemCaseSensitive(json, "astro");
+	if(0 == astro) return -1;
+
+	sunrise = cJSON_GetObjectItemCaseSensitive(astro, "sunrise");
+	if(0 == sunrise) goto error;
+	if (0 == cJSON_IsString(sunrise) || (sunrise->valuestring == 0)) goto error;
+
+	if(0 != convert_time_string_format(sunrise->valuestring, sunrise_time)) goto error;
+
+	sunset = cJSON_GetObjectItemCaseSensitive(astro, "sunset");
+	if(0 == sunset) goto error;
+	if (0 == cJSON_IsString(sunset) || (sunset->valuestring == 0)) goto error;
+
+	if(0 != convert_time_string_format(sunset->valuestring, sunset_time)) goto error;
+
+	return 0;
+
+	error:
+		if(*sunrise_time){
+			if(heap_caps_get_allocated_size(*sunrise_time)) free(*sunrise_time);
+		}
+		if(*sunset_time){
+			if(heap_caps_get_allocated_size(*sunset_time)) free(*sunset_time);
+		}
+		return -1;
+}
+
+/* Convert string from format:
+ * 	09:13 AM
+ * to format:
+ * 	21:13
+ * */
+static int convert_time_string_format(char *from, char **to){
+
+	int h, m, res;
+	char ampm[3];
+	size_t len;
+
+	len = strnlen(from, 12);
+	if(12 == len) return -1;
+
+	// parse string
+	res = sscanf(from, "%d:%d %s", &h, &m, ampm);
+	if(3 != res) return -1;
+
+	// check if PM
+	if(0 == memcmp(ampm, "PM", 2)){
+
+		h += 12;
+	}
+	else if(0 != memcmp(ampm, "AM", 2)) return -1; // make sure that only AM or PM value is stored
+
+	*to = malloc(6);
+	if(0 == *to) return -1;
+
+	// create new string
+	sprintf(*to, "%02d:%02d", h, m);
 
 	return 0;
 }

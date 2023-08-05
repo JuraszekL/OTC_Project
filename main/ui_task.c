@@ -56,14 +56,22 @@ static void ui_event_wifi_connected(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
-static void ui_event_basic_weather_icon_update(void *arg);
-static void ui_event_basic_weather_values_update(void *arg);
-static void ui_event_weather_city_update(void *arg);
-static void ui_event_weather_country_update(void *arg);
-static void ui_event_weather_icon_update(void *arg);
-static void ui_event_weather_avg_temp_update(void *arg);
+static void ui_event_basic_weather_update(void *arg);
+static void ui_event_detailed_weather_update(void *arg);
 
-static void set_weater_icon(char *path, lv_obj_t * obj);
+static void basic_weather_update_icon(char *icon_path);
+static void basic_weather_update_values(int temp, int press, int hum);
+
+static void detailed_weather_update_city_name(char *city_name);
+static void detailed_weather_update_country_name(char *country_name);
+static void detailed_weather_update_weather_icon(char *icon_path);
+static void detailed_weather_update_avg_temp(int avg_temp);
+static void detailed_weather_update_min_max_temp(int min_temp, int max_temp);
+static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time);
+
+static void set_weather_icon(char *path, lv_obj_t * obj);
+static void set_wifi_label(uint8_t icon_type, char icon);
+
 
 /**************************************************************
  *
@@ -78,12 +86,9 @@ const ui_event event_tab[] = {
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
-		[UI_EVT_BASIC_WEATHER_ICON_UPDATE] = ui_event_basic_weather_icon_update,
-		[UI_EVT_BASIC_WEATHER_VALUES_UPDATE] = ui_event_basic_weather_values_update,
-		[UI_EVT_WEATHER_CITY_UPDATE] = ui_event_weather_city_update,
-		[UI_EVT_WEATHER_COUNTRY_UPDATE] = ui_event_weather_country_update,
-		[UI_EVT_WEATHER_ICON_UPDATE] = ui_event_weather_icon_update,
-		[UI_EVT_WEATHER_AVG_TEMP_UPDATE] = ui_event_weather_avg_temp_update,
+		[UI_EVT_BASIC_WEATHER_UPDATE] = ui_event_basic_weather_update,
+		[UI_EVT_DETAILED_WEATHER_UPDATE] = ui_event_detailed_weather_update,
+
 };
 
 extern const char *Eng_DayName[7];
@@ -173,6 +178,18 @@ void UI_ReportEvt(UI_EventType_t Type, void *arg){
 	}
 }
 
+
+void WetaherScreen_BackButtonClicked(lv_event_t * e){
+
+//	ESP_LOGI("", "clicked");
+}
+
+void MainScreen_WeatherIconClicked(lv_event_t * e){
+
+	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
+	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
+}
+
 /**************************************************************
  *
  * Private function definitions
@@ -208,49 +225,18 @@ static void startup_screen(void){
 	lv_obj_clear_flag(ui_VersionLabel, LV_OBJ_FLAG_HIDDEN);
 }
 
-/* set icon within area of ui_WiFiIconLabel
- *
- * format of ui_WiFiIconLabel is char-space-space-char-null, each one charactes is a single icon,
- * correct string should contain 4 characters and null character at the end
- * par. icon_type is an enum that sets correct position for different icons (0 or 3)
- * par. icon is a character that represents an icon within font
- * */
-static void wifi_label_set(uint8_t icon_type, char icon){
-
-	size_t len = 0;
-	char buff[5] = {0};
-	char *text = lv_label_get_text(ui_WiFiIconLabel);
-	if(0 != text){
-
-		len = strnlen(text, 5);
-		if(4 == len){
-
-			// if correct format "%c  %c\0"
-			if(text[icon_type] == icon) return;
-			else{
-
-				// set correct icon to correct position
-				text[icon_type] = icon;
-				lv_label_set_text(ui_WiFiIconLabel, text);
-			}
-		}
-		else{
-
-			sprintf(buff, "    ");
-			buff[icon_type] = icon;
-			lv_label_set_text(ui_WiFiIconLabel, buff);
-		}
-	}
-}
+/*****************************
+ * UI event functions
+ * ***************************/
 
 static void ui_event_wifi_disconnected(void *arg){
 
-	wifi_label_set(wifi_icon, ICON_NO_WIFI);
+	set_wifi_label(wifi_icon, ICON_NO_WIFI);
 }
 
 static void ui_event_wifi_connected(void *arg){
 
-	wifi_label_set(wifi_icon, ICON_WIFI);
+	set_wifi_label(wifi_icon, ICON_WIFI);
 }
 
 static void ui_event_time_changed(void *arg){
@@ -304,100 +290,97 @@ static void ui_event_time_changed(void *arg){
 
 static void ui_event_clock_not_sync(void *arg){
 
-	wifi_label_set(sync_icon, ICON_NO_SYNC);
+	set_wifi_label(sync_icon, ICON_NO_SYNC);
 }
 
 
 static void ui_event_clock_sync(void *arg){
 
-	wifi_label_set(sync_icon, ICON_SYNC);
+	set_wifi_label(sync_icon, ICON_SYNC);
 
 }
 
-static void set_weater_icon(char *path, lv_obj_t * obj){
 
-	size_t len;
-	int a;
-	char *buff = 0;
+static void ui_event_basic_weather_update(void *arg){
 
-	// allocate buffer for image path
-	len = strnlen(path, 64);
-	if(64 == len) goto cleanup;
-	buff = malloc(len + 3);
-	if(0 == buff) goto cleanup;
+	if(0 == arg) return;
 
-	// prepare path string
-	a = sprintf(buff, "%c:%s", LV_FS_STDIO_LETTER, path);
-	if(a != (len + 2)) goto cleanup;
+	UI_BasicWeatherValues_t *data = (UI_BasicWeatherValues_t *)arg;
 
-	// set image from path
-	lv_img_set_src(obj, buff);
+	basic_weather_update_icon(data->icon_path);
+	basic_weather_update_values(data->temp, data->press, data->hum);
 
-	cleanup:
-		if(buff){
-			if(heap_caps_get_allocated_size(buff)) free(buff);
-		}
-		if(path){
-			if(heap_caps_get_allocated_size(path)) free(path);
-		}
+	if(data){
+		if(heap_caps_get_allocated_size(data)) free(data);
+	}
 }
+
+static void ui_event_detailed_weather_update(void *arg){
+
+	if(0 == arg) return;
+
+	UI_DetailedWeatherValues_t *data = (UI_DetailedWeatherValues_t *)arg;
+
+	detailed_weather_update_city_name(data->city_name);
+	detailed_weather_update_country_name(data->country_name);
+	detailed_weather_update_weather_icon(data->icon_path);
+	detailed_weather_update_avg_temp(data->average_temp);
+	detailed_weather_update_min_max_temp(data->min_temp, data->max_temp);
+	detailed_weather_update_sunrise_sunset_time(data->sunrise_time, data->sunset_time);
+
+	if(data){
+		if(heap_caps_get_allocated_size(data)) free(data);
+	}
+}
+
+/*****************************
+ * detailed functions
+ * ***************************/
 
 /* function sets weather basic data on the main screen */
-static void ui_event_basic_weather_icon_update(void *arg){
+static void basic_weather_update_icon(char *icon_path){
 
-	if(0 == arg) return;
+	if(0 == icon_path) return;
 
-	set_weater_icon((char *)arg, ui_WeatherImage);
+	set_weather_icon(icon_path, ui_WeatherImage);
 }
 
-static void ui_event_basic_weather_values_update(void *arg){
+static void basic_weather_update_values(int temp, int press, int hum){
 
-	if(0 == arg) return;
+	lv_label_set_text_fmt(ui_WeatherLabel, "%d°C\n%dhPa\n%d%%", temp, press, hum);
 
-	UI_WeatherValues_t *ptr = (UI_WeatherValues_t *)arg;
-
-	lv_label_set_text_fmt(ui_WeatherLabel, "%d°C\n%dhPa\n%d%%", ptr->temp, ptr->press, ptr->hum);
-
-	if(ptr){
-		if(heap_caps_get_allocated_size(ptr)) free(ptr);
-	}
 }
 
-static void ui_event_weather_city_update(void *arg){
+static void detailed_weather_update_city_name(char *city_name){
 
-	if(arg){
+	if(0 == city_name) return;
 
-		lv_label_set_text(ui_WeatherScreenCity, (char *)arg);
-		if(heap_caps_get_allocated_size(arg)) free(arg);
-	}
+	lv_label_set_text(ui_WeatherScreenCity, city_name);
+	if(heap_caps_get_allocated_size(city_name)) free(city_name);
 }
 
-static void ui_event_weather_country_update(void *arg){
+static void detailed_weather_update_country_name(char *country_name){
 
-	if(arg){
+	if(0 == country_name) return;
 
-		lv_label_set_text(ui_WeatherScreenCountry, (char *)arg);
-		if(heap_caps_get_allocated_size(arg)) free(arg);
-	}
+	lv_label_set_text(ui_WeatherScreenCountry, country_name);
+	if(heap_caps_get_allocated_size(country_name)) free(country_name);
 }
 
-static void ui_event_weather_icon_update(void *arg){
+static void detailed_weather_update_weather_icon(char *icon_path){
 
-	if(0 == arg) return;
+	if(0 == icon_path) return;
 
-	set_weater_icon((char *)arg, ui_WeatherScreenIcon);
+	set_weather_icon(icon_path, ui_WeatherScreenIcon);
 }
 
-static void ui_event_weather_avg_temp_update(void *arg){
+static void detailed_weather_update_avg_temp(int avg_temp){
 
-	int avg_temp = (int)arg;
-	char buff[6];
 	uint8_t r, g, b, diff;
 
 	if(((int)-50 > avg_temp) || ((int)50 < avg_temp)) return;
 
-	sprintf(buff, "%+d°C", avg_temp);
-	lv_label_set_text(ui_WeatherScreenTemp, buff);
+	lv_label_set_text_fmt(ui_WeatherScreenTemp, "%+d°C", avg_temp);
 	lv_arc_set_value(ui_WeatherScreenTempArc, avg_temp);
 
 	if((int)-10 >= avg_temp){
@@ -434,13 +417,92 @@ static void ui_event_weather_avg_temp_update(void *arg){
 
 }
 
-void WetaherScreen_BackButtonClicked(lv_event_t * e){
+static void detailed_weather_update_min_max_temp(int min_temp, int max_temp){
 
-//	ESP_LOGI("", "clicked");
+	lv_label_set_text_fmt(ui_WeatherScreenTempMinMax, "min/max\n%+d°C / %+d°C", min_temp, max_temp);
 }
 
-void MainScreen_WeatherIconClicked(lv_event_t * e){
+static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time){
 
-	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
-	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
+	if((0 == sunrise_time) || (0 == sunset_time)) goto cleanup;
+
+	lv_label_set_text_fmt(ui_WeatherScreenSunriseLabel, "%s\n%s", sunrise_time, sunset_time);
+
+	cleanup:
+		if(sunrise_time){
+			if(heap_caps_get_allocated_size(sunrise_time)) free(sunrise_time);
+		}
+		if(sunset_time){
+			if(heap_caps_get_allocated_size(sunset_time)) free(sunset_time);
+		}
+}
+
+/*****************************
+ * helpers
+ * ***************************/
+
+
+/* set icon within area of ui_WiFiIconLabel
+ *
+ * format of ui_WiFiIconLabel is char-space-space-char-null, each one charactes is a single icon,
+ * correct string should contain 4 characters and null character at the end
+ * par. icon_type is an enum that sets correct position for different icons (0 or 3)
+ * par. icon is a character that represents an icon within font
+ * */
+static void set_wifi_label(uint8_t icon_type, char icon){
+
+	size_t len = 0;
+	char buff[5] = {0};
+	char *text = lv_label_get_text(ui_WiFiIconLabel);
+	if(0 != text){
+
+		len = strnlen(text, 5);
+		if(4 == len){
+
+			// if correct format "%c  %c\0"
+			if(text[icon_type] == icon) return;
+			else{
+
+				// set correct icon to correct position
+				text[icon_type] = icon;
+				lv_label_set_text(ui_WiFiIconLabel, text);
+			}
+		}
+		else{
+
+			sprintf(buff, "    ");
+			buff[icon_type] = icon;
+			lv_label_set_text(ui_WiFiIconLabel, buff);
+		}
+	}
+}
+
+
+/* prepare correct file path to set image from sd card */
+static void set_weather_icon(char *path, lv_obj_t * obj){
+
+	size_t len;
+	int a;
+	char *buff = 0;
+
+	// allocate buffer for image path
+	len = strnlen(path, 64);
+	if(64 == len) goto cleanup;
+	buff = malloc(len + 3);
+	if(0 == buff) goto cleanup;
+
+	// prepare path string
+	a = sprintf(buff, "%c:%s", LV_FS_STDIO_LETTER, path);
+	if(a != (len + 2)) goto cleanup;
+
+	// set image from path
+	lv_img_set_src(obj, buff);
+
+	cleanup:
+		if(buff){
+			if(heap_caps_get_allocated_size(buff)) free(buff);
+		}
+		if(path){
+			if(heap_caps_get_allocated_size(path)) free(path);
+		}
 }
