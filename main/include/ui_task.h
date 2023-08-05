@@ -46,6 +46,9 @@ typedef struct {
 	char *sunrise_time;
 	char *sunset_time;
 
+	int recip_rain;
+	int percent_rain;
+
 } UI_DetailedWeatherValues_t;
 
 void UI_ReportEvt(UI_EventType_t Type, void *arg);

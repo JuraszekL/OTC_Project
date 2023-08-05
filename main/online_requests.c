@@ -58,6 +58,7 @@ static int parse_json_forecast_city_country(cJSON *json, char **city_name, char 
 static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
 static int parse_json_forecast_min_max_temp(cJSON *json, int *min_temp, int *max_temp);
 static int parse_json_forecast_sunrise_sunset_time(cJSON *json, char **sunrise_time, char **sunset_time);
+static int parse_json_forecast_recip_percent_rain(cJSON *json, int *recip_rain, int *percent_rain);
 
 static int convert_time_string_format(char *from, char **to);
 
@@ -266,6 +267,9 @@ static void request_detailed_weather_update(void *arg){
 	if(0 != ret) goto error;
 
 	ret = parse_json_forecast_sunrise_sunset_time(day_0, &data->sunrise_time, &data->sunset_time);
+	if(0 != ret) goto error;
+
+	ret = parse_json_forecast_recip_percent_rain(day_0, &data->recip_rain, &data->percent_rain);
 	if(0 != ret) goto error;
 
 	// if everything was fine send obtained data to weather screen
@@ -653,6 +657,27 @@ static int parse_json_forecast_sunrise_sunset_time(cJSON *json, char **sunrise_t
 			if(heap_caps_get_allocated_size(*sunset_time)) free(*sunset_time);
 		}
 		return -1;
+}
+
+/* get total precipitation and percentage chance of rain from json  */
+static int parse_json_forecast_recip_percent_rain(cJSON *json, int *recip_rain, int *percent_rain){
+
+	cJSON *day = 0, *totalprecip_mm = 0, *daily_chance_of_rain = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return -1;
+
+	totalprecip_mm = cJSON_GetObjectItemCaseSensitive(day, "totalprecip_mm");
+	if(0 == totalprecip_mm) return -1;
+	if(0 == cJSON_IsNumber(totalprecip_mm)) return -1;
+	*recip_rain = (int)round(totalprecip_mm->valuedouble);
+
+	daily_chance_of_rain = cJSON_GetObjectItemCaseSensitive(day, "daily_chance_of_rain");
+	if(0 == daily_chance_of_rain) return -1;
+	if(0 == cJSON_IsNumber(daily_chance_of_rain)) return -1;
+	*percent_rain = daily_chance_of_rain->valuedouble;
+
+	return 0;
 }
 
 /* Convert string from format:

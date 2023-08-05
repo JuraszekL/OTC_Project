@@ -68,6 +68,7 @@ static void detailed_weather_update_weather_icon(char *icon_path);
 static void detailed_weather_update_avg_temp(int avg_temp);
 static void detailed_weather_update_min_max_temp(int min_temp, int max_temp);
 static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time);
+static void detailed_weather_update_precip_percent_rain(int precip, int percent);
 
 static void set_weather_icon(char *path, lv_obj_t * obj);
 static void set_wifi_label(uint8_t icon_type, char icon);
@@ -327,6 +328,7 @@ static void ui_event_detailed_weather_update(void *arg){
 	detailed_weather_update_avg_temp(data->average_temp);
 	detailed_weather_update_min_max_temp(data->min_temp, data->max_temp);
 	detailed_weather_update_sunrise_sunset_time(data->sunrise_time, data->sunset_time);
+	detailed_weather_update_precip_percent_rain(data->recip_rain, data->percent_rain);
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -435,6 +437,11 @@ static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char
 		if(sunset_time){
 			if(heap_caps_get_allocated_size(sunset_time)) free(sunset_time);
 		}
+}
+
+static void detailed_weather_update_precip_percent_rain(int precip, int percent){
+
+	lv_label_set_text_fmt(ui_WeatherScreenRainLabel, "%dmm\n%d%%", precip, percent);
 }
 
 /*****************************
