@@ -69,6 +69,8 @@ static void detailed_weather_update_avg_temp(int avg_temp);
 static void detailed_weather_update_min_max_temp(int min_temp, int max_temp);
 static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time);
 static void detailed_weather_update_precip_percent_rain(int precip, int percent);
+static void detailed_weather_update_avg_max_wind(int avg, int max);
+static void detailed_weather_update_precip_percent_snow(int precip, int percent);
 
 static void set_weather_icon(char *path, lv_obj_t * obj);
 static void set_wifi_label(uint8_t icon_type, char icon);
@@ -187,7 +189,6 @@ void WetaherScreen_BackButtonClicked(lv_event_t * e){
 
 void MainScreen_WeatherIconClicked(lv_event_t * e){
 
-	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
 	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
 }
 
@@ -329,6 +330,10 @@ static void ui_event_detailed_weather_update(void *arg){
 	detailed_weather_update_min_max_temp(data->min_temp, data->max_temp);
 	detailed_weather_update_sunrise_sunset_time(data->sunrise_time, data->sunset_time);
 	detailed_weather_update_precip_percent_rain(data->recip_rain, data->percent_rain);
+	detailed_weather_update_avg_max_wind(data->wind_avg, data->wind_max);
+	detailed_weather_update_precip_percent_snow(data->recip_snow, data->percent_snow);
+
+	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -442,6 +447,16 @@ static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char
 static void detailed_weather_update_precip_percent_rain(int precip, int percent){
 
 	lv_label_set_text_fmt(ui_WeatherScreenRainLabel, "%dmm\n%d%%", precip, percent);
+}
+
+static void detailed_weather_update_avg_max_wind(int avg, int max){
+
+	lv_label_set_text_fmt(ui_WeatherScreenWindLabel, "%dkm/h\n%dkm/h", avg, max);
+}
+
+static void detailed_weather_update_precip_percent_snow(int precip, int percent){
+
+	lv_label_set_text_fmt(ui_WeatherScreenSnowLabel, "%dmm\n%d%%", precip, percent);
 }
 
 /*****************************

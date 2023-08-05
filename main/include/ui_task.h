@@ -49,6 +49,12 @@ typedef struct {
 	int recip_rain;
 	int percent_rain;
 
+	int wind_avg;
+	int wind_max;
+
+	int recip_snow;
+	int percent_snow;
+
 } UI_DetailedWeatherValues_t;
 
 void UI_ReportEvt(UI_EventType_t Type, void *arg);

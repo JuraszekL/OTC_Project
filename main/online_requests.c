@@ -59,6 +59,8 @@ static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
 static int parse_json_forecast_min_max_temp(cJSON *json, int *min_temp, int *max_temp);
 static int parse_json_forecast_sunrise_sunset_time(cJSON *json, char **sunrise_time, char **sunset_time);
 static int parse_json_forecast_recip_percent_rain(cJSON *json, int *recip_rain, int *percent_rain);
+static int parse_json_forecast_avg_max_wind(cJSON *json, int *avg_wind, int *max_wind);
+static int parse_json_forecast_recip_percent_snow(cJSON *json, int *recip_snow, int *percent_snow);
 
 static int convert_time_string_format(char *from, char **to);
 
@@ -270,6 +272,12 @@ static void request_detailed_weather_update(void *arg){
 	if(0 != ret) goto error;
 
 	ret = parse_json_forecast_recip_percent_rain(day_0, &data->recip_rain, &data->percent_rain);
+	if(0 != ret) goto error;
+
+	ret = parse_json_forecast_avg_max_wind(recieved_json, &data->wind_avg, &data->wind_max);
+	if(0 != ret) goto error;
+
+	ret = parse_json_forecast_recip_percent_snow(day_0, &data->recip_snow, &data->percent_snow);
 	if(0 != ret) goto error;
 
 	// if everything was fine send obtained data to weather screen
@@ -676,6 +684,46 @@ static int parse_json_forecast_recip_percent_rain(cJSON *json, int *recip_rain, 
 	if(0 == daily_chance_of_rain) return -1;
 	if(0 == cJSON_IsNumber(daily_chance_of_rain)) return -1;
 	*percent_rain = daily_chance_of_rain->valuedouble;
+
+	return 0;
+}
+
+static int parse_json_forecast_avg_max_wind(cJSON *json, int *avg_wind, int *max_wind){
+
+	cJSON *current = 0, *wind_kph = 0, *gust_kph = 0;
+
+	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+	if(0 == current) return -1;
+
+	wind_kph = cJSON_GetObjectItemCaseSensitive(current, "wind_kph");
+	if(0 == wind_kph) return -1;
+	if(0 == cJSON_IsNumber(wind_kph)) return -1;
+	*avg_wind = (int)round(wind_kph->valuedouble);
+
+	gust_kph = cJSON_GetObjectItemCaseSensitive(current, "gust_kph");
+	if(0 == gust_kph) return -1;
+	if(0 == cJSON_IsNumber(gust_kph)) return -1;
+	*max_wind = gust_kph->valuedouble;
+
+	return 0;
+}
+
+static int parse_json_forecast_recip_percent_snow(cJSON *json, int *recip_snow, int *percent_snow){
+
+	cJSON *day = 0, *totalsnow_cm = 0, *daily_chance_of_snow = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return -1;
+
+	totalsnow_cm = cJSON_GetObjectItemCaseSensitive(day, "totalsnow_cm");
+	if(0 == totalsnow_cm) return -1;
+	if(0 == cJSON_IsNumber(totalsnow_cm)) return -1;
+	*recip_snow = (int)round(totalsnow_cm->valuedouble);
+
+	daily_chance_of_snow = cJSON_GetObjectItemCaseSensitive(day, "daily_chance_of_snow");
+	if(0 == daily_chance_of_snow) return -1;
+	if(0 == cJSON_IsNumber(daily_chance_of_snow)) return -1;
+	*percent_snow = daily_chance_of_snow->valuedouble;
 
 	return 0;
 }
