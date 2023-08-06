@@ -39,21 +39,21 @@ struct online_request_queue_data {
 static void sntp_initialize(void);
 static void sntp_sync_cb(struct timeval *tv);
 
-static void request_basic_data_update(void *arg);
 static void request_time_update(void *arg);
+static void request_basic_data_update(void *arg);
 static void request_detailed_weather_update(void *arg);
 
 static int http_get_weather_json(const char *method, char **json_raw, cJSON **recieved_json);
 static int http_perform_evt_handler(esp_http_client_event_t *evt);
 
-static int parse_json_current_weather_icon(cJSON *json, char **icon_path);
-static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path);
 static int parse_json_icon(cJSON *json, char **icon_path);
 
-static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum);
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string);
+static int parse_json_current_weather_icon(cJSON *json, char **icon_path);
+static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum);
 
 static int parse_json_forecast_day_0(cJSON *json, cJSON **_day_0);
+static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path);
 static int parse_json_forecast_city_country(cJSON *json, char **city_name, char **country_name);
 static int parse_json_forecast_avg_temp(cJSON *json, int *avg_temp);
 static int parse_json_forecast_min_max_temp(cJSON *json, int *min_temp, int *max_temp);
@@ -63,8 +63,6 @@ static int parse_json_forecast_avg_max_wind(cJSON *json, int *avg_wind, int *max
 static int parse_json_forecast_recip_percent_snow(cJSON *json, int *recip_snow, int *percent_snow);
 
 static int convert_time_string_format(char *from, char **to);
-
-
 
 /**************************************************************
  *
@@ -408,37 +406,6 @@ static int http_perform_evt_handler(esp_http_client_event_t *evt){
  * JSON operations
  * ***************************/
 
-
-/* get weather icon path from current weather json */
-static int parse_json_current_weather_icon(cJSON *json, char **icon_path){
-
-	int a = -1;
-	cJSON *current = 0;
-
-	current = cJSON_GetObjectItemCaseSensitive(json, "current");
-	if(0 == current) return a;
-
-	if(0 != parse_json_icon(current, icon_path)) return a;
-
-	a = 0;
-	return a;
-}
-
-/* get weather icon path from current weather json */
-static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path){
-
-	int a = -1;
-	cJSON *day = 0;
-
-	day = cJSON_GetObjectItemCaseSensitive(json, "day");
-	if(0 == day) return a;
-
-	if(0 != parse_json_icon(day, icon_path)) return a;
-
-	a = 0;
-	return a;
-}
-
 /* find the icon file path from JSON, general */
 static int parse_json_icon(cJSON *json, char **icon_path){
 
@@ -483,34 +450,6 @@ static int parse_json_icon(cJSON *json, char **icon_path){
 	return a;
 }
 
-/* get current weather values from parsed json */
-static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum){
-
-	int a = -1;
-	cJSON *current = 0, *temp_c = 0, *pressure_mb = 0, *humidity = 0;
-
-	current = cJSON_GetObjectItemCaseSensitive(json, "current");
-	if(0 == current) return a;
-
-	temp_c = cJSON_GetObjectItemCaseSensitive(current, "temp_c");
-	if(0 == temp_c) return a;
-	if(0 == cJSON_IsNumber(temp_c)) return a;
-	*temp = temp_c->valueint;
-
-	pressure_mb = cJSON_GetObjectItemCaseSensitive(current, "pressure_mb");
-	if(0 == pressure_mb) return a;
-	if(0 == cJSON_IsNumber(pressure_mb)) return a;
-	*press = pressure_mb->valueint;
-
-	humidity = cJSON_GetObjectItemCaseSensitive(current, "humidity");
-	if(0 == humidity) return a;
-	if(0 == cJSON_IsNumber(humidity)) return a;
-	*hum = humidity->valueint;
-
-	a = 0;
-	return a;
-}
-
 /* get timezone name from parsed json */
 static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 
@@ -540,6 +479,49 @@ static int parse_json_timezone_basic(cJSON *json, const char **timezone_string){
 	return a;
 }
 
+/* get weather icon path from current weather json */
+static int parse_json_current_weather_icon(cJSON *json, char **icon_path){
+
+	int a = -1;
+	cJSON *current = 0;
+
+	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+	if(0 == current) return a;
+
+	if(0 != parse_json_icon(current, icon_path)) return a;
+
+	a = 0;
+	return a;
+}
+
+/* get current weather values from parsed json */
+static int parse_json_current_weather_values(cJSON *json, int *temp, int *press, int *hum){
+
+	int a = -1;
+	cJSON *current = 0, *temp_c = 0, *pressure_mb = 0, *humidity = 0;
+
+	current = cJSON_GetObjectItemCaseSensitive(json, "current");
+	if(0 == current) return a;
+
+	temp_c = cJSON_GetObjectItemCaseSensitive(current, "temp_c");
+	if(0 == temp_c) return a;
+	if(0 == cJSON_IsNumber(temp_c)) return a;
+	*temp = temp_c->valueint;
+
+	pressure_mb = cJSON_GetObjectItemCaseSensitive(current, "pressure_mb");
+	if(0 == pressure_mb) return a;
+	if(0 == cJSON_IsNumber(pressure_mb)) return a;
+	*press = pressure_mb->valueint;
+
+	humidity = cJSON_GetObjectItemCaseSensitive(current, "humidity");
+	if(0 == humidity) return a;
+	if(0 == cJSON_IsNumber(humidity)) return a;
+	*hum = humidity->valueint;
+
+	a = 0;
+	return a;
+}
+
 /* get pointer to current day's json */
 static int parse_json_forecast_day_0(cJSON *json, cJSON **day_0){
 
@@ -555,6 +537,21 @@ static int parse_json_forecast_day_0(cJSON *json, cJSON **day_0){
 	if(0 == *day_0) return -1;
 
 	return 0;
+}
+
+/* get weather icon path from forecast weather json */
+static int parse_json_forecast_weather_icon(cJSON *json, char **icon_path){
+
+	int a = -1;
+	cJSON *day = 0;
+
+	day = cJSON_GetObjectItemCaseSensitive(json, "day");
+	if(0 == day) return a;
+
+	if(0 != parse_json_icon(day, icon_path)) return a;
+
+	a = 0;
+	return a;
 }
 
 /* get city and country name from recieved json */
@@ -688,6 +685,7 @@ static int parse_json_forecast_recip_percent_rain(cJSON *json, int *recip_rain, 
 	return 0;
 }
 
+/* get average and maximum wind speed from recieved json */
 static int parse_json_forecast_avg_max_wind(cJSON *json, int *avg_wind, int *max_wind){
 
 	cJSON *current = 0, *wind_kph = 0, *gust_kph = 0;
@@ -708,6 +706,7 @@ static int parse_json_forecast_avg_max_wind(cJSON *json, int *avg_wind, int *max
 	return 0;
 }
 
+/* get total precipitation and percentage chance of snow from json  */
 static int parse_json_forecast_recip_percent_snow(cJSON *json, int *recip_snow, int *percent_snow){
 
 	cJSON *day = 0, *totalsnow_cm = 0, *daily_chance_of_snow = 0;

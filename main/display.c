@@ -74,18 +74,16 @@ void Display_Task(void *arg){
 
 	lvgl_init();
 
+	// mutex for LVGL operations
 	LVGL_MutexHandle = xSemaphoreCreateMutex();
 	assert(LVGL_MutexHandle);
-
-//    lv_theme_t * theme = lv_theme_default_init(disp, lv_palette_main(LV_PALETTE_BLUE), lv_palette_main(LV_PALETTE_RED),
-//                                               false, LV_FONT_DEFAULT);
-//    lv_disp_set_theme(disp, theme);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, DISPLAY_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
 	while(1){
 
+		// perform LVGL operation
 		res = xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 		if(pdTRUE == res){
 

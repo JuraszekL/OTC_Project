@@ -10,9 +10,19 @@
 #include "ui_task.h"
 #include "wifi.h"
 
+/**************************************************************
+ *
+ *	Function prototypes
+ *
+ ***************************************************************/
 static void network_init(void);
 static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t event_id, void* event_data);
 
+/**************************************************************
+ *
+ *	Global variables
+ *
+ ***************************************************************/
 TaskHandle_t Wifi_TaskHandle;
 EventGroupHandle_t WifiEvents;
 
@@ -26,7 +36,11 @@ static wifi_config_t wifi_config = {
 		},
 };
 
-
+/******************************************************************************************************************
+ *
+ * Wifi task
+ *
+ ******************************************************************************************************************/
 void Wifi_Task(void *arg){
 
 	uint32_t notification_value;
@@ -60,7 +74,13 @@ void Wifi_Task(void *arg){
 	}
 }
 
+/**************************************************************
+ *
+ * Private function definitions
+ *
+ ***************************************************************/
 
+/* initialize wifi peripherials and NETIF layer */
 static void network_init(void){
 
 	wifi_init_config_t sta_init_config = WIFI_INIT_CONFIG_DEFAULT();

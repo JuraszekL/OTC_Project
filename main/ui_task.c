@@ -1,6 +1,3 @@
-/**************************************************************
- *	include
- ***************************************************************/
 #include <stdio.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -9,7 +6,6 @@
 #include "freertos/semphr.h"
 #include <sys/time.h>
 #include "esp_log.h"
-
 
 #include "lvgl.h"
 #include "lv_conf.h"
@@ -143,7 +139,6 @@ void UI_Task(void *arg){
 
 	while(1){
 
-//		vTaskDelay(pdMS_TO_TICKS(1000));
 		ret = xQueueReceive(ui_queue_handle, &data, portMAX_DELAY);
 		if(pdTRUE == ret){
 
@@ -387,8 +382,20 @@ static void detailed_weather_update_avg_temp(int avg_temp){
 
 	if(((int)-50 > avg_temp) || ((int)50 < avg_temp)) return;
 
+	// set temprature value as text and as arc value
 	lv_label_set_text_fmt(ui_WeatherScreenTemp, "%+d°C", avg_temp);
 	lv_arc_set_value(ui_WeatherScreenTempArc, avg_temp);
+
+	// calculate color of ui_WeatherScreenTempArc
+	/* <------------------------------------------------------------------------------------------------>
+	 * -50                                   -10          0          10          25                    50     degC
+	 * 0                                      0                      0 --------> 255                   255    R
+	 * 0 -----------------------------------> 255                    255         255 <---------------- 0      G
+	 * 255                                    255 <----------------- 0           0                     0      B
+	 *
+	 * The lowest values of temperature are pure blue, rising up, color shifts to green, then yellow, orange and
+	 * pure red by highest values
+	 * */
 
 	if((int)-10 >= avg_temp){
 

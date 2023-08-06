@@ -1,6 +1,9 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
+/**************************************************************
+ * Font icon characters
+ ***************************************************************/
 #define ICON_WIFI			'A'
 #define ICON_NO_WIFI		'B'
 #define ICON_SYNC			'C'
@@ -10,6 +13,9 @@
 #define ICON_RIGHT_ARROW	'G'
 #define ICON_DOWN_ARROW		'H'
 
+/**************************************************************
+ * UI event types
+ ***************************************************************/
 typedef enum {
 
 	UI_EVT_WIFI_CONNECTED = 0,
@@ -22,6 +28,9 @@ typedef enum {
 
 } UI_EventType_t;
 
+/**************************************************************
+ * Data with basic weather values
+ ***************************************************************/
 typedef struct {
 
 	char *icon_path;
@@ -32,6 +41,9 @@ typedef struct {
 
 } UI_BasicWeatherValues_t;
 
+/**************************************************************
+ * Data with detailed weather values
+ ***************************************************************/
 typedef struct {
 
 	char *city_name;
@@ -57,6 +69,9 @@ typedef struct {
 
 } UI_DetailedWeatherValues_t;
 
+/**************************************************************
+ * Public functions
+ ***************************************************************/
 void UI_ReportEvt(UI_EventType_t Type, void *arg);
 void UI_Task(void *arg);
 

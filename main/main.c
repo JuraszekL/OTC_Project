@@ -62,7 +62,7 @@ void app_main(void){
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks for core 1
-	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 3, NULL, 1);
 	xTaskCreatePinnedToCore(TouchPad_Task, "TouchPad_Task", 4096, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(UI_Task, "UI_Task", 8192, NULL, 2, NULL, 1);
 	xTaskCreatePinnedToCore(SDCard_Task, "SDCard_Task", 8192, NULL, 1, NULL, 1);

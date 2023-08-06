@@ -2,14 +2,23 @@
 #ifndef MAIN_INCLUDE_ONLINE_REQUESTS_H_
 #define MAIN_INCLUDE_ONLINE_REQUESTS_H_
 
+/**************************************************************
+ * HTTP API
+ ***************************************************************/
 #define HTTP_WEATHER_URL				"http://api.weatherapi.com/v1"
 #define HTTP_WEATHER_METH_NOW			"/current.json?"
 #define HTTP_WEATHER_METH_FORECAST		"/forecast.json?"
 #define HTTP_WEATHER_PAR_KEY			"key="
 #define HTTP_WEATHER_QUERY				"&q=auto:ip"
 
+/**************************************************************
+ * SNTP server
+ ***************************************************************/
 #define SNTP_SERVER_NAME				"ntp1.tp.pl"
 
+/**************************************************************
+ * Online request types
+ ***************************************************************/
 typedef enum {
 
 	ONLINEREQ_BASIC_UPDATE = 0,
@@ -18,6 +27,9 @@ typedef enum {
 
 } OnlineRequest_Type_t;
 
+/**************************************************************
+ * Public functions
+ ***************************************************************/
 void OnlineRequest_Send(OnlineRequest_Type_t Type, void *arg);
 void OnlineRequests_Task(void *arg);
 
