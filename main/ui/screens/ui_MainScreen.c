@@ -74,6 +74,32 @@ void ui_MainScreen_screen_init(void)
     lv_obj_set_style_text_align(ui_WeatherLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_font(ui_WeatherLabel, &lv_font_montserrat_30, LV_PART_MAIN | LV_STATE_DEFAULT);
 
+    ui_MainScreenWifiButton = lv_btn_create(ui_MainScreen);
+    lv_obj_set_width(ui_MainScreenWifiButton, 100);
+    lv_obj_set_height(ui_MainScreenWifiButton, 50);
+    lv_obj_set_x(ui_MainScreenWifiButton, 20);
+    lv_obj_set_y(ui_MainScreenWifiButton, -20);
+    lv_obj_set_align(ui_MainScreenWifiButton, LV_ALIGN_BOTTOM_LEFT);
+    lv_obj_add_flag(ui_MainScreenWifiButton, LV_OBJ_FLAG_SCROLL_ON_FOCUS);     /// Flags
+    lv_obj_clear_flag(ui_MainScreenWifiButton, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    lv_obj_set_style_bg_color(ui_MainScreenWifiButton, lv_color_hex(0xFFFFFF), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_bg_opa(ui_MainScreenWifiButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_color(ui_MainScreenWifiButton, lv_color_hex(0xF2921D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(ui_MainScreenWifiButton, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_width(ui_MainScreenWifiButton, 4, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_color(ui_MainScreenWifiButton, lv_color_hex(0x000000), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_shadow_opa(ui_MainScreenWifiButton, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+    ui_BackArrowIconLabel1 = lv_label_create(ui_MainScreenWifiButton);
+    lv_obj_set_width(ui_BackArrowIconLabel1, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_BackArrowIconLabel1, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_align(ui_BackArrowIconLabel1, LV_ALIGN_CENTER);
+    lv_label_set_text(ui_BackArrowIconLabel1, "A");
+    lv_obj_set_style_text_color(ui_BackArrowIconLabel1, lv_color_hex(0xF2921D), LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_opa(ui_BackArrowIconLabel1, 255, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_text_font(ui_BackArrowIconLabel1, &ui_font_UIIconsNew36, LV_PART_MAIN | LV_STATE_DEFAULT);
+
     lv_obj_add_event_cb(ui_WeatherImage, ui_event_WeatherImage, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MainScreenWifiButton, ui_event_MainScreenWifiButton, LV_EVENT_ALL, NULL);
 
 }

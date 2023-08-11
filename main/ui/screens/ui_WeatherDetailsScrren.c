@@ -72,6 +72,7 @@ void ui_WeatherDetailsScrren_screen_init(void)
     lv_obj_set_x(ui_WeatherScreenTempArc, 0);
     lv_obj_set_y(ui_WeatherScreenTempArc, -60);
     lv_obj_set_align(ui_WeatherScreenTempArc, LV_ALIGN_CENTER);
+    lv_obj_clear_flag(ui_WeatherScreenTempArc, LV_OBJ_FLAG_CLICKABLE);      /// Flags
     lv_arc_set_range(ui_WeatherScreenTempArc, -50, 50);
     lv_obj_set_style_arc_color(ui_WeatherScreenTempArc, lv_color_hex(0x4040FF), LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_arc_opa(ui_WeatherScreenTempArc, 80, LV_PART_MAIN | LV_STATE_DEFAULT);

@@ -10,6 +10,7 @@
 #include "lvgl.h"
 #include "lv_conf.h"
 #include "ui.h"
+#include "ui_wifi_list.h"
 
 #include "main.h"
 #include "animations.h"
@@ -54,6 +55,8 @@ static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
 static void ui_event_basic_weather_update(void *arg);
 static void ui_event_detailed_weather_update(void *arg);
+static void ui_event_main_scr_wifi_btn_clicked(void *arg);
+static void ui_event_wifi_scr_back_btn_clicked(void *arg);
 
 static void basic_weather_update_icon(char *icon_path);
 static void basic_weather_update_values(int temp, int press, int hum);
@@ -87,7 +90,8 @@ const ui_event event_tab[] = {
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
 		[UI_EVT_BASIC_WEATHER_UPDATE] = ui_event_basic_weather_update,
 		[UI_EVT_DETAILED_WEATHER_UPDATE] = ui_event_detailed_weather_update,
-
+		[UI_EVT_MAINSCR_WIFI_BTN_CLICKED] = ui_event_main_scr_wifi_btn_clicked,
+		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 };
 
 extern const char *Eng_DayName[7];
@@ -130,6 +134,7 @@ void UI_Task(void *arg){
 	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 	ui_MainScreen_screen_init();
 	ui_WeatherDetailsScrren_screen_init();
+	ui_WifiScreen_screen_init();
 
 	lv_label_set_text(ui_ClockLabel, "--:--");
 	lv_label_set_text(ui_DateLabel, "");
@@ -180,6 +185,16 @@ void UI_ReportEvt(UI_EventType_t Type, void *arg){
 void WetaherScreen_BackButtonClicked(lv_event_t * e){
 
 //	ESP_LOGI("", "clicked");
+}
+
+void MainScreen_WifiButtonClicked(lv_event_t * e){
+
+	UI_ReportEvt(UI_EVT_MAINSCR_WIFI_BTN_CLICKED, 0);
+}
+
+void WifiScreenBackButtonClicked(lv_event_t * e){
+
+	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
 }
 
 void MainScreen_WeatherIconClicked(lv_event_t * e){
@@ -333,6 +348,20 @@ static void ui_event_detailed_weather_update(void *arg){
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
 	}
+}
+
+static void ui_event_main_scr_wifi_btn_clicked(void *arg){
+
+	if(0 == ui_WifiScreen) ui_WifiScreen_screen_init();
+	UI_WifiListInit();
+	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+	xTimerStart(OneSecondTimer, pdMS_TO_TICKS(500));
+}
+
+static void ui_event_wifi_scr_back_btn_clicked(void *arg){
+
+	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+	xTimerStop(OneSecondTimer, pdMS_TO_TICKS(500));
 }
 
 /*****************************

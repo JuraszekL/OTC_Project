@@ -12,6 +12,12 @@
 #define ICON_LEFT_ARROW		'F'
 #define ICON_RIGHT_ARROW	'G'
 #define ICON_DOWN_ARROW		'H'
+#define ICON_PADLOCK		'M'
+#define ICON_SIGNAL_FULL	'N'
+#define ICON_SIGNAL_GOOD	'O'
+#define ICON_SIGNAL_MID		'P'
+#define ICON_SIGNAL_LOW		'Q'
+
 
 /**************************************************************
  * UI event types
@@ -25,6 +31,8 @@ typedef enum {
 	UI_EVT_CLOCK_SYNC,
 	UI_EVT_BASIC_WEATHER_UPDATE,
 	UI_EVT_DETAILED_WEATHER_UPDATE,
+	UI_EVT_MAINSCR_WIFI_BTN_CLICKED,
+	UI_EVT_WIFISCR_BACK_BTN_CLICKED,
 
 } UI_EventType_t;
 
@@ -68,6 +76,16 @@ typedef struct {
 	int percent_snow;
 
 } UI_DetailedWeatherValues_t;
+
+typedef struct {
+
+	char *ssid;
+	uint8_t mac[6];
+	char *ip;	//TODO zmienić!
+	int rssi;
+	int mode;
+
+} UI_WifiDetails_t;
 
 /**************************************************************
  * Public functions

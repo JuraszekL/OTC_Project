@@ -11,7 +11,9 @@ extern "C" {
 #endif
 
 void MainScreen_WeatherIconClicked(lv_event_t * e);
+void MainScreen_WifiButtonClicked(lv_event_t * e);
 void WetaherScreen_BackButtonClicked(lv_event_t * e);
+void WifiScreenBackButtonClicked(lv_event_t * e);
 
 #ifdef __cplusplus
 } /*extern "C"*/

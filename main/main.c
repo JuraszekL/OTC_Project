@@ -17,11 +17,16 @@
 #include "clock.h"
 #include "online_requests.h"
 #include "sdcard.h"
+#include "spiffs_task.h"
+#include "ui_wifi_list.h"
 
 static void one_second_timer_callback(TimerHandle_t xTimer);
 
 EventGroupHandle_t AppStartSyncEvt;
 TimerHandle_t OneSecondTimer;
+
+bool a = true;
+int rssi = -37;
 
 const char tag[] = "main.c";
 
@@ -60,6 +65,7 @@ void app_main(void){
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(SPIFFS_Task, "SPIFFS_Task", 4096, NULL, 1, NULL, 0);
 
 	// create the tasks for core 1
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 3, NULL, 1);
@@ -96,5 +102,10 @@ void * IRAM_ATTR lvgl_realloc(void * data_p, size_t new_size){
 
 static void one_second_timer_callback(TimerHandle_t xTimer){
 
-
+	UI_WifiListAdd(a, "Test_Wifi_Name", rssi);
+	if(-37 == rssi) rssi = -55;
+	else if(-55 == rssi) rssi = -63;
+	else if(-63 == rssi) rssi = -78;
+	else if(-78 == rssi) rssi = -37;
+	a = !a;
 }

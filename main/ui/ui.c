@@ -28,6 +28,9 @@ lv_obj_t * ui_WhiteLineTop;
 void ui_event_WeatherImage(lv_event_t * e);
 lv_obj_t * ui_WeatherImage;
 lv_obj_t * ui_WeatherLabel;
+void ui_event_MainScreenWifiButton(lv_event_t * e);
+lv_obj_t * ui_MainScreenWifiButton;
+lv_obj_t * ui_BackArrowIconLabel1;
 
 // SCREEN: ui_WeatherDetailsScrren
 void ui_WeatherDetailsScrren_screen_init(void);
@@ -49,6 +52,19 @@ lv_obj_t * ui_WeatherScreenSunriseLabel;
 lv_obj_t * ui_WeatherScreenRainLabel;
 lv_obj_t * ui_WeatherScreenWindLabel;
 lv_obj_t * ui_WeatherScreenSnowLabel;
+
+// SCREEN: ui_WifiScreen
+void ui_WifiScreen_screen_init(void);
+lv_obj_t * ui_WifiScreen;
+void ui_event_WifiScreenBackButton(lv_event_t * e);
+lv_obj_t * ui_WifiScreenBackButton;
+lv_obj_t * ui_BackArrowIconLabel2;
+lv_obj_t * ui_WifiScreenRSSIArc;
+lv_obj_t * ui_WifiScreenRSSIValueLabel;
+lv_obj_t * ui_WifiScreenRSSIdBmLabel;
+lv_obj_t * ui_WifiScreenSSIDLabel;
+lv_obj_t * ui_WifiScreenWifiDetails;
+lv_obj_t * ui_WhiteLineTop1;
 lv_obj_t * ui____initial_actions0;
 
 ///////////////////// TEST LVGL SETTINGS ////////////////////
@@ -70,6 +86,14 @@ void ui_event_WeatherImage(lv_event_t * e)
         MainScreen_WeatherIconClicked(e);
     }
 }
+void ui_event_MainScreenWifiButton(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        MainScreen_WifiButtonClicked(e);
+    }
+}
 void ui_event_WeatherScreenBackButton(lv_event_t * e)
 {
     lv_event_code_t event_code = lv_event_get_code(e);
@@ -77,6 +101,14 @@ void ui_event_WeatherScreenBackButton(lv_event_t * e)
     if(event_code == LV_EVENT_CLICKED) {
         WetaherScreen_BackButtonClicked(e);
         _ui_screen_change(&ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, &ui_MainScreen_screen_init);
+    }
+}
+void ui_event_WifiScreenBackButton(lv_event_t * e)
+{
+    lv_event_code_t event_code = lv_event_get_code(e);
+    lv_obj_t * target = lv_event_get_target(e);
+    if(event_code == LV_EVENT_CLICKED) {
+        WifiScreenBackButtonClicked(e);
     }
 }
 
@@ -91,6 +123,7 @@ void ui_init(void)
     ui_StartupScreen_screen_init();
     ui_MainScreen_screen_init();
     ui_WeatherDetailsScrren_screen_init();
+    ui_WifiScreen_screen_init();
     ui____initial_actions0 = lv_obj_create(NULL);
     lv_disp_load_scr(ui_StartupScreen);
 }

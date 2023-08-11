@@ -27,14 +27,14 @@ TaskHandle_t Wifi_TaskHandle;
 EventGroupHandle_t WifiEvents;
 
 static esp_netif_t *station_netif_obj;
-static wifi_config_t wifi_config = {
-
-		.sta = {
-
-				.ssid = CONFIG_ESP_WIFI_SSID,
-				.password = CONFIG_ESP_WIFI_PASSWORD,
-		},
-};
+//static wifi_config_t wifi_config = {
+//
+//		.sta = {
+//
+//				.ssid = CONFIG_ESP_WIFI_SSID,
+//				.password = CONFIG_ESP_WIFI_PASSWORD,
+//		},
+//};
 
 /******************************************************************************************************************
  *
@@ -59,9 +59,6 @@ void Wifi_Task(void *arg){
 	notification_value = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 	assert(notification_value);
 
-	// start wifi
-	ESP_ERROR_CHECK(esp_wifi_start() );
-
 	while(1){
 
 		// wait for wifi event to reconnect
@@ -69,7 +66,7 @@ void Wifi_Task(void *arg){
 		if(0 != notification_value){
 
 			vTaskDelay(pdMS_TO_TICKS(1000));
-			esp_wifi_connect();
+//			esp_wifi_connect();
 		}
 	}
 }
@@ -102,12 +99,15 @@ static void network_init(void){
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
 	// configure wifi
-	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
+//	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config) );
 
 	// install wifi_evt_handler function as a handler for needed wifi events
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_START, wifi_evt_handler, NULL, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, wifi_evt_handler, NULL, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, ESP_EVENT_ANY_ID, wifi_evt_handler, NULL, NULL));
+//    ESP_ERROR_CHECK(esp_event_handler_instance_register(WIFI_EVENT, WIFI_EVENT_STA_DISCONNECTED, wifi_evt_handler, NULL, NULL));
     ESP_ERROR_CHECK(esp_event_handler_instance_register(IP_EVENT, IP_EVENT_STA_GOT_IP, wifi_evt_handler, NULL, NULL));
+
+	// start wifi
+	ESP_ERROR_CHECK(esp_wifi_start());
 }
 
 /* handler for wifi events */
@@ -118,7 +118,7 @@ static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t eve
 		xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
 		xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
-		xTaskNotifyGive(Wifi_TaskHandle);
+//		xTaskNotifyGive(Wifi_TaskHandle);
 
 	}
 	else if((WIFI_EVENT == event_base) && (WIFI_EVENT_STA_DISCONNECTED == event_id)){
@@ -126,7 +126,7 @@ static void wifi_evt_handler(void* arg, esp_event_base_t event_base, int32_t eve
 		xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
 		xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 		UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
-		xTaskNotifyGive(Wifi_TaskHandle);
+//		xTaskNotifyGive(Wifi_TaskHandle);
 	}
 
 	else if((IP_EVENT == event_base) && (IP_EVENT_STA_GOT_IP == event_id)){

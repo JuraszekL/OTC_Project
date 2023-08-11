@@ -33,6 +33,9 @@ extern lv_obj_t * ui_WhiteLineTop;
 void ui_event_WeatherImage(lv_event_t * e);
 extern lv_obj_t * ui_WeatherImage;
 extern lv_obj_t * ui_WeatherLabel;
+void ui_event_MainScreenWifiButton(lv_event_t * e);
+extern lv_obj_t * ui_MainScreenWifiButton;
+extern lv_obj_t * ui_BackArrowIconLabel1;
 // SCREEN: ui_WeatherDetailsScrren
 void ui_WeatherDetailsScrren_screen_init(void);
 extern lv_obj_t * ui_WeatherDetailsScrren;
@@ -53,10 +56,23 @@ extern lv_obj_t * ui_WeatherScreenSunriseLabel;
 extern lv_obj_t * ui_WeatherScreenRainLabel;
 extern lv_obj_t * ui_WeatherScreenWindLabel;
 extern lv_obj_t * ui_WeatherScreenSnowLabel;
+// SCREEN: ui_WifiScreen
+void ui_WifiScreen_screen_init(void);
+extern lv_obj_t * ui_WifiScreen;
+void ui_event_WifiScreenBackButton(lv_event_t * e);
+extern lv_obj_t * ui_WifiScreenBackButton;
+extern lv_obj_t * ui_BackArrowIconLabel2;
+extern lv_obj_t * ui_WifiScreenRSSIArc;
+extern lv_obj_t * ui_WifiScreenRSSIValueLabel;
+extern lv_obj_t * ui_WifiScreenRSSIdBmLabel;
+extern lv_obj_t * ui_WifiScreenSSIDLabel;
+extern lv_obj_t * ui_WifiScreenWifiDetails;
+extern lv_obj_t * ui_WhiteLineTop1;
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 
+LV_FONT_DECLARE(ui_font_UIIconsNew16);
 LV_FONT_DECLARE(ui_font_UIIconsNew36);
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);
