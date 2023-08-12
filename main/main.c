@@ -25,9 +25,6 @@ static void one_second_timer_callback(TimerHandle_t xTimer);
 EventGroupHandle_t AppStartSyncEvt;
 TimerHandle_t OneSecondTimer;
 
-bool a = true;
-int rssi = -37;
-
 const char tag[] = "main.c";
 
 void app_main(void){
@@ -102,10 +99,4 @@ void * IRAM_ATTR lvgl_realloc(void * data_p, size_t new_size){
 
 static void one_second_timer_callback(TimerHandle_t xTimer){
 
-	UI_WifiListAdd(a, "Test_Wifi_Name", rssi);
-	if(-37 == rssi) rssi = -55;
-	else if(-55 == rssi) rssi = -63;
-	else if(-63 == rssi) rssi = -78;
-	else if(-78 == rssi) rssi = -37;
-	a = !a;
 }

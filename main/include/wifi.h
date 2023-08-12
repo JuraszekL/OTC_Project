@@ -4,18 +4,18 @@
 /**************************************************************
  * WIFI status bits
  ***************************************************************/
-#define WIFI_CONNECTED_BIT			(1U << 0)
-#define WIFI_DISCONNECTED_BIT		(1U << 1)
+
 
 /**************************************************************
  * Public variables
  ***************************************************************/
-extern TaskHandle_t Wifi_TaskHandle;;
-extern EventGroupHandle_t WifiEvents;
+extern SemaphoreHandle_t WifiList_MutexHandle;;
 
 /**************************************************************
  * Public functions
  ***************************************************************/
 void Wifi_Task(void *arg);
+bool Wifi_WaitUntilIsConnected(unsigned int Time_ms);
+void WIFI_StartScan(void);
 
 #endif /* MAIN_INCLUDE_WIFI_H_ */

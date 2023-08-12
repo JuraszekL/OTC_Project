@@ -88,7 +88,6 @@ extern const char *TimezonesNames[][2];
  ******************************************************************************************************************/
 void OnlineRequests_Task(void *arg){
 
-	EventBits_t bits = 0;
 	BaseType_t ret;
 	struct online_request_queue_data data;
 
@@ -102,7 +101,7 @@ void OnlineRequests_Task(void *arg){
 	sntp_initialize();
 
 	// wait until wifi is connected
-	bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, portMAX_DELAY);
+	Wifi_WaitUntilIsConnected(portMAX_DELAY);
 
 	while(1){
 
@@ -111,10 +110,8 @@ void OnlineRequests_Task(void *arg){
 		if(pdTRUE == ret){
 
 			// check if wifi is connected again
-			bits = xEventGroupWaitBits(WifiEvents, WIFI_CONNECTED_BIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(TIMEOUT_MS));
-			if(bits & WIFI_CONNECTED_BIT){
+			if(true == Wifi_WaitUntilIsConnected(TIMEOUT_MS)){
 
-				// call related function if wifi is connected
 				requests_tab[data.type](data.arg);
 			}
 		}

@@ -1,6 +1,8 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
+#include "ui_wifi_list.h"
+
 /**************************************************************
  * Font icon characters
  ***************************************************************/
@@ -33,6 +35,8 @@ typedef enum {
 	UI_EVT_DETAILED_WEATHER_UPDATE,
 	UI_EVT_MAINSCR_WIFI_BTN_CLICKED,
 	UI_EVT_WIFISCR_BACK_BTN_CLICKED,
+	UI_EVT_WIFI_LIST_ADD,
+	UI_EVT_WIFI_LIST_CLEAR,
 
 } UI_EventType_t;
 
@@ -79,13 +83,21 @@ typedef struct {
 
 typedef struct {
 
+	bool is_protected;
 	char *ssid;
-	uint8_t mac[6];
-	char *ip;	//TODO zmienić!
 	int rssi;
-	int mode;
 
-} UI_WifiDetails_t;
+} UI_BasicAPData_t;
+
+//typedef struct {
+//
+//	char *ssid;
+//	uint8_t mac[6];
+//	char *ip;	//TODO zmienić!
+//	int rssi;
+//	int mode;
+//
+//} UI_WifiDetails_t;
 
 /**************************************************************
  * Public functions
