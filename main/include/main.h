@@ -36,6 +36,16 @@
 #define TIMEOUT_MS				5000
 
 /**************************************************************
+ * Public structure with Wifi credentials
+ ***************************************************************/
+typedef struct {
+
+	char *ssid;
+	char *pass;
+
+} WifiCreds_t;
+
+/**************************************************************
  * Public variables
  ***************************************************************/
 extern EventGroupHandle_t AppStartSyncEvt;

@@ -3,6 +3,6 @@
 
 
 void SPIFFS_Task(void *arg);
-
+void SPIFFS_IsPasswordSaved(char *ssid);
 
 #endif /* MAIN_INCLUDE_SPIFFS_TASK_H_ */

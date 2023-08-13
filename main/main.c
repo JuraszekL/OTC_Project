@@ -59,10 +59,10 @@ void app_main(void){
 	assert(AppStartSyncEvt);
 
 	// create the tasks for core 0
-	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 8192, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 0);
-	xTaskCreatePinnedToCore(SPIFFS_Task, "SPIFFS_Task", 4096, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(SPIFFS_Task, "SPIFFS_Task", 8192, NULL, 1, NULL, 0);
 
 	// create the tasks for core 1
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 3, NULL, 1);
