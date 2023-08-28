@@ -28,6 +28,11 @@ typedef enum {
 
 	UI_EVT_WIFI_CONNECTED = 0,
 	UI_EVT_WIFI_DISCONNECTED,
+	UI_EVT_WIFI_CONNECTING,
+	UI_EVT_WIFI_CONNECT_ERROR,
+	UI_EVT_WIFI_GET_PASS,
+	UI_EVT_WIFI_LIST_ADD,
+	UI_EVT_WIFI_LIST_CLEAR,
 	UI_EVT_TIME_CHANGED,
 	UI_EVT_CLOCK_NOT_SYNC,
 	UI_EVT_CLOCK_SYNC,
@@ -35,10 +40,6 @@ typedef enum {
 	UI_EVT_DETAILED_WEATHER_UPDATE,
 	UI_EVT_MAINSCR_WIFI_BTN_CLICKED,
 	UI_EVT_WIFISCR_BACK_BTN_CLICKED,
-	UI_EVT_WIFI_LIST_ADD,
-	UI_EVT_WIFI_LIST_CLEAR,
-	UI_EVT_WIFI_CONNECTING,
-	UI_EVT_WIFI_GET_PASS,
 
 } UI_EventType_t;
 
@@ -83,6 +84,9 @@ typedef struct {
 
 } UI_DetailedWeatherValues_t;
 
+/**************************************************************
+ * Data with basic info of found AP
+ ***************************************************************/
 typedef struct {
 
 	bool is_protected;
@@ -91,15 +95,18 @@ typedef struct {
 
 } UI_BasicAPData_t;
 
-//typedef struct {
-//
-//	char *ssid;
-//	uint8_t mac[6];
-//	char *ip;	//TODO zmienić!
-//	int rssi;
-//	int mode;
-//
-//} UI_WifiDetails_t;
+/**************************************************************
+ * Data with detailed info of connected AP
+ ***************************************************************/
+typedef struct {
+
+	char *ssid;
+	uint8_t mac[6];
+	char ip[16];
+	int rssi;
+	int mode;
+
+} UI_DetailedAPData_t;
 
 /**************************************************************
  * Public functions

@@ -49,6 +49,10 @@ static void startup_screen(void);
 
 static void ui_event_wifi_disconnected(void *arg);
 static void ui_event_wifi_connected(void *arg);
+static void ui_event_wifi_connecting(void *arg);
+static void ui_event_wifi_connect_error(void *arg);
+static void ui_event_wifilist_add(void *arg);
+static void ui_event_wifilist_clear(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
@@ -56,9 +60,7 @@ static void ui_event_basic_weather_update(void *arg);
 static void ui_event_detailed_weather_update(void *arg);
 static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
-static void ui_event_wifilist_add(void *arg);
-static void ui_event_wifilist_clear(void *arg);
-static void ui_event_wifi_connecting(void *arg);
+
 
 static void basic_weather_update_icon(char *icon_path);
 static void basic_weather_update_values(int temp, int press, int hum);
@@ -87,6 +89,10 @@ const ui_event event_tab[] = {
 
 		[UI_EVT_WIFI_CONNECTED] = ui_event_wifi_connected,
 		[UI_EVT_WIFI_DISCONNECTED] = ui_event_wifi_disconnected,
+		[UI_EVT_WIFI_CONNECTING] = ui_event_wifi_connecting,
+		[UI_EVT_WIFI_CONNECT_ERROR] = ui_event_wifi_connect_error,
+		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
+		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
@@ -94,9 +100,6 @@ const ui_event event_tab[] = {
 		[UI_EVT_DETAILED_WEATHER_UPDATE] = ui_event_detailed_weather_update,
 		[UI_EVT_MAINSCR_WIFI_BTN_CLICKED] = ui_event_main_scr_wifi_btn_clicked,
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
-		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
-		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
-		[UI_EVT_WIFI_CONNECTING] = ui_event_wifi_connecting,
 };
 
 extern const char *Eng_DayName[7];
@@ -244,12 +247,87 @@ static void startup_screen(void){
 
 static void ui_event_wifi_disconnected(void *arg){
 
+	// set wifi icon in top left corner of main screen
 	set_wifi_label(wifi_icon, ICON_NO_WIFI);
 }
 
 static void ui_event_wifi_connected(void *arg){
 
+	UI_DetailedAPData_t *data = (UI_DetailedAPData_t *)arg;
+
+	// set wifi icon in top left corner of main screen
 	set_wifi_label(wifi_icon, ICON_WIFI);
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		if(0 != data){
+
+			UI_WifiPopup_Connected(data->ssid);
+		}
+		else{
+
+			UI_WifiPopup_Connected(0);
+		}
+	}
+
+	//set all ap related data
+}
+
+static void ui_event_wifi_connecting(void *arg){
+
+	if(0 == arg) return;
+
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
+
+	// set animation to main screen wifi symbol
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_Connecting(creds->ssid);
+	}
+
+	// free resources
+	if(creds->ssid){
+		if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+	}
+	if(creds->pass){
+		if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+	}
+	if(creds){
+		if(heap_caps_get_allocated_size(creds)) free(creds);
+	}
+}
+
+static void ui_event_wifi_connect_error(void *arg){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_NotConnected();
+	}
+
+	// delete animation of wifi icon
+}
+
+// add single element to list of found wifi networks
+static void ui_event_wifilist_add(void *arg){
+
+	if(0 == arg) return;
+
+	UI_BasicAPData_t *data = (UI_BasicAPData_t *)arg;
+
+	UI_WifiListAdd(data->is_protected, data->ssid, data->rssi);
+
+	if(data){
+		if(heap_caps_get_allocated_size(data)) free(data);
+	}
+}
+
+static void ui_event_wifilist_clear(void *arg){
+
+	UI_WifiListClear();
 }
 
 static void ui_event_time_changed(void *arg){
@@ -365,49 +443,7 @@ static void ui_event_wifi_scr_back_btn_clicked(void *arg){
 	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
 }
 
-static void ui_event_wifilist_add(void *arg){
 
-	if(0 == arg) return;
-
-	UI_BasicAPData_t *data = (UI_BasicAPData_t *)arg;
-
-	UI_WifiListAdd(data->is_protected, data->ssid, data->rssi);
-
-	if(data){
-		if(heap_caps_get_allocated_size(data)) free(data);
-	}
-}
-
-static void ui_event_wifilist_clear(void *arg){
-
-	UI_WifiListClear();
-}
-
-static void ui_event_wifi_connecting(void *arg){
-
-	if(0 == arg) return;
-
-	WifiCreds_t *creds = (WifiCreds_t *)arg;
-
-	// set animation to main screen wifi symbol
-
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_Connecting((WifiCreds_t *)arg);
-	}
-	else{
-
-		if(creds->ssid){
-			if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
-		}
-		if(creds->pass){
-			if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
-		}
-		if(creds){
-			if(heap_caps_get_allocated_size(creds)) free(creds);
-		}
-	}
-}
 
 /*****************************
  * detailed functions
