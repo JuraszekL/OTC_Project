@@ -1,6 +1,9 @@
 #ifndef MAIN_INCLUDE_MAIN_H_
 #define MAIN_INCLUDE_MAIN_H_
 
+#include "freertos/FreeRTOS.h"
+#include "freertos/event_groups.h"
+
 /**************************************************************
  * Use lv_conf.h instead of kconfig
  ***************************************************************/

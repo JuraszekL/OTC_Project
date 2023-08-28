@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <string.h>
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "freertos/event_groups.h"
@@ -8,6 +9,7 @@
 
 #include "main.h"
 #include "ui_task.h"
+#include "spiffs_task.h"
 #include "wifi.h"
 
 /**************************************************************
@@ -22,6 +24,9 @@
 #define WIFI_AUTOCONNECT_ENABLE_BIT			(1U << 2)
 #define WIFI_SCAN_IN_PROGRESS_BIT			(1U << 3)
 #define WIFI_CONNECTION_IN_PROGRESS_BIT		(1U << 4)
+
+/* other definitions */
+#define WIFI_RECONNECT_ATTEMPTS				5
 
 /**************************************************************
  *
@@ -63,6 +68,7 @@ static void wifi_scan_done_routine(void *arg);
 static void wifi_disconnected_routine(void *arg);
 static void wifi_connected_routine(void *arg);
 static void wifi_sta_got_ip_routine(void *arg);
+static void wifi_connect_routine(void *arg);
 
 static void fill_wifi_list_with_found_aps(void);
 
@@ -75,6 +81,7 @@ SemaphoreHandle_t WifiList_MutexHandle;
 
 static EventGroupHandle_t WifiEvents;
 static QueueHandle_t wifi_queue_handle;
+static SemaphoreHandle_t wifi_reconnect_semaphore_handle;
 static const wifi_routine wifi_routines_tab[] = {
 
 		[wifi_start] = wifi_start_routine,
@@ -83,6 +90,7 @@ static const wifi_routine wifi_routines_tab[] = {
 		[wifi_disconnected] = wifi_disconnected_routine,
 		[wifi_connected] = wifi_connected_routine,
 		[wifi_sta_got_ip] = wifi_sta_got_ip_routine,
+		[wifi_connect] = wifi_connect_routine,
 };
 
 static wifi_ap_record_t *ap_list;
@@ -149,6 +157,38 @@ bool Wifi_WaitUntilIsConnected(unsigned int Time_ms){
 void WIFI_StartScan(void){
 
 	wifi_routine_request(wifi_scan_start, NULL);
+}
+
+/* function called from UI when user requests to connect with "clicked" wifi  or
+ * when user has put the password for requested wifi */
+void Wifi_Connect(WifiCreds_t *creds){
+
+	if((0 == creds) || (0 == creds->ssid)) return;
+
+	if(0 == creds->pass){
+
+		SPIFFS_GetPass(creds);
+	}
+	else{
+
+		wifi_routine_request(wifi_connect, creds);
+	}
+}
+
+/* function called by filesystem when searching for password has been finished
+ * if no password found, creds->pass == 0, and function runs UI to obtain password from user */
+void Wifi_ReportPass(WifiCreds_t *creds){
+
+	if((0 == creds) || (0 == creds->ssid)) return;
+
+	if(0 == creds->pass){
+
+//		/UI_ReportEvt(UI_EVT_WIFI_GET_PASSWORD, creds);
+	}
+	else{
+
+		wifi_routine_request(wifi_connect, creds);
+	}
 }
 /**************************************************************
  *
@@ -233,7 +273,7 @@ static void wifi_start_routine(void *arg){
 	xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 	xEventGroupSetBits(WifiEvents, WIFI_AUTOCONNECT_ENABLE_BIT);
 	UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
-	wifi_routine_request(wifi_scan_start, NULL);
+//	wifi_routine_request(wifi_scan_start, NULL);
 }
 
 /* function to be performed when scan start is requested */
@@ -306,9 +346,24 @@ static void wifi_scan_done_routine(void *arg){
 
 static void wifi_disconnected_routine(void *arg){
 
-//	xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
-//	xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
-//	UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
+	if(0 != wifi_reconnect_semaphore_handle){
+
+		if(pdTRUE == xSemaphoreTake(wifi_reconnect_semaphore_handle, 0)){
+
+			esp_wifi_connect();
+		}
+		else{
+
+			vSemaphoreDelete(wifi_reconnect_semaphore_handle);
+			wifi_reconnect_semaphore_handle = 0;
+			xEventGroupClearBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
+			// UI_Report_connectionfailed
+		}
+	}
+
+	xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
+	xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
+	UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
 }
 
 static void wifi_connected_routine(void *arg){
@@ -318,9 +373,47 @@ static void wifi_connected_routine(void *arg){
 
 static void wifi_sta_got_ip_routine(void *arg){
 
-//	xEventGroupClearBits(WifiEvents, WIFI_DISCONNECTED_BIT);
-//	xEventGroupSetBits(WifiEvents, WIFI_CONNECTED_BIT);
-//	UI_ReportEvt(UI_EVT_WIFI_CONNECTED, NULL);
+	xEventGroupClearBits(WifiEvents, WIFI_DISCONNECTED_BIT);
+	xEventGroupClearBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
+	xEventGroupSetBits(WifiEvents, WIFI_CONNECTED_BIT);
+	UI_ReportEvt(UI_EVT_WIFI_CONNECTED, NULL);
+
+	vSemaphoreDelete(wifi_reconnect_semaphore_handle);
+	wifi_reconnect_semaphore_handle = 0;
+}
+
+static void wifi_connect_routine(void *arg){
+
+	int a;
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
+	wifi_config_t wifi_config = {0};
+	EventBits_t bits = xEventGroupGetBits(WifiEvents);
+
+	if(bits & WIFI_CONNECTION_IN_PROGRESS_BIT) goto cleanup;
+
+	a = strnlen(creds->ssid, 31);
+	if((0 == a) || (31 == a)) goto cleanup;
+	memcpy(wifi_config.sta.ssid, creds->ssid, (a + 1));
+
+	a = strnlen(creds->pass, 31);
+	if((0 == a) || (63 == a)) goto cleanup;
+	memcpy(wifi_config.sta.password, creds->pass, (a + 1));
+
+	if(0 != wifi_reconnect_semaphore_handle) vSemaphoreDelete(wifi_reconnect_semaphore_handle);
+	wifi_reconnect_semaphore_handle = xSemaphoreCreateCounting(WIFI_RECONNECT_ATTEMPTS, WIFI_RECONNECT_ATTEMPTS);
+	if(0 == wifi_reconnect_semaphore_handle) goto cleanup;
+
+	if(ESP_OK != esp_wifi_set_config(WIFI_IF_STA, &wifi_config)) goto cleanup;
+	if(ESP_OK != esp_wifi_connect()) goto cleanup;
+
+	UI_ReportEvt(UI_EVT_WIFI_CONNECTING, arg);
+	xEventGroupSetBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
+	return;
+
+	cleanup:
+		free(creds->ssid);
+		free(creds->pass);
+		free(creds);
 }
 
 /* send all found AP's to Wifi list on WifiScreen */

@@ -15,6 +15,7 @@
 
 #include "main.h"
 #include "ui_task.h"
+#include "wifi.h"
 #include "spiffs_task.h"
 
 //#define FORMAT_SPIFFS
@@ -45,7 +46,7 @@
 typedef enum {
 
 	spiffs_check_wifi_pass_file = 0,
-	spiffs_check_record,
+	spiffs_get_pass,
 	spiffs_add_record,
 
 } spiffs_routine_t;
@@ -77,14 +78,15 @@ static void spiffs_mount(void);
 static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool important);
 
 static void spiffs_check_wifi_pass_file_routine(void *arg);
-static void spiffs_check_record_routine(void *arg);
+static void spiffs_get_pass_routine(void *arg);
 static void spiffs_add_record_routine(void *arg);
 
 static int spiffs_restore_wifi_pass_backup_file(void);
-static void spiffs_add_wifi_record(spiffs_wifi_record_t *data);
+//static void spiffs_add_wifi_record(spiffs_wifi_record_t *data);
 static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **file_buff, cJSON **json);
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff);
 static int json_add_wifi_record(cJSON **json, spiffs_wifi_record_t *data, char **output_string);
+static int json_get_wifi_pass(cJSON *json, char **pass);
 
 //const static char string_to_encrypt[] = "string do zaszyfrowania";
 //
@@ -101,7 +103,7 @@ static QueueHandle_t spiffs_queue_handle;
 const static spiffs_routine spiffs_routines_tab[] = {
 
 		[spiffs_check_wifi_pass_file] = spiffs_check_wifi_pass_file_routine,
-		[spiffs_check_record] = spiffs_check_record_routine,
+		[spiffs_get_pass] = spiffs_get_pass_routine,
 		[spiffs_add_record] = spiffs_add_record_routine,
 };
 
@@ -134,9 +136,9 @@ void SPIFFS_Task(void *arg){
 	a = malloc(sizeof(spiffs_wifi_record_t));
 	if(a){
 
-		a->ssid = "wifi1234";
+		a->ssid = "ABCD";
 		a->iv = "vdfbdbfdsf";
-		a->pass = "lbndfrbdndbdbfdb";
+		a->pass = "dziupla12";
 		a->org_len = 35;
 	}
 	spiffs_routine_request(spiffs_add_record, a, false);
@@ -144,7 +146,7 @@ void SPIFFS_Task(void *arg){
 	b = malloc(sizeof(spiffs_wifi_record_t));
 	if(b){
 
-		b->ssid = "wifi5678";
+		b->ssid = "HOMENET";
 		b->iv = "dfvslkfnsvlfnslv";
 		b->pass = "sdivbsidjbsvsvbfdfngdgn";
 		b->org_len = 55;
@@ -169,10 +171,10 @@ void SPIFFS_Task(void *arg){
  * Public function definitions
  *
  ***************************************************************/
-void SPIFFS_IsPasswordSaved(char *ssid){
+void SPIFFS_GetPass(WifiCreds_t *creds){
 
-	if(0 == ssid) return;
-	spiffs_routine_request(spiffs_check_record, ssid, false);
+	if(0 == creds) return;
+	spiffs_routine_request(spiffs_get_pass, creds, false);
 }
 
 /**************************************************************
@@ -302,23 +304,23 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 		return;
 }
 
-static void spiffs_check_record_routine(void *arg){
+
+static void spiffs_get_pass_routine(void *arg){
 
 //	char *ssid = (char *)arg;
-//	FILE *f = 0;
-//	int file_size, a;
-//	char *wifi_pass_json_raw = 0;
-//	cJSON *wifi_pass_json = 0;
-//	EventBits_t bits;
-//	WifiCreds_t *creds = 0;
-//
-//	bits = xEventGroupGetBits(spiffs_files_status);
-//	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
-//
-//	// open wifi_pass file
-//	f = fopen(wifi_pass_file_path, "r");
-//	if(0 == f) goto error;
-//
+	FILE *f = 0;
+	int file_size;
+	char *wifi_pass_json_raw = 0;
+	cJSON *wifi_pass_json = 0, *ssid_json = 0;
+	EventBits_t bits;
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
+
+	bits = xEventGroupGetBits(spiffs_files_status);
+	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
+
+	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
+			&wifi_pass_json)) goto error;
+
 //	// prepare return data
 //	creds = calloc(1, sizeof(WifiCreds_t));
 //	if(0 == creds) goto error;
@@ -327,39 +329,127 @@ static void spiffs_check_record_routine(void *arg){
 //	creds->ssid = malloc(a + 1);
 //	if(0 == creds->ssid) goto error;
 //	memcpy(creds->ssid, ssid, a + 1);
-//
-//	// check file size
-//	fseek(f, 0, SEEK_END);
-//	file_size = ftell(f);
-//	fseek(f, 0, SEEK_SET);
-//	if(0 == file_size){
-//
-//		creds->pass = 0;
+
+	if(0 == file_size){
+
+		creds->pass = 0;
 //		UI_ReportEvt(UI_EVT_WIFI_REPORT_PASSWORD, creds);
-//		fclose(f);
-//	}
-//
-//	error:
-//		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
-//		if(wifi_pass_json_raw){
-//			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
-//		}
-//		if(creds){
-//			if(creds->ssid){
-//				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
-//			}
-//			if(creds->pass){
-//				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
-//			}
-//			if(heap_caps_get_allocated_size(creds)) free(creds);
-//		}
-//		if(f) fclose(f);
-//		spiffs_check_wifi_pass_file();
+		Wifi_ReportPass(creds);
+		fclose(f);
+		return;
+	}
+
+	if(true == cJSON_HasObjectItem(wifi_pass_json, creds->ssid)){
+
+		ssid_json = cJSON_GetObjectItemCaseSensitive(wifi_pass_json, creds->ssid);
+		if(0 == ssid_json) goto error;
+
+		if(0 != json_get_wifi_pass(ssid_json, &creds->pass)) goto error;
+		//if(0 != json_get_crypted_wifi_pass(ssid_json, &creds->pass)) goto error; //TODO
+	}
+	else {
+
+		creds->pass = 0;
+	}
+
+//	UI_ReportEvt(UI_EVT_WIFI_REPORT_PASSWORD, creds);
+	Wifi_ReportPass(creds);
+
+	cJSON_Delete(wifi_pass_json);
+	free(wifi_pass_json_raw);
+	fclose(f);
+	return;
+
+	error:
+		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
+		if(wifi_pass_json_raw){
+			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
+		}
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
+		if(f) fclose(f);
+		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
+
 
 static void spiffs_add_record_routine(void *arg){
 
-	spiffs_add_wifi_record((spiffs_wifi_record_t *)arg);
+	if(0 == arg) return;
+
+	spiffs_wifi_record_t *data = (spiffs_wifi_record_t *)arg;
+	FILE *f = 0;
+	int file_size, a;
+	char *wifi_pass_json_raw = 0;
+	cJSON *wifi_pass_json = 0;
+	EventBits_t bits;
+
+	// if file doesn't exists
+	bits = xEventGroupGetBits(spiffs_files_status);
+	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
+
+	// open, read, and parse wifi_pass file
+	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
+			&wifi_pass_json)) goto error;
+	if(0 == file_size){
+
+		// create empty json if file has no data
+		wifi_pass_json = cJSON_CreateObject();
+		if(0 == wifi_pass_json) goto error;
+	}
+	else{
+
+		fclose(f);
+
+		// write backup to wifi-pass_backup file
+		if(0 != spiffs_perform_write(wifi_pass_backup_file_path, &f, file_size, wifi_pass_json_raw)) goto error;
+
+		free(wifi_pass_json_raw);
+		wifi_pass_json_raw = 0;
+	}
+
+	fclose(f);
+
+	if(false == cJSON_HasObjectItem(wifi_pass_json, data->ssid)){
+
+		if(0 != json_add_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;
+	//	if(0 != json_add_crypted_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;	//TODO
+
+		// get lenght of the string
+		a = strlen(wifi_pass_json_raw);
+		ESP_LOGI("", "a = %d", a);
+
+	#ifdef ZJEB_DANE
+		a -= 5;
+	#endif
+
+		if(0 != spiffs_perform_write(wifi_pass_file_path, &f, (a + 1), wifi_pass_json_raw)) goto error;
+
+		fclose(f);
+		free(wifi_pass_json_raw);
+	}
+
+	// cleanup
+	cJSON_Delete(wifi_pass_json);
+	free(data);
+	return;
+
+	error:
+		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
+		if(wifi_pass_json_raw){
+			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
+		}
+		if(f) fclose(f);
+		if(data){
+			if(heap_caps_get_allocated_size(data)) free(data);
+		}
+		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
 
@@ -413,76 +503,7 @@ static int spiffs_restore_wifi_pass_backup_file(void){
 		}
 }
 
-/* Read wifi_pass file, parse json, add new record, save json as string
- * and save back to file. Function operates with encrypted values of data */
-static void spiffs_add_wifi_record(spiffs_wifi_record_t *data){
-
-	if(0 == data) return;
-
-	FILE *f = 0;
-	int file_size, a;
-	char *wifi_pass_json_raw = 0;
-	cJSON *wifi_pass_json = 0;
-	EventBits_t bits;
-
-	// if file doesn't exists
-	bits = xEventGroupGetBits(spiffs_files_status);
-	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
-
-	// open, read, and parse wifi_pass file
-	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
-			&wifi_pass_json)) goto error;
-	if(0 == file_size){
-
-		// create empty json if file has no data
-		wifi_pass_json = cJSON_CreateObject();
-		if(0 == wifi_pass_json) goto error;
-	}
-	else{
-
-		fclose(f);
-
-		// write backup to wifi-pass_backup file
-		if(0 != spiffs_perform_write(wifi_pass_backup_file_path, &f, file_size, wifi_pass_json_raw)) goto error;
-
-		free(wifi_pass_json_raw);
-		wifi_pass_json_raw = 0;
-	}
-
-	fclose(f);
-
-	if(0 != json_add_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;
-
-	// get lenght of the string
-	a = strlen(wifi_pass_json_raw);
-	ESP_LOGI("", "a = %d", a);
-
-#ifdef ZJEB_DANE
-	a -= 5;
-#endif
-
-	if(0 != spiffs_perform_write(wifi_pass_file_path, &f, (a + 1), wifi_pass_json_raw)) goto error;
-
-	// cleanup
-	fclose(f);
-	cJSON_Delete(wifi_pass_json);
-	free(wifi_pass_json_raw);
-	free(data);
-	return;
-
-	error:
-		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
-		if(wifi_pass_json_raw){
-			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
-		}
-		if(f) fclose(f);
-		if(data){
-			if(heap_caps_get_allocated_size(data)) free(data);
-		}
-		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
-}
-
-
+/* general puprose function to open, check size, read and parse file */
 static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **file_buff, cJSON **json){
 
 	int a;
@@ -527,6 +548,7 @@ static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **
 	return 0;
 }
 
+/* general purpose function to open and write new file */
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff){
 
 	int a;
@@ -548,6 +570,7 @@ static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *f
 	return 0;
 }
 
+/* add new wifi record to obtained json + return as string */
 static int json_add_wifi_record(cJSON **json, spiffs_wifi_record_t *data, char **output_string){
 
 	cJSON *ssid = 0, *iv = 0, *pass = 0, *org_len = 0;
@@ -575,6 +598,26 @@ static int json_add_wifi_record(cJSON **json, spiffs_wifi_record_t *data, char *
 	// convert created json to string
 	*output_string = cJSON_PrintUnformatted(*json);
 	if(0 == *output_string) return -1;
+
+	return 0;
+}
+
+static int json_get_wifi_pass(cJSON *json, char **pass){
+
+	int len;
+
+	cJSON *json_pass = cJSON_GetObjectItemCaseSensitive(json, JSON_PASS_LABEL);
+	if(0 == json_pass) return -1;
+
+	if (0 == cJSON_IsString(json_pass) || (json_pass->valuestring == 0)) return -1;
+
+	len = strnlen(json_pass->valuestring, 65);
+	if((0 == len) || (65 == len)) return -1;
+
+	*pass = calloc(1, (len + 1));
+	if(0 == *pass) return -1;
+
+	memcpy(*pass, json_pass->valuestring, (len + 1));
 
 	return 0;
 }

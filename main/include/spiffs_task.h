@@ -3,6 +3,6 @@
 
 
 void SPIFFS_Task(void *arg);
-void SPIFFS_IsPasswordSaved(char *ssid);
+void SPIFFS_GetPass(WifiCreds_t *creds);
 
 #endif /* MAIN_INCLUDE_SPIFFS_TASK_H_ */

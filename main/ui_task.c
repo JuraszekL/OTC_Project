@@ -58,7 +58,7 @@ static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
 static void ui_event_wifilist_add(void *arg);
 static void ui_event_wifilist_clear(void *arg);
-static void ui_event_wifi_report_password(void *arg);
+static void ui_event_wifi_connecting(void *arg);
 
 static void basic_weather_update_icon(char *icon_path);
 static void basic_weather_update_values(int temp, int press, int hum);
@@ -96,7 +96,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
 		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
-		[UI_EVT_WIFI_REPORT_PASSWORD] = ui_event_wifi_report_password,
+		[UI_EVT_WIFI_CONNECTING] = ui_event_wifi_connecting,
 };
 
 extern const char *Eng_DayName[7];
@@ -353,10 +353,11 @@ static void ui_event_detailed_weather_update(void *arg){
 
 static void ui_event_main_scr_wifi_btn_clicked(void *arg){
 
-	if(0 == ui_WifiScreen) ui_WifiScreen_screen_init();
+	if(false == lv_obj_is_valid(ui_WifiScreen)) ui_WifiScreen_screen_init();
+	//add style to inactive state
 	UI_WifiListInit();
 	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
-//	WIFI_StartScan();
+	WIFI_StartScan();
 }
 
 static void ui_event_wifi_scr_back_btn_clicked(void *arg){
@@ -375,7 +376,6 @@ static void ui_event_wifilist_add(void *arg){
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
 	}
-
 }
 
 static void ui_event_wifilist_clear(void *arg){
@@ -383,20 +383,29 @@ static void ui_event_wifilist_clear(void *arg){
 	UI_WifiListClear();
 }
 
-static void ui_event_wifi_report_password(void *arg){
+static void ui_event_wifi_connecting(void *arg){
 
 	if(0 == arg) return;
 
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
-	if(0 == creds->pass){
+	// set animation to main screen wifi symbol
 
-		// create popup to put password
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_Connecting((WifiCreds_t *)arg);
 	}
 	else{
 
-		// create popup with connecting status
-		// wifi connect (creds)
+		if(creds->ssid){
+			if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+		}
+		if(creds->pass){
+			if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+		}
+		if(creds){
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
 	}
 }
 

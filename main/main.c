@@ -1,7 +1,6 @@
+#include "main.h"
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
-#include "freertos/event_groups.h"
 #include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
@@ -9,7 +8,6 @@
 
 #include "cJSON.h"
 
-#include "main.h"
 #include "display.h"
 #include "touchpad.h"
 #include "ui_task.h"
