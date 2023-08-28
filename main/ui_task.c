@@ -77,7 +77,7 @@ static void detailed_weather_update_precip_percent_snow(int precip, int percent)
 
 static void set_weather_icon(char *path, lv_obj_t * obj);
 static void set_wifi_label(uint8_t icon_type, char icon);
-
+static void set_ap_details(UI_DetailedAPData_t *data);
 
 /**************************************************************
  *
@@ -104,6 +104,7 @@ const ui_event event_tab[] = {
 
 extern const char *Eng_DayName[7];
 extern const char *Eng_MonthName_3char[12];
+extern const char *Authentication_Modes[];
 
 static QueueHandle_t ui_queue_handle;
 static struct {
@@ -249,6 +250,9 @@ static void ui_event_wifi_disconnected(void *arg){
 
 	// set wifi icon in top left corner of main screen
 	set_wifi_label(wifi_icon, ICON_NO_WIFI);
+
+	// clear information about connected AP
+	set_ap_details(0);
 }
 
 static void ui_event_wifi_connected(void *arg){
@@ -271,7 +275,8 @@ static void ui_event_wifi_connected(void *arg){
 		}
 	}
 
-	//set all ap related data
+	// set information about connected AP
+	set_ap_details(data);
 }
 
 static void ui_event_wifi_connecting(void *arg){
@@ -644,4 +649,33 @@ static void set_weather_icon(char *path, lv_obj_t * obj){
 		if(path){
 			if(heap_caps_get_allocated_size(path)) free(path);
 		}
+}
+
+/* set/clear details about connected AP on WifiScreen */
+static void set_ap_details(UI_DetailedAPData_t *data){
+
+	const char *mode_str = 0;
+
+	if(0 != data){
+
+		// get pointer to authentication mode string
+		mode_str = Authentication_Modes[data->mode];
+
+		lv_arc_set_value(ui_WifiScreenRSSIArc, data->rssi);
+		lv_label_set_text_fmt(ui_WifiScreenRSSIValueLabel, "%d", data->rssi);
+		lv_label_set_text(ui_WifiScreenSSIDLabel, data->ssid);
+		lv_label_set_text_fmt(ui_WifiScreenWifiDetails, "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
+				"IPv4: %s\n%s", data->mac[0], data->mac[1], data->mac[2], data->mac[3], data->mac[4],
+				data->mac[5], (char *)data->ip, mode_str);
+
+		free(data->ssid);
+		free(data);
+	}
+	else{
+
+		lv_arc_set_value(ui_WifiScreenRSSIArc, -120);
+		lv_label_set_text(ui_WifiScreenRSSIValueLabel, "---");
+		lv_label_set_text(ui_WifiScreenSSIDLabel, "");
+		lv_label_set_text(ui_WifiScreenWifiDetails, "");
+	}
 }

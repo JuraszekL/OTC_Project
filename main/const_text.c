@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "esp_wifi.h"
 
 const char *Eng_DayName[7] = {
 
@@ -25,6 +26,20 @@ const char *Eng_MonthName_3char[12] = {
 		"Oct",
 		"Nov",
 		"Dec",
+};
+
+const char *Authentication_Modes[] = {
+
+		[WIFI_AUTH_OPEN] = "OPEN",
+		[WIFI_AUTH_WEP] = "WEP",
+		[WIFI_AUTH_WPA_PSK] = "WPA PSK",
+		[WIFI_AUTH_WPA2_PSK] = "WPA2 PSK",
+		[WIFI_AUTH_WPA_WPA2_PSK] = "WPA WPA2 PSK",
+		[WIFI_AUTH_WPA2_ENTERPRISE] = "WPA2 ENTERPRISE",
+		[WIFI_AUTH_WPA3_PSK] = "WPA3 PSK",
+		[WIFI_AUTH_WPA2_WPA3_PSK] = "WPA2 WPA3 PSK",
+		[WIFI_AUTH_OWE] = "OWE",
+		[WIFI_AUTH_MAX] = "Unknown auth. type",
 };
 
 
