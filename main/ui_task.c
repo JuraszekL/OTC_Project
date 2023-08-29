@@ -16,6 +16,7 @@
 #include "wifi.h"
 #include "display.h"
 #include "online_requests.h"
+#include "ui_styles.h"
 #include "ui_task.h"
 
 /**************************************************************
@@ -119,6 +120,7 @@ static struct {
 
 } last_displayed_time;
 
+
 /******************************************************************************************************************
  *
  * UI task
@@ -135,6 +137,8 @@ void UI_Task(void *arg){
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, UI_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
+
+	UI_InitStyles();
 
 	// run startup screen
 	startup_screen();
@@ -454,7 +458,6 @@ static void ui_event_main_scr_wifi_btn_clicked(void *arg){
 	if(false == lv_obj_is_valid(ui_WifiScreen)) ui_WifiScreen_screen_init();
 	//add style to inactive state
 	UI_WifiListInit();
-	UI_WifiPopup_InitStyle();
 	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
 	WIFI_StartScan();
 }

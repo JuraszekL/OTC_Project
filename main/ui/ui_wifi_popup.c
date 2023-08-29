@@ -2,6 +2,7 @@
 #include "ui.h"
 #include "ui_task.h"
 #include "wifi.h"
+#include "ui_styles.h"
 
 /**************************************************************
  *
@@ -21,6 +22,7 @@ static void wifi_popup_create_line(uint8_t line_type);
 static void wifi_popup_create_spinner(void);
 static void wifi_popup_create_password_text_area(void);
 static void wifi_popup_create_checkboxes(void);
+static void wifi_popup_create_buttons(void);
 
 static void set_line_opa(void *obj, int32_t val);
 static void wifi_popup_line_animation_ready(struct _lv_anim_t *a);
@@ -33,29 +35,14 @@ static void wifi_popup_line_animation_ready(struct _lv_anim_t *a);
 static const lv_point_t ok_line_points[] = {{25, 25}, {50, 50}, {100, 0}};	// those make a "check" sign
 static const lv_point_t nok_line_points[] = {{25, 0}, {75, 50}, {50, 25}, {75, 0}, {25, 50}};	// those make an "X" sign
 
-static lv_style_t style_popup;
 static lv_obj_t *top_background, *panel, *top_text, *spinner, *wifi_popup_line, *password_text,
-				*save_checkbox, *hide_checkbox;
+				*save_checkbox, *hide_checkbox, *back_button, *ok_button;
 
 /**************************************************************
  *
  * Public function definitions
  *
  ***************************************************************/
-void UI_WifiPopup_InitStyle(void){
-
-	lv_style_init(&style_popup);
-	lv_style_set_bg_color(&style_popup, lv_color_hex(0x262223));
-	lv_style_set_bg_opa(&style_popup, LV_OPA_COVER);
-	lv_style_set_border_color(&style_popup, lv_color_hex(0xF26B1D));
-	lv_style_set_border_opa(&style_popup, LV_OPA_COVER);
-	lv_style_set_text_font(&style_popup, &lv_font_montserrat_16);
-	lv_style_set_text_color(&style_popup, lv_color_hex(0xF2921D));
-	lv_style_set_line_color(&style_popup, lv_color_hex(0xF2921D));
-	lv_style_set_line_width(&style_popup, 8);
-	lv_style_set_line_rounded(&style_popup, true);
-}
-
 void UI_WifiPopup_Connecting(char *ssid){
 
 	char buff[64] = {0};
@@ -131,6 +118,7 @@ void UI_WifiPopup_NotConnected(void){
 	wifi_popup_create_line(nok_line);
 }
 
+/* create popup where user can enter the password */
 void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 
 	// check if popup base is valid
@@ -151,10 +139,12 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 		spinner = 0;
 	}
 
-    /*Create the password box*/
+    /*Create the rest of objects */
 	wifi_popup_create_password_text_area();
 
 	wifi_popup_create_checkboxes();
+
+	wifi_popup_create_buttons();
 
 //    /*Create a keyboard*/
 //    kb = lv_keyboard_create(top_background);
@@ -194,6 +184,7 @@ static void wifi_popup_event_handler(lv_event_t * e){
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t * obj = lv_event_get_target(e);
 
+    // event occured at password text area
     if(obj == password_text){
 
     	if(LV_EVENT_FOCUSED == code){
@@ -205,6 +196,7 @@ static void wifi_popup_event_handler(lv_event_t * e){
     		// hide keyboard
     	}
     }
+    // hide checkbox has been toggled
     else if((obj == hide_checkbox) && (LV_EVENT_VALUE_CHANGED == code)){
 
     	if(LV_STATE_CHECKED & lv_obj_get_state(obj)){
@@ -216,25 +208,30 @@ static void wifi_popup_event_handler(lv_event_t * e){
     		lv_textarea_set_password_mode(password_text, false);
     	}
     }
+    // back button at wifi popup panel has been clicked
+    else if((obj == back_button) && (LV_EVENT_PRESSED == code)){
+
+    	lv_obj_del_async(top_background);
+    }
 }
 
 /* create base of wifi popup object */
 static void wifi_popup_create_panel(void){
 
 	top_background = lv_obj_create(lv_layer_top());
-	lv_obj_add_style(top_background, &style_popup, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(top_background, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_size(top_background, LV_PCT(100), LV_PCT(100));
 	lv_obj_set_style_bg_opa(top_background, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(top_background, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_clear_flag(top_background, LV_OBJ_FLAG_SCROLLABLE);
 
 	panel = lv_obj_create(top_background);
-	lv_obj_add_style(panel, &style_popup, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(panel, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_size(panel, 200, 150);
 	lv_obj_set_align(panel, LV_ALIGN_CENTER);
 
 	top_text = lv_label_create(panel);
-	lv_obj_add_style(top_text, &style_popup, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(top_text, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(top_text, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(top_text, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(top_text, LV_ALIGN_TOP_MID);
@@ -249,7 +246,7 @@ static void wifi_popup_create_line(uint8_t line_type){
 	// create an object
 	wifi_popup_line = lv_line_create(panel);
 	lv_obj_set_align(wifi_popup_line, LV_ALIGN_BOTTOM_MID);
-	lv_obj_add_style(wifi_popup_line, &style_popup, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(wifi_popup_line, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_line_opa(wifi_popup_line, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	if(ok_line == line_type){
@@ -285,39 +282,67 @@ static void wifi_popup_create_spinner(void){
 	lv_obj_set_style_arc_width(spinner, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 }
 
+/* create text area where user can enter password */
 static void wifi_popup_create_password_text_area(void){
 
 	password_text = lv_textarea_create(panel);
-    lv_textarea_set_text(password_text, "abc");
+	lv_obj_add_style(password_text, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(password_text, &UI_PopupPanelStyle, LV_PART_CURSOR | LV_STATE_FOCUSED);
+    lv_textarea_set_text(password_text, "");
     lv_textarea_set_password_mode(password_text, true);
     lv_textarea_set_one_line(password_text, true);
     lv_obj_set_width(password_text, lv_pct(80));
     lv_obj_set_align(password_text, LV_ALIGN_TOP_MID);
     lv_obj_set_y(password_text, 30);
-    lv_obj_set_style_bg_color(password_text, lv_color_hex(0xF2F2F2), 0);
+//    lv_obj_set_style_bg_color(password_text, lv_color_hex(0xF2F2F2), 0);
     lv_obj_add_event_cb(password_text, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
 }
 
+/* create two checkboxes to hide and save password */
 static void wifi_popup_create_checkboxes(void){
 
 	save_checkbox = lv_checkbox_create(panel);
-	lv_obj_add_style(save_checkbox, &style_popup, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
-	lv_obj_add_style(save_checkbox, &style_popup, LV_PART_INDICATOR | LV_STATE_CHECKED);
+	lv_obj_add_style(save_checkbox, &UI_PopupPanelStyle, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
+	lv_obj_add_style(save_checkbox, &UI_PopupPanelStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
 	lv_obj_set_align(save_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(save_checkbox, lv_pct(15));
     lv_checkbox_set_text(save_checkbox, "Save");
     lv_obj_add_state(save_checkbox, LV_STATE_CHECKED);
-//    lv_obj_add_event_cb(save_checkbox, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
 
 	hide_checkbox = lv_checkbox_create(panel);
-	lv_obj_add_style(hide_checkbox, &style_popup, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
-	lv_obj_add_style(hide_checkbox, &style_popup, LV_PART_INDICATOR | LV_STATE_CHECKED);
+	lv_obj_add_style(hide_checkbox, &UI_PopupPanelStyle, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
+	lv_obj_add_style(hide_checkbox, &UI_PopupPanelStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
 	lv_obj_set_align(hide_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(hide_checkbox, lv_pct(60));
     lv_checkbox_set_text(hide_checkbox, "Hide");
     lv_obj_add_state(hide_checkbox, LV_STATE_CHECKED);
     lv_obj_add_event_cb(hide_checkbox, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
 }
+
+/* create back and connect buttons */
+static void wifi_popup_create_buttons(void){
+
+	lv_obj_t *but_label;
+
+	back_button = lv_btn_create(panel);
+	lv_obj_add_style(back_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(back_button, LV_ALIGN_BOTTOM_LEFT);
+	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+
+	but_label = lv_label_create(back_button);
+	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_label_set_text_fmt(but_label, "%c", ICON_LEFT_ARROW);
+
+	ok_button = lv_btn_create(panel);
+	lv_obj_add_style(ok_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(ok_button, LV_ALIGN_BOTTOM_RIGHT);
+	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+
+	but_label = lv_label_create(ok_button);
+	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_label_set_text_fmt(but_label, "%c", ICON_RIGHT_ARROW);
+}
+
 /**************************************************************
  * Animation helpers
  ***************************************************************/

@@ -3,6 +3,7 @@
 
 #include "ui_wifi_list.h"
 #include "ui_wifi_popup.h"
+#include "lvgl.h"
 
 /**************************************************************
  * Font icon characters
@@ -108,6 +109,8 @@ typedef struct {
 	int mode;
 
 } UI_DetailedAPData_t;
+
+
 
 /**************************************************************
  * Public functions
