@@ -2,6 +2,7 @@
 #define MAIN_INCLUDE_UI_TASK_H_
 
 #include "ui_wifi_list.h"
+#include "ui_wifi_popup.h"
 
 /**************************************************************
  * Font icon characters

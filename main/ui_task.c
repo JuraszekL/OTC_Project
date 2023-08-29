@@ -51,6 +51,7 @@ static void ui_event_wifi_disconnected(void *arg);
 static void ui_event_wifi_connected(void *arg);
 static void ui_event_wifi_connecting(void *arg);
 static void ui_event_wifi_connect_error(void *arg);
+static void ui_event_wifi_get_pass(void *arg);
 static void ui_event_wifilist_add(void *arg);
 static void ui_event_wifilist_clear(void *arg);
 static void ui_event_time_changed(void *arg);
@@ -91,6 +92,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFI_DISCONNECTED] = ui_event_wifi_disconnected,
 		[UI_EVT_WIFI_CONNECTING] = ui_event_wifi_connecting,
 		[UI_EVT_WIFI_CONNECT_ERROR] = ui_event_wifi_connect_error,
+		[UI_EVT_WIFI_GET_PASS] = ui_event_wifi_get_pass,
 		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
 		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
@@ -316,6 +318,19 @@ static void ui_event_wifi_connect_error(void *arg){
 	// delete animation of wifi icon
 }
 
+static void ui_event_wifi_get_pass(void *arg){
+
+	if(0 == arg) return;
+
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_GetPass(creds);
+	}
+}
+
 // add single element to list of found wifi networks
 static void ui_event_wifilist_add(void *arg){
 
@@ -439,6 +454,7 @@ static void ui_event_main_scr_wifi_btn_clicked(void *arg){
 	if(false == lv_obj_is_valid(ui_WifiScreen)) ui_WifiScreen_screen_init();
 	//add style to inactive state
 	UI_WifiListInit();
+	UI_WifiPopup_InitStyle();
 	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
 	WIFI_StartScan();
 }

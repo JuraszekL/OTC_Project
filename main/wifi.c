@@ -183,7 +183,7 @@ void Wifi_ReportPass(WifiCreds_t *creds){
 
 	if(0 == creds->pass){
 
-//		/UI_ReportEvt(UI_EVT_WIFI_GET_PASSWORD, creds);
+		UI_ReportEvt(UI_EVT_WIFI_GET_PASS, creds);
 	}
 	else{
 
