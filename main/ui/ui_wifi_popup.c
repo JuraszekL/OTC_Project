@@ -6,10 +6,18 @@
 
 /**************************************************************
  *
+ *	Defines
+ *
+ ***************************************************************/
+#define KEYBOARD_SHOW_HIDE_TIME_MS		300U
+
+/**************************************************************
+ *
  *	Typedefs
  *
  ***************************************************************/
 enum { ok_line, nok_line };
+enum { show_keyboard, hide_keyboard };
 
 /**************************************************************
  *
@@ -23,9 +31,14 @@ static void wifi_popup_create_spinner(void);
 static void wifi_popup_create_password_text_area(void);
 static void wifi_popup_create_checkboxes(void);
 static void wifi_popup_create_buttons(void);
+static void wifi_popup_create_keyboard(void);
+
+static void wifi_popup_show_hide_keyboard(uint8_t show_hide);
 
 static void set_line_opa(void *obj, int32_t val);
+static void set_y(void *obj, int32_t val);
 static void wifi_popup_line_animation_ready(struct _lv_anim_t *a);
+static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a);
 
 /**************************************************************
  *
@@ -36,7 +49,7 @@ static const lv_point_t ok_line_points[] = {{25, 25}, {50, 50}, {100, 0}};	// th
 static const lv_point_t nok_line_points[] = {{25, 0}, {75, 50}, {50, 25}, {75, 0}, {25, 50}};	// those make an "X" sign
 
 static lv_obj_t *top_background, *panel, *top_text, *spinner, *wifi_popup_line, *password_text,
-				*save_checkbox, *hide_checkbox, *back_button, *ok_button;
+				*save_checkbox, *hide_checkbox, *back_button, *ok_button, *keyboard;
 
 /**************************************************************
  *
@@ -146,31 +159,7 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 
 	wifi_popup_create_buttons();
 
-//    /*Create a keyboard*/
-//    kb = lv_keyboard_create(top_background);
-//    lv_obj_set_size(kb, LV_PCT(100), LV_PCT(50));
-//
-//    lv_keyboard_set_textarea(kb, pwd_ta); /*Focus it on one of the text areas to start*/
-//
-//    // bacground dark
-//    lv_obj_set_style_bg_color(kb, lv_color_hex(0x262223), LV_PART_MAIN | LV_STATE_DEFAULT);
-////    lv_obj_set_style_bg_color(kb, lv_color_hex(0xF2921D), LV_PART_ITEMS);
-//
-//    // background dark for normal keys
-//    lv_obj_set_style_bg_opa(kb, LV_OPA_TRANSP, LV_PART_ITEMS);
-//
-//    // background for checked keys
-//    lv_obj_set_style_bg_color(kb, lv_color_hex(0xF26B1D), LV_PART_ITEMS | LV_STATE_CHECKED);
-//    lv_obj_set_style_bg_opa(kb, LV_OPA_10, LV_PART_ITEMS | LV_STATE_CHECKED);
-//
-//    // border for all keys
-//    lv_obj_set_style_border_width(kb, 1, LV_PART_ITEMS);
-//    lv_obj_set_style_border_color(kb, lv_color_hex(0xF26B1D), LV_PART_ITEMS);
-//    lv_obj_set_style_border_opa(kb, LV_OPA_60, LV_PART_ITEMS);
-//
-//    // text color for all keys
-//    lv_obj_set_style_text_color(kb, lv_color_hex(0xF2921D), LV_PART_ITEMS);
-//    lv_obj_set_style_text_color(kb, lv_color_hex(0xF2921D), LV_PART_ITEMS | LV_STATE_CHECKED);
+	wifi_popup_create_keyboard();
 }
 
 
@@ -189,11 +178,11 @@ static void wifi_popup_event_handler(lv_event_t * e){
 
     	if(LV_EVENT_FOCUSED == code){
 
-    		// show keyboard
+    		wifi_popup_show_hide_keyboard(show_keyboard);
     	}
     	else if(LV_EVENT_DEFOCUSED == code){
 
-    		// hide keyboard
+    		wifi_popup_show_hide_keyboard(hide_keyboard);
     	}
     }
     // hide checkbox has been toggled
@@ -343,6 +332,75 @@ static void wifi_popup_create_buttons(void){
 	lv_label_set_text_fmt(but_label, "%c", ICON_RIGHT_ARROW);
 }
 
+static void wifi_popup_create_keyboard(void){
+
+	/*Create a keyboard*/
+	keyboard = lv_keyboard_create(top_background);
+	lv_obj_set_align(keyboard, LV_ALIGN_BOTTOM_MID);
+	lv_obj_set_y(keyboard, 240);
+	lv_obj_set_size(keyboard, LV_PCT(100), LV_PCT(50));
+
+	// bacground dark
+	lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x262223), LV_PART_MAIN | LV_STATE_DEFAULT);
+
+	// background dark for normal keys
+	lv_obj_set_style_bg_opa(keyboard, LV_OPA_TRANSP, LV_PART_ITEMS);
+
+	// background for checked keys
+	lv_obj_set_style_bg_color(keyboard, lv_color_hex(0xF26B1D), LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_bg_opa(keyboard, LV_OPA_10, LV_PART_ITEMS | LV_STATE_CHECKED);
+
+	// border for all keys
+	lv_obj_set_style_border_width(keyboard, 1, LV_PART_ITEMS);
+	lv_obj_set_style_border_color(keyboard, lv_color_hex(0xF26B1D), LV_PART_ITEMS);
+	lv_obj_set_style_border_opa(keyboard, LV_OPA_60, LV_PART_ITEMS);
+
+	// text color for all keys
+	lv_obj_set_style_text_color(keyboard, lv_color_hex(0xF2921D), LV_PART_ITEMS);
+	lv_obj_set_style_text_color(keyboard, lv_color_hex(0xF2921D), LV_PART_ITEMS | LV_STATE_CHECKED);
+}
+
+static void wifi_popup_show_hide_keyboard(uint8_t show_hide){
+
+	lv_anim_t popup_move, kb_move;
+
+	// create panel animation
+	lv_anim_init(&popup_move);
+	lv_anim_set_exec_cb(&popup_move, set_y);
+	lv_anim_set_var(&popup_move, panel);
+	lv_anim_set_time(&popup_move, KEYBOARD_SHOW_HIDE_TIME_MS);
+	if(show_keyboard == show_hide){
+
+		lv_anim_set_values(&popup_move, 0, -120);
+	}
+	else{
+
+		lv_anim_set_values(&popup_move, -120, 0);
+	}
+	lv_anim_set_path_cb(&popup_move, lv_anim_path_ease_out);
+	lv_anim_set_ready_cb(&popup_move, wifi_popup_show_keyboard_animation_ready);
+
+	// create keyboard animation
+	lv_anim_init(&kb_move);
+	lv_anim_set_exec_cb(&kb_move, set_y);
+	lv_anim_set_var(&kb_move, keyboard);
+	lv_anim_set_time(&kb_move, KEYBOARD_SHOW_HIDE_TIME_MS);
+	if(show_keyboard == show_hide){
+
+		lv_anim_set_values(&kb_move, 240, 0);
+		lv_keyboard_set_textarea(keyboard, password_text); /*Focus it on one of the text areas to start*/
+	}
+	else{
+
+		lv_anim_set_values(&kb_move, 0, 240);
+	}
+	lv_anim_set_path_cb(&kb_move, lv_anim_path_ease_out);
+	lv_anim_set_ready_cb(&kb_move, wifi_popup_show_keyboard_animation_ready);
+
+	// start both
+	lv_anim_start(&popup_move);
+	lv_anim_start(&kb_move);
+}
 /**************************************************************
  * Animation helpers
  ***************************************************************/
@@ -353,9 +411,22 @@ static void set_line_opa(void *obj, int32_t val){
 	lv_obj_set_style_line_opa(obj, val, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
+/* animate y position */
+static void set_y(void *obj, int32_t val){
+
+	lv_obj_set_y(obj, val);
+}
+
 /* callback when animation of wifi popup "sign" is done */
 static void wifi_popup_line_animation_ready(struct _lv_anim_t *a){
 
 	lv_anim_del(wifi_popup_line, NULL);
 	lv_obj_del_delayed(top_background, 500);
+}
+
+/* callback when animation of sliding keyboard is done */
+static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a){
+
+	if(a->var == panel)lv_anim_del(panel, NULL);
+	else if(a->var == keyboard)lv_anim_del(keyboard, NULL);
 }
