@@ -23,19 +23,7 @@ extern lv_obj_t * ui_OnlineTableClockLabel;
 extern lv_obj_t * ui_ByJuraszekLLabel;
 extern lv_obj_t * ui_LogosImage;
 extern lv_obj_t * ui_VersionLabel;
-// SCREEN: ui_MainScreen
-void ui_MainScreen_screen_init(void);
-extern lv_obj_t * ui_MainScreen;
-extern lv_obj_t * ui_ClockLabel;
-extern lv_obj_t * ui_DateLabel;
-extern lv_obj_t * ui_WiFiIconLabel;
-extern lv_obj_t * ui_WhiteLineTop;
-void ui_event_WeatherImage(lv_event_t * e);
-extern lv_obj_t * ui_WeatherImage;
-extern lv_obj_t * ui_WeatherLabel;
-void ui_event_MainScreenWifiButton(lv_event_t * e);
-extern lv_obj_t * ui_MainScreenWifiButton;
-extern lv_obj_t * ui_BackArrowIconLabel1;
+
 // SCREEN: ui_WeatherDetailsScrren
 void ui_WeatherDetailsScrren_screen_init(void);
 extern lv_obj_t * ui_WeatherDetailsScrren;

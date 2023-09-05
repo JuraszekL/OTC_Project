@@ -4,11 +4,9 @@
 #include "freertos/event_groups.h"
 #include "freertos/queue.h"
 #include "freertos/semphr.h"
-#include <sys/time.h>
 #include "esp_log.h"
 
 #include "lvgl.h"
-#include "lv_conf.h"
 #include "ui.h"
 
 #include "main.h"
@@ -16,7 +14,10 @@
 #include "wifi.h"
 #include "display.h"
 #include "online_requests.h"
+#include "ui_wifi_list.h"
+#include "ui_wifi_popup.h"
 #include "ui_styles.h"
+#include "ui_main_screen.h"
 #include "ui_task.h"
 
 /**************************************************************
@@ -38,8 +39,6 @@ struct ui_queue_data {
 	UI_EventType_t type;
 	void *arg;
 };
-
-enum {wifi_icon = 0, sync_icon = 3};
 
 /**************************************************************
  *
@@ -63,10 +62,6 @@ static void ui_event_detailed_weather_update(void *arg);
 static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
 
-
-static void basic_weather_update_icon(char *icon_path);
-static void basic_weather_update_values(int temp, int press, int hum);
-
 static void detailed_weather_update_city_name(char *city_name);
 static void detailed_weather_update_country_name(char *country_name);
 static void detailed_weather_update_weather_icon(char *icon_path);
@@ -78,7 +73,6 @@ static void detailed_weather_update_avg_max_wind(int avg, int max);
 static void detailed_weather_update_precip_percent_snow(int precip, int percent);
 
 static void set_weather_icon(char *path, lv_obj_t * obj);
-static void set_wifi_label(uint8_t icon_type, char icon);
 static void set_ap_details(UI_DetailedAPData_t *data);
 
 /**************************************************************
@@ -105,20 +99,9 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 };
 
-extern const char *Eng_DayName[7];
-extern const char *Eng_MonthName_3char[12];
 extern const char *Authentication_Modes[];
 
 static QueueHandle_t ui_queue_handle;
-static struct {
-
-	uint8_t	tm_min;
-	uint8_t	tm_hour;
-	uint8_t	tm_mday;
-	uint8_t	tm_mon;
-	uint8_t	tm_wday;
-
-} last_displayed_time;
 
 
 /******************************************************************************************************************
@@ -144,14 +127,12 @@ void UI_Task(void *arg){
 	startup_screen();
 
 	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
-	ui_MainScreen_screen_init();
+	UI_MainScreen_Init();
 	ui_WeatherDetailsScrren_screen_init();
 	ui_WifiScreen_screen_init();
 
-	lv_label_set_text(ui_ClockLabel, "--:--");
-	lv_label_set_text(ui_DateLabel, "");
-	lv_label_set_text(ui_WiFiIconLabel, "    ");
-	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
+//	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
+	UI_MainScreen_Load(2000);
 	xSemaphoreGive(LVGL_MutexHandle);
 
 	while(1){
@@ -195,23 +176,16 @@ void UI_ReportEvt(UI_EventType_t Type, void *arg){
 
 void WetaherScreen_BackButtonClicked(lv_event_t * e){
 
-//	ESP_LOGI("", "clicked");
+	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
 }
 
-void MainScreen_WifiButtonClicked(lv_event_t * e){
-
-	UI_ReportEvt(UI_EVT_MAINSCR_WIFI_BTN_CLICKED, 0);
-}
 
 void WifiScreenBackButtonClicked(lv_event_t * e){
 
 	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
 }
 
-void MainScreen_WeatherIconClicked(lv_event_t * e){
 
-	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
-}
 
 /**************************************************************
  *
@@ -255,7 +229,7 @@ static void startup_screen(void){
 static void ui_event_wifi_disconnected(void *arg){
 
 	// set wifi icon in top left corner of main screen
-	set_wifi_label(wifi_icon, ICON_NO_WIFI);
+	UI_MainScreen_SetTopIcon(wifi_icon, ICON_NO_WIFI);
 
 	// clear information about connected AP
 	set_ap_details(0);
@@ -266,7 +240,7 @@ static void ui_event_wifi_connected(void *arg){
 	UI_DetailedAPData_t *data = (UI_DetailedAPData_t *)arg;
 
 	// set wifi icon in top left corner of main screen
-	set_wifi_label(wifi_icon, ICON_WIFI);
+	UI_MainScreen_SetTopIcon(wifi_icon, ICON_WIFI);
 
 	// if wifi screen is actual create popup
 	if(ui_WifiScreen == lv_scr_act()){
@@ -356,62 +330,22 @@ static void ui_event_wifilist_clear(void *arg){
 
 static void ui_event_time_changed(void *arg){
 
+	if(0 == arg) return;
+
 	struct tm *changed_time = (struct tm *)arg;
-	uint8_t set_time = 0, set_date = 0;
 
-	// check for differences
-	if(last_displayed_time.tm_min != changed_time->tm_min){
-
-		set_time = 1;
-		last_displayed_time.tm_min = changed_time->tm_min;
-	}
-
-	if(last_displayed_time.tm_hour != changed_time->tm_hour){
-
-		set_time = 1;
-		last_displayed_time.tm_hour = changed_time->tm_hour;
-	}
-
-	if(last_displayed_time.tm_wday != changed_time->tm_wday){
-
-		set_date = 1;
-		last_displayed_time.tm_wday = changed_time->tm_wday;
-	}
-
-	if(last_displayed_time.tm_mday != changed_time->tm_mday){
-
-		set_date = 1;
-		last_displayed_time.tm_mday = changed_time->tm_mday;
-	}
-
-	if(last_displayed_time.tm_mon != changed_time->tm_mon){
-
-		set_date = 1;
-		last_displayed_time.tm_mon = changed_time->tm_mon;
-	}
-
-	// set required values to lvgl labels
-	if(1 == set_time){
-
-		lv_label_set_text_fmt(ui_ClockLabel, "%02d:%02d", last_displayed_time.tm_hour, last_displayed_time.tm_min);
-	}
-
-	if(1 == set_date){
-
-		lv_label_set_text_fmt(ui_DateLabel, "%s, %02d %s", Eng_DayName[last_displayed_time.tm_wday], last_displayed_time.tm_mday,
-				Eng_MonthName_3char[last_displayed_time.tm_mon]);
-	}
+	UI_MainScreen_UpdateTimeAndDate(changed_time);
 }
 
 static void ui_event_clock_not_sync(void *arg){
 
-	set_wifi_label(sync_icon, ICON_NO_SYNC);
+	UI_MainScreen_SetTopIcon(sync_icon, ICON_NO_SYNC);
 }
 
 
 static void ui_event_clock_sync(void *arg){
 
-	set_wifi_label(sync_icon, ICON_SYNC);
+	UI_MainScreen_SetTopIcon(sync_icon, ICON_SYNC);
 
 }
 
@@ -422,8 +356,8 @@ static void ui_event_basic_weather_update(void *arg){
 
 	UI_BasicWeatherValues_t *data = (UI_BasicWeatherValues_t *)arg;
 
-	basic_weather_update_icon(data->icon_path);
-	basic_weather_update_values(data->temp, data->press, data->hum);
+	UI_MainScreen_UpdateWeatherIcon(data->icon_path);
+	UI_MainScreen_UpdateWeatherData(data->temp, data->press, data->hum);
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -464,7 +398,7 @@ static void ui_event_main_scr_wifi_btn_clicked(void *arg){
 
 static void ui_event_wifi_scr_back_btn_clicked(void *arg){
 
-	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_RIGHT, 300, 0, false);
+	UI_MainScreen_Load(0);
 }
 
 
@@ -472,20 +406,6 @@ static void ui_event_wifi_scr_back_btn_clicked(void *arg){
 /*****************************
  * detailed functions
  * ***************************/
-
-/* function sets weather basic data on the main screen */
-static void basic_weather_update_icon(char *icon_path){
-
-	if(0 == icon_path) return;
-
-	set_weather_icon(icon_path, ui_WeatherImage);
-}
-
-static void basic_weather_update_values(int temp, int press, int hum){
-
-	lv_label_set_text_fmt(ui_WeatherLabel, "%d°C\n%dhPa\n%d%%", temp, press, hum);
-
-}
 
 static void detailed_weather_update_city_name(char *city_name){
 
@@ -603,42 +523,6 @@ static void detailed_weather_update_precip_percent_snow(int precip, int percent)
 /*****************************
  * helpers
  * ***************************/
-
-
-/* set icon within area of ui_WiFiIconLabel
- *
- * format of ui_WiFiIconLabel is char-space-space-char-null, each one charactes is a single icon,
- * correct string should contain 4 characters and null character at the end
- * par. icon_type is an enum that sets correct position for different icons (0 or 3)
- * par. icon is a character that represents an icon within font
- * */
-static void set_wifi_label(uint8_t icon_type, char icon){
-
-	size_t len = 0;
-	char buff[5] = {0};
-	char *text = lv_label_get_text(ui_WiFiIconLabel);
-	if(0 != text){
-
-		len = strnlen(text, 5);
-		if(4 == len){
-
-			// if correct format "%c  %c\0"
-			if(text[icon_type] == icon) return;
-			else{
-
-				// set correct icon to correct position
-				text[icon_type] = icon;
-				lv_label_set_text(ui_WiFiIconLabel, text);
-			}
-		}
-		else{
-
-			sprintf(buff, "    ");
-			buff[icon_type] = icon;
-			lv_label_set_text(ui_WiFiIconLabel, buff);
-		}
-	}
-}
 
 
 /* prepare correct file path to set image from sd card */

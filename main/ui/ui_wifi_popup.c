@@ -1,8 +1,9 @@
-#include "lvgl.h"
+#include "ui_wifi_popup.h"
+#include "ui_styles.h"
 #include "ui.h"
 #include "ui_task.h"
 #include "wifi.h"
-#include "ui_styles.h"
+#include "lvgl.h"
 #include "esp_log.h"
 
 /**************************************************************

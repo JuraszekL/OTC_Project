@@ -1,10 +1,6 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
-#include "ui_wifi_list.h"
-#include "ui_wifi_popup.h"
-#include "lvgl.h"
-
 /**************************************************************
  * Font icon characters
  ***************************************************************/
