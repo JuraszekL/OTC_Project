@@ -3,6 +3,7 @@
 #include "ui_task.h"
 #include "wifi.h"
 #include "ui_styles.h"
+#include "esp_log.h"
 
 /**************************************************************
  *
@@ -30,10 +31,11 @@ static void wifi_popup_create_line(uint8_t line_type);
 static void wifi_popup_create_spinner(void);
 static void wifi_popup_create_password_text_area(void);
 static void wifi_popup_create_checkboxes(void);
-static void wifi_popup_create_buttons(void);
+static void wifi_popup_create_buttons(void *arg);
 static void wifi_popup_create_keyboard(void);
 
 static void wifi_popup_show_hide_keyboard(uint8_t show_hide);
+static void wifi_popup_connect(void *arg);
 
 static void set_line_opa(void *obj, int32_t val);
 static void set_y(void *obj, int32_t val);
@@ -157,7 +159,7 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 
 	wifi_popup_create_checkboxes();
 
-	wifi_popup_create_buttons();
+	wifi_popup_create_buttons(creds);
 
 	wifi_popup_create_keyboard();
 }
@@ -200,6 +202,26 @@ static void wifi_popup_event_handler(lv_event_t * e){
     // back button at wifi popup panel has been clicked
     else if((obj == back_button) && (LV_EVENT_PRESSED == code)){
 
+    	// free resources
+    	WifiCreds_t *creds = lv_event_get_user_data(e);
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
+
+		// delete popup
+    	lv_obj_del_async(top_background);
+    }
+
+    // ok button at wifi popup panel has been clicked
+    else if((obj == ok_button) && (LV_EVENT_PRESSED == code)){
+
+    	wifi_popup_connect(lv_event_get_user_data(e));
     	lv_obj_del_async(top_background);
     }
 }
@@ -309,14 +331,14 @@ static void wifi_popup_create_checkboxes(void){
 }
 
 /* create back and connect buttons */
-static void wifi_popup_create_buttons(void){
+static void wifi_popup_create_buttons(void *arg){
 
 	lv_obj_t *but_label;
 
 	back_button = lv_btn_create(panel);
 	lv_obj_add_style(back_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_align(back_button, LV_ALIGN_BOTTOM_LEFT);
-	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
 
 	but_label = lv_label_create(back_button);
 	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -325,13 +347,14 @@ static void wifi_popup_create_buttons(void){
 	ok_button = lv_btn_create(panel);
 	lv_obj_add_style(ok_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_align(ok_button, LV_ALIGN_BOTTOM_RIGHT);
-	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
 
 	but_label = lv_label_create(ok_button);
 	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_label_set_text_fmt(but_label, "%c", ICON_RIGHT_ARROW);
 }
 
+/* create keyboard outside the screen */
 static void wifi_popup_create_keyboard(void){
 
 	/*Create a keyboard*/
@@ -360,6 +383,7 @@ static void wifi_popup_create_keyboard(void){
 	lv_obj_set_style_text_color(keyboard, lv_color_hex(0xF2921D), LV_PART_ITEMS | LV_STATE_CHECKED);
 }
 
+/* show or hide keyboard on screen */
 static void wifi_popup_show_hide_keyboard(uint8_t show_hide){
 
 	lv_anim_t popup_move, kb_move;
@@ -400,6 +424,51 @@ static void wifi_popup_show_hide_keyboard(uint8_t show_hide){
 	// start both
 	lv_anim_start(&popup_move);
 	lv_anim_start(&kb_move);
+}
+
+/* function called when user clicked "next" button after entering the wifi password */
+static void wifi_popup_connect(void *arg){
+
+	if(0 == arg) return;
+
+	int a;
+	const char *pass = 0;
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
+
+	// get the password entered by user
+	pass = lv_textarea_get_text(password_text);
+	if(0 == pass) goto error;
+
+	// copy password to output data
+	a = strnlen(pass, 64);
+	if((0 == a) || (64 == a)) goto error;
+	creds->pass = malloc(a + 1);
+	if(0 == creds->pass) goto error;
+	memcpy(creds->pass, pass, a + 1);
+
+	// set if user requested to save the password
+	if(LV_STATE_CHECKED == lv_obj_get_state(save_checkbox)){
+
+		creds->save = true;
+	}
+	else{
+
+		creds->save = false;
+	}
+
+	Wifi_Connect(creds);
+	return;
+
+	error:
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
 }
 /**************************************************************
  * Animation helpers

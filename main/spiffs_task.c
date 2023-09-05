@@ -18,7 +18,7 @@
 #include "wifi.h"
 #include "spiffs_task.h"
 
-//#define FORMAT_SPIFFS
+#define FORMAT_SPIFFS
 //#define ZJEB_DANE
 
 /**************************************************************
@@ -47,7 +47,7 @@ typedef enum {
 
 	spiffs_check_wifi_pass_file = 0,
 	spiffs_get_pass,
-	spiffs_add_record,
+	spiffs_save_pass,
 
 } spiffs_routine_t;
 
@@ -60,14 +60,14 @@ struct spiffs_queue_data {
 
 };
 
-typedef struct {
-
-	char *ssid;
-	char *iv;
-	char *pass;
-	int org_len;
-
-} spiffs_wifi_record_t;
+//typedef struct {
+//
+//	char *ssid;
+//	char *iv;
+//	char *pass;
+//	int org_len;
+//
+//} spiffs_wifi_record_t;
 
 /**************************************************************
  *
@@ -79,18 +79,13 @@ static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool import
 
 static void spiffs_check_wifi_pass_file_routine(void *arg);
 static void spiffs_get_pass_routine(void *arg);
-static void spiffs_add_record_routine(void *arg);
+static void spiffs_save_pass_routine(void *arg);
 
 static int spiffs_restore_wifi_pass_backup_file(void);
-//static void spiffs_add_wifi_record(spiffs_wifi_record_t *data);
 static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **file_buff, cJSON **json);
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff);
-static int json_add_wifi_record(cJSON **json, spiffs_wifi_record_t *data, char **output_string);
+static int json_add_wifi_record(cJSON **json, WifiCreds_t *data, char **output_string);
 static int json_get_wifi_pass(cJSON *json, char **pass);
-
-//const static char string_to_encrypt[] = "string do zaszyfrowania";
-//
-//static unsigned char input[128], output[128];
 
 /**************************************************************
  *
@@ -104,7 +99,7 @@ const static spiffs_routine spiffs_routines_tab[] = {
 
 		[spiffs_check_wifi_pass_file] = spiffs_check_wifi_pass_file_routine,
 		[spiffs_get_pass] = spiffs_get_pass_routine,
-		[spiffs_add_record] = spiffs_add_record_routine,
+		[spiffs_save_pass] = spiffs_save_pass_routine,
 };
 
 /******************************************************************************************************************
@@ -114,7 +109,6 @@ const static spiffs_routine spiffs_routines_tab[] = {
  ******************************************************************************************************************/
 void SPIFFS_Task(void *arg){
 
-	spiffs_wifi_record_t *a, *b;
 	BaseType_t ret;
 	struct spiffs_queue_data data;
 
@@ -132,26 +126,6 @@ void SPIFFS_Task(void *arg){
 
 	vTaskDelay(pdMS_TO_TICKS(1000));
 	spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, false);
-
-	a = malloc(sizeof(spiffs_wifi_record_t));
-	if(a){
-
-		a->ssid = "ABCD";
-		a->iv = "vdfbdbfdsf";
-		a->pass = "dziupla12";
-		a->org_len = 35;
-	}
-	spiffs_routine_request(spiffs_add_record, a, false);
-
-	b = malloc(sizeof(spiffs_wifi_record_t));
-	if(b){
-
-		b->ssid = "HOMENET";
-		b->iv = "dfvslkfnsvlfnslv";
-		b->pass = "sdivbsidjbsvsvbfdfngdgn";
-		b->org_len = 55;
-	}
-	spiffs_routine_request(spiffs_add_record, b, false);
 
 	while(1){
 
@@ -175,6 +149,12 @@ void SPIFFS_GetPass(WifiCreds_t *creds){
 
 	if(0 == creds) return;
 	spiffs_routine_request(spiffs_get_pass, creds, false);
+}
+
+void SPIFFS_SavePass(WifiCreds_t *creds){
+
+	if(0 == creds) return;
+	spiffs_routine_request(spiffs_save_pass, creds, false);
 }
 
 /**************************************************************
@@ -220,7 +200,7 @@ static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool import
 	data.type = type;
 	data.arg = arg;
 
-	// send recieved type and argument to Wifi_Task
+	// send recieved type and argument to SPIFFS_Task
 	if(true == important){
 
 		res = xQueueSendToFront(spiffs_queue_handle, &data, pdMS_TO_TICKS(50));
@@ -307,7 +287,6 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 
 static void spiffs_get_pass_routine(void *arg){
 
-//	char *ssid = (char *)arg;
 	FILE *f = 0;
 	int file_size;
 	char *wifi_pass_json_raw = 0;
@@ -321,19 +300,9 @@ static void spiffs_get_pass_routine(void *arg){
 	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
 			&wifi_pass_json)) goto error;
 
-//	// prepare return data
-//	creds = calloc(1, sizeof(WifiCreds_t));
-//	if(0 == creds) goto error;
-//	a = strnlen(ssid, 33);
-//	if(33 == a) goto error;
-//	creds->ssid = malloc(a + 1);
-//	if(0 == creds->ssid) goto error;
-//	memcpy(creds->ssid, ssid, a + 1);
-
 	if(0 == file_size){
 
 		creds->pass = 0;
-//		UI_ReportEvt(UI_EVT_WIFI_REPORT_PASSWORD, creds);
 		Wifi_ReportPass(creds);
 		fclose(f);
 		return;
@@ -352,7 +321,6 @@ static void spiffs_get_pass_routine(void *arg){
 		creds->pass = 0;
 	}
 
-//	UI_ReportEvt(UI_EVT_WIFI_REPORT_PASSWORD, creds);
 	Wifi_ReportPass(creds);
 
 	cJSON_Delete(wifi_pass_json);
@@ -379,11 +347,9 @@ static void spiffs_get_pass_routine(void *arg){
 }
 
 
-static void spiffs_add_record_routine(void *arg){
+static void spiffs_save_pass_routine(void *arg){
 
-	if(0 == arg) return;
-
-	spiffs_wifi_record_t *data = (spiffs_wifi_record_t *)arg;
+	WifiCreds_t *creds = (WifiCreds_t *)arg;
 	FILE *f = 0;
 	int file_size, a;
 	char *wifi_pass_json_raw = 0;
@@ -416,9 +382,10 @@ static void spiffs_add_record_routine(void *arg){
 
 	fclose(f);
 
-	if(false == cJSON_HasObjectItem(wifi_pass_json, data->ssid)){
+	// if no any password for given ssid was saved before
+	if(false == cJSON_HasObjectItem(wifi_pass_json, creds->ssid)){
 
-		if(0 != json_add_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;
+		if(0 != json_add_wifi_record(&wifi_pass_json, creds, &wifi_pass_json_raw)) goto error;
 	//	if(0 != json_add_crypted_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;	//TODO
 
 		// get lenght of the string
@@ -437,7 +404,9 @@ static void spiffs_add_record_routine(void *arg){
 
 	// cleanup
 	cJSON_Delete(wifi_pass_json);
-	free(data);
+	free(creds->ssid);
+	free(creds->pass);
+	free(creds);
 	return;
 
 	error:
@@ -446,8 +415,14 @@ static void spiffs_add_record_routine(void *arg){
 			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
 		}
 		if(f) fclose(f);
-		if(data){
-			if(heap_caps_get_allocated_size(data)) free(data);
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
 		}
 		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
@@ -571,29 +546,30 @@ static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *f
 }
 
 /* add new wifi record to obtained json + return as string */
-static int json_add_wifi_record(cJSON **json, spiffs_wifi_record_t *data, char **output_string){
+static int json_add_wifi_record(cJSON **json, WifiCreds_t *data, char **output_string){
 
-	cJSON *ssid = 0, *iv = 0, *pass = 0, *org_len = 0;
+//	cJSON *ssid = 0, *iv = 0, *pass = 0, *org_len = 0;
+	cJSON *ssid = 0, *pass = 0;
 
 	// create new object with ssid as name
 	ssid = cJSON_CreateObject();
 	if(0 == ssid) return -1;
 	cJSON_AddItemToObject(*json, data->ssid, ssid);
 
-	// add input vector as string to the object
-	iv = cJSON_CreateString(data->iv);
-	if(0 == iv) return -1;
-	cJSON_AddItemToObject(ssid, JSON_IV_LABEL, iv);
+//	// add input vector as string to the object
+//	iv = cJSON_CreateString(data->iv);
+//	if(0 == iv) return -1;
+//	cJSON_AddItemToObject(ssid, JSON_IV_LABEL, iv);
 
 	// add password as string to the object
 	pass = cJSON_CreateString(data->pass);
 	if(0 == pass) return -1;
 	cJSON_AddItemToObject(ssid, JSON_PASS_LABEL, pass);
 
-	// add pasword length as number to the object
-	org_len = cJSON_CreateNumber(data->org_len);
-	if(0 == org_len) return -1;
-	cJSON_AddItemToObject(ssid, JSON_ORG_LEN_LABEL, org_len);
+//	// add pasword length as number to the object
+//	org_len = cJSON_CreateNumber(data->org_len);
+//	if(0 == org_len) return -1;
+//	cJSON_AddItemToObject(ssid, JSON_ORG_LEN_LABEL, org_len);
 
 	// convert created json to string
 	*output_string = cJSON_PrintUnformatted(*json);

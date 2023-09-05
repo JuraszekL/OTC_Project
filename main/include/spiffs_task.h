@@ -4,5 +4,6 @@
 
 void SPIFFS_Task(void *arg);
 void SPIFFS_GetPass(WifiCreds_t *creds);
+void SPIFFS_SavePass(WifiCreds_t *creds);
 
 #endif /* MAIN_INCLUDE_SPIFFS_TASK_H_ */

@@ -14,7 +14,7 @@
  ***************************************************************/
 #define VERSION_MAJOR		"0"
 #define VERSION_MINOR		"0"
-#define VERSION_PATCH		"5"
+#define VERSION_PATCH		"6"
 
 /**************************************************************
  * Bits for aplication startup synchro
@@ -45,6 +45,7 @@ typedef struct {
 
 	char *ssid;
 	char *pass;
+	bool save;
 
 } WifiCreds_t;
 

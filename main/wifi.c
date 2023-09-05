@@ -24,9 +24,10 @@
 #define WIFI_AUTOCONNECT_ENABLE_BIT			(1U << 2)
 #define WIFI_SCAN_IN_PROGRESS_BIT			(1U << 3)
 #define WIFI_CONNECTION_IN_PROGRESS_BIT		(1U << 4)
+#define WIFI_SAVE_PASSWORD_BIT				(1U << 5)
 
 /* other definitions */
-#define WIFI_RECONNECT_ATTEMPTS				5
+#define WIFI_RECONNECT_ATTEMPTS				2
 
 /**************************************************************
  *
@@ -165,12 +166,19 @@ void Wifi_Connect(WifiCreds_t *creds){
 
 	if((0 == creds) || (0 == creds->ssid)) return;
 
+	EventBits_t bits = xEventGroupGetBits(WifiEvents);
+
+	// return if already trying to connect
+	if(bits & WIFI_CONNECTION_IN_PROGRESS_BIT) return;;
+
 	if(0 == creds->pass){
 
+		ESP_LOGI("wifi.c", "no password in creds, get pass from SPIFFS");
 		SPIFFS_GetPass(creds);
 	}
 	else{
 
+		ESP_LOGI("wifi.c", "password: %s, connecting", creds->pass);
 		wifi_routine_request(wifi_connect, creds);
 	}
 }
@@ -360,6 +368,7 @@ static void wifi_disconnected_routine(void *arg){
 			vSemaphoreDelete(wifi_reconnect_semaphore_handle);
 			wifi_reconnect_semaphore_handle = 0;
 			xEventGroupClearBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
+			xEventGroupClearBits(WifiEvents, WIFI_SAVE_PASSWORD_BIT);
 			UI_ReportEvt(UI_EVT_WIFI_CONNECT_ERROR, NULL);
 		}
 	}
@@ -381,8 +390,11 @@ static void wifi_sta_got_ip_routine(void *arg){
 	esp_err_t e;
 	int a;
 	wifi_ap_record_t ap_data = {0};
+	wifi_config_t wifi_config = {0};
 	esp_netif_ip_info_t netif_data = {0};
 	UI_DetailedAPData_t *ui_data = 0;
+	WifiCreds_t *creds = 0;
+	EventBits_t bits = xEventGroupGetBits(WifiEvents);
 
 	// set status bits and clear the rest of reconnecting variables
 	xEventGroupClearBits(WifiEvents, WIFI_DISCONNECTED_BIT);
@@ -425,9 +437,45 @@ static void wifi_sta_got_ip_routine(void *arg){
 
 	// send data to UI
 	UI_ReportEvt(UI_EVT_WIFI_CONNECTED, ui_data);
+
+	if(bits & WIFI_SAVE_PASSWORD_BIT){
+
+		// get config of connected AP
+		e = esp_wifi_get_config(WIFI_IF_STA, &wifi_config);
+		if(ESP_OK != e) goto error;
+
+    	// prepare data to save
+    	creds = calloc(1, sizeof(WifiCreds_t));
+    	if(0 == creds) goto error;
+
+    	a = strnlen((char *)wifi_config.sta.ssid, 32);
+    	if((0 == a) || (32 == a)) goto error;
+    	creds->ssid = malloc(a + 1);
+    	if(0 == creds->ssid) goto error;
+    	memcpy(creds->ssid, (char *)ap_data.ssid, a + 1);
+
+    	a = strnlen((char *)wifi_config.sta.password, 64);
+    	if((0 == a) || (64 == a)) goto error;
+    	creds->pass = malloc(a + 1);
+    	if(0 == creds->pass) goto error;
+    	memcpy(creds->pass, (char *)wifi_config.sta.password, a + 1);
+
+    	// save password for current network
+    	SPIFFS_SavePass(creds);
+		xEventGroupClearBits(WifiEvents, WIFI_SAVE_PASSWORD_BIT);
+	}
 	return;
 
 	error:
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
 		if(ui_data){
 
 			if(ui_data->ssid){
@@ -435,7 +483,6 @@ static void wifi_sta_got_ip_routine(void *arg){
 			}
 			if(heap_caps_get_allocated_size(ui_data)) free(ui_data);
 		}
-
 		UI_ReportEvt(UI_EVT_WIFI_CONNECTED, NULL);
 }
 
@@ -475,6 +522,11 @@ static void wifi_connect_routine(void *arg){
 	// set stataus bits
 	UI_ReportEvt(UI_EVT_WIFI_CONNECTING, arg);
 	xEventGroupSetBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
+	if(true == creds->save){
+
+		// set this bit if user requested to save password (UI)
+		xEventGroupSetBits(WifiEvents, WIFI_SAVE_PASSWORD_BIT);
+	}
 	return;
 
 	cleanup:

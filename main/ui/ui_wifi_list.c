@@ -181,6 +181,7 @@ static void wifi_list_event_handler(lv_event_t * e){
     	if(0 == creds->ssid) goto error;
     	memcpy(creds->ssid, ssid, a + 1);
 
+    	ESP_LOGI("ui_wifi_list.c", "calling Wifi_Connect");
     	Wifi_Connect(creds);
     }
 
