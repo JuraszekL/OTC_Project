@@ -82,31 +82,6 @@ typedef struct {
 
 } UI_DetailedWeatherValues_t;
 
-/**************************************************************
- * Data with basic info of found AP
- ***************************************************************/
-typedef struct {
-
-	bool is_protected;
-	char *ssid;
-	int rssi;
-
-} UI_BasicAPData_t;
-
-/**************************************************************
- * Data with detailed info of connected AP
- ***************************************************************/
-typedef struct {
-
-	char *ssid;
-	uint8_t mac[6];
-	char ip[16];
-	int rssi;
-	int mode;
-
-} UI_DetailedAPData_t;
-
-
 
 /**************************************************************
  * Public functions

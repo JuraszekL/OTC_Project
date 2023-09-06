@@ -75,12 +75,18 @@ void UI_WifiPopup_Connecting(char *ssid){
 		lv_obj_del(wifi_popup_line);
 	}
 
-	// prepare text
-	sprintf(buff, "Connecting to:\n%s", ssid);
-    lv_label_set_text(top_text, buff);
+	if(0 != ssid){
+
+		// prepare text
+		sprintf(buff, "Connecting to:\n%s", ssid);
+	    lv_label_set_text(top_text, buff);
+	}
+	else{
+
+		lv_label_set_text(top_text, "Connecting...");
+	}
 
     wifi_popup_create_spinner();
-
 }
 
 void UI_WifiPopup_Connected(char *ssid){

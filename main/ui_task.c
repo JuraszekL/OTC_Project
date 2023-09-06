@@ -15,9 +15,10 @@
 #include "display.h"
 #include "online_requests.h"
 #include "ui_wifi_list.h"
-#include "ui_wifi_popup.h"
+//#include "ui_wifi_popup.h"
 #include "ui_styles.h"
 #include "ui_main_screen.h"
+#include "ui_wifi_screen.h"
 #include "ui_task.h"
 
 /**************************************************************
@@ -73,7 +74,7 @@ static void detailed_weather_update_avg_max_wind(int avg, int max);
 static void detailed_weather_update_precip_percent_snow(int precip, int percent);
 
 static void set_weather_icon(char *path, lv_obj_t * obj);
-static void set_ap_details(UI_DetailedAPData_t *data);
+//static void set_ap_details(UI_DetailedAPData_t *data);
 
 /**************************************************************
  *
@@ -98,8 +99,6 @@ const ui_event event_tab[] = {
 		[UI_EVT_MAINSCR_WIFI_BTN_CLICKED] = ui_event_main_scr_wifi_btn_clicked,
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 };
-
-extern const char *Authentication_Modes[];
 
 static QueueHandle_t ui_queue_handle;
 
@@ -129,9 +128,8 @@ void UI_Task(void *arg){
 	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 	UI_MainScreen_Init();
 	ui_WeatherDetailsScrren_screen_init();
-	ui_WifiScreen_screen_init();
+	UI_WifiScreen_Init();
 
-//	lv_scr_load_anim(ui_MainScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 150, 2000, true);
 	UI_MainScreen_Load(2000);
 	xSemaphoreGive(LVGL_MutexHandle);
 
@@ -180,13 +178,6 @@ void WetaherScreen_BackButtonClicked(lv_event_t * e){
 }
 
 
-void WifiScreenBackButtonClicked(lv_event_t * e){
-
-	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
-}
-
-
-
 /**************************************************************
  *
  * Private function definitions
@@ -232,7 +223,7 @@ static void ui_event_wifi_disconnected(void *arg){
 	UI_MainScreen_SetTopIcon(wifi_icon, ICON_NO_WIFI);
 
 	// clear information about connected AP
-	set_ap_details(0);
+	UI_WifiScreen_SetApDetails(0);
 }
 
 static void ui_event_wifi_connected(void *arg){
@@ -242,58 +233,50 @@ static void ui_event_wifi_connected(void *arg){
 	// set wifi icon in top left corner of main screen
 	UI_MainScreen_SetTopIcon(wifi_icon, ICON_WIFI);
 
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
+	// create popup with information that wifi is connected
+	UI_WifiScreen_Connected(data);
 
-		if(0 != data){
+	// set information about connected AP on wifi screen
+	UI_WifiScreen_SetApDetails(data);
 
-			UI_WifiPopup_Connected(data->ssid);
+	// free resources
+	if(data){
+
+		if(data->ssid){
+
+			if(heap_caps_get_allocated_size(data->ssid)) free(data->ssid);
 		}
-		else{
-
-			UI_WifiPopup_Connected(0);
-		}
+		if(heap_caps_get_allocated_size(data)) free(data);
 	}
-
-	// set information about connected AP
-	set_ap_details(data);
 }
 
 static void ui_event_wifi_connecting(void *arg){
 
-	if(0 == arg) return;
-
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
-	// set animation to main screen wifi symbol
+	//TODO set animation to main screen wifi symbol
 
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_Connecting(creds->ssid);
-	}
+	// create popup with information that wifi is trying to conenct
+	UI_WifiScreen_Connecting(creds);
 
 	// free resources
-	if(creds->ssid){
-		if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
-	}
-	if(creds->pass){
-		if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
-	}
 	if(creds){
+
+		if(creds->ssid){
+			if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+		}
+		if(creds->pass){
+			if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+		}
 		if(heap_caps_get_allocated_size(creds)) free(creds);
 	}
 }
 
 static void ui_event_wifi_connect_error(void *arg){
 
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
+	UI_WifiScreen_ConnectError();
 
-		UI_WifiPopup_NotConnected();
-	}
-
-	// delete animation of wifi icon
+	//TODO delete animation of wifi icon
 }
 
 static void ui_event_wifi_get_pass(void *arg){
@@ -302,11 +285,7 @@ static void ui_event_wifi_get_pass(void *arg){
 
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_GetPass(creds);
-	}
+	UI_WifiScreen_GetPass(creds);
 }
 
 // add single element to list of found wifi networks
@@ -316,7 +295,7 @@ static void ui_event_wifilist_add(void *arg){
 
 	UI_BasicAPData_t *data = (UI_BasicAPData_t *)arg;
 
-	UI_WifiListAdd(data->is_protected, data->ssid, data->rssi);
+	UI_WifiScreen_AddToList(data);
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -325,7 +304,7 @@ static void ui_event_wifilist_add(void *arg){
 
 static void ui_event_wifilist_clear(void *arg){
 
-	UI_WifiListClear();
+	UI_WifiScreen_ClearList();
 }
 
 static void ui_event_time_changed(void *arg){
@@ -389,10 +368,7 @@ static void ui_event_detailed_weather_update(void *arg){
 
 static void ui_event_main_scr_wifi_btn_clicked(void *arg){
 
-	if(false == lv_obj_is_valid(ui_WifiScreen)) ui_WifiScreen_screen_init();
-	//add style to inactive state
-	UI_WifiListInit();
-	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+	UI_WifiScreen_Load(0);
 	WIFI_StartScan();
 }
 
@@ -554,31 +530,4 @@ static void set_weather_icon(char *path, lv_obj_t * obj){
 		}
 }
 
-/* set/clear details about connected AP on WifiScreen */
-static void set_ap_details(UI_DetailedAPData_t *data){
 
-	const char *mode_str = 0;
-
-	if(0 != data){
-
-		// get pointer to authentication mode string
-		mode_str = Authentication_Modes[data->mode];
-
-		lv_arc_set_value(ui_WifiScreenRSSIArc, data->rssi);
-		lv_label_set_text_fmt(ui_WifiScreenRSSIValueLabel, "%d", data->rssi);
-		lv_label_set_text(ui_WifiScreenSSIDLabel, data->ssid);
-		lv_label_set_text_fmt(ui_WifiScreenWifiDetails, "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
-				"IPv4: %s\n%s", data->mac[0], data->mac[1], data->mac[2], data->mac[3], data->mac[4],
-				data->mac[5], (char *)data->ip, mode_str);
-
-		free(data->ssid);
-		free(data);
-	}
-	else{
-
-		lv_arc_set_value(ui_WifiScreenRSSIArc, -120);
-		lv_label_set_text(ui_WifiScreenRSSIValueLabel, "---");
-		lv_label_set_text(ui_WifiScreenSSIDLabel, "");
-		lv_label_set_text(ui_WifiScreenWifiDetails, "");
-	}
-}

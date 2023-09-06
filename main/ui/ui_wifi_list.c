@@ -40,7 +40,7 @@ static struct list_objects *wifi_list_objects;
  ***************************************************************/
 
 /* initialize wifi list component */
-void UI_WifiListInit(void){
+void UI_WifiListInit(lv_obj_t *screen){
 
 	if(true == lv_obj_is_valid(wifi_list)) return;	//skip if already initialized
 
@@ -52,7 +52,7 @@ void UI_WifiListInit(void){
 	lv_style_set_text_color(&style_list, lv_color_hex(0xF2921D));
 
 	// init list
-	wifi_list = lv_list_create(ui_WifiScreen);
+	wifi_list = lv_list_create(screen);
     lv_obj_set_size(wifi_list, 320, 250);
     lv_obj_align(wifi_list, LV_ALIGN_TOP_MID, 0, 145);
 

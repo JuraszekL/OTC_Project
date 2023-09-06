@@ -1,7 +1,8 @@
 # See the build system documentation in IDF programming guide
 # for more information about component CMakeLists.txt files.
 file(GLOB_RECURSE UI_SOURCES ui/*.c)
-file(GLOB_RECURSE UI_WIFI_COMPONENTS ui/ui_wifi_list.c ui/ui_wifi_popup.c ui/ui_styles.c ui/ui_main_screen.c)
+file(GLOB_RECURSE UI_WIFI_COMPONENTS ui/ui_wifi_list.c ui/ui_wifi_popup.c ui/ui_styles.c ui/ui_main_screen.c
+	ui/ui_wifi_screen.c)
 
 idf_component_register(
     SRCS "main.c" "display.c" "touchpad.c" "animations.c" "ui_task.c" "wifi.c"

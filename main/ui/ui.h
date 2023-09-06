@@ -44,18 +44,7 @@ extern lv_obj_t * ui_WeatherScreenSunriseLabel;
 extern lv_obj_t * ui_WeatherScreenRainLabel;
 extern lv_obj_t * ui_WeatherScreenWindLabel;
 extern lv_obj_t * ui_WeatherScreenSnowLabel;
-// SCREEN: ui_WifiScreen
-void ui_WifiScreen_screen_init(void);
-extern lv_obj_t * ui_WifiScreen;
-void ui_event_WifiScreenBackButton(lv_event_t * e);
-extern lv_obj_t * ui_WifiScreenBackButton;
-extern lv_obj_t * ui_BackArrowIconLabel2;
-extern lv_obj_t * ui_WifiScreenRSSIArc;
-extern lv_obj_t * ui_WifiScreenRSSIValueLabel;
-extern lv_obj_t * ui_WifiScreenRSSIdBmLabel;
-extern lv_obj_t * ui_WifiScreenSSIDLabel;
-extern lv_obj_t * ui_WifiScreenWifiDetails;
-extern lv_obj_t * ui_WhiteLineTop1;
+
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
