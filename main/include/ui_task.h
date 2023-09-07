@@ -12,6 +12,10 @@
 #define ICON_LEFT_ARROW		'F'
 #define ICON_RIGHT_ARROW	'G'
 #define ICON_DOWN_ARROW		'H'
+#define ICON_SUNRISE		'I'
+#define ICON_RAIN			'J'
+#define ICON_WIND			'K'
+#define ICON_SNOW			'L'
 #define ICON_PADLOCK		'M'
 #define ICON_SIGNAL_FULL	'N'
 #define ICON_SIGNAL_GOOD	'O'
@@ -38,6 +42,7 @@ typedef enum {
 	UI_EVT_DETAILED_WEATHER_UPDATE,
 	UI_EVT_MAINSCR_WIFI_BTN_CLICKED,
 	UI_EVT_WIFISCR_BACK_BTN_CLICKED,
+	UI_EVT_WEATHERSCR_BACK_BTN_CLICKED,
 
 } UI_EventType_t;
 

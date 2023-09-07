@@ -8,18 +8,19 @@
 
 #include "lvgl.h"
 #include "ui.h"
+#include "ui_styles.h"
+#include "ui_main_screen.h"
+#include "ui_wifi_screen.h"
+#include "ui_weather_screen.h"
+#include "ui_task.h"
 
 #include "main.h"
 #include "animations.h"
 #include "wifi.h"
 #include "display.h"
 #include "online_requests.h"
-#include "ui_wifi_list.h"
-//#include "ui_wifi_popup.h"
-#include "ui_styles.h"
-#include "ui_main_screen.h"
-#include "ui_wifi_screen.h"
-#include "ui_task.h"
+
+
 
 /**************************************************************
  *
@@ -62,19 +63,7 @@ static void ui_event_basic_weather_update(void *arg);
 static void ui_event_detailed_weather_update(void *arg);
 static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
-
-static void detailed_weather_update_city_name(char *city_name);
-static void detailed_weather_update_country_name(char *country_name);
-static void detailed_weather_update_weather_icon(char *icon_path);
-static void detailed_weather_update_avg_temp(int avg_temp);
-static void detailed_weather_update_min_max_temp(int min_temp, int max_temp);
-static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time);
-static void detailed_weather_update_precip_percent_rain(int precip, int percent);
-static void detailed_weather_update_avg_max_wind(int avg, int max);
-static void detailed_weather_update_precip_percent_snow(int precip, int percent);
-
-static void set_weather_icon(char *path, lv_obj_t * obj);
-//static void set_ap_details(UI_DetailedAPData_t *data);
+static void ui_event_weather_scr_back_btn_clicked(void *arg);
 
 /**************************************************************
  *
@@ -98,6 +87,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_DETAILED_WEATHER_UPDATE] = ui_event_detailed_weather_update,
 		[UI_EVT_MAINSCR_WIFI_BTN_CLICKED] = ui_event_main_scr_wifi_btn_clicked,
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
+		[UI_EVT_WEATHERSCR_BACK_BTN_CLICKED] =  ui_event_weather_scr_back_btn_clicked,
 };
 
 static QueueHandle_t ui_queue_handle;
@@ -127,7 +117,8 @@ void UI_Task(void *arg){
 
 	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 	UI_MainScreen_Init();
-	ui_WeatherDetailsScrren_screen_init();
+//	ui_WeatherDetailsScrren_screen_init();
+	UI_WeatherScrren_Init();
 	UI_WifiScreen_Init();
 
 	UI_MainScreen_Load(2000);
@@ -169,12 +160,6 @@ void UI_ReportEvt(UI_EventType_t Type, void *arg){
 			if(heap_caps_get_allocated_size(arg)) free(arg);
 		}
 	}
-}
-
-
-void WetaherScreen_BackButtonClicked(lv_event_t * e){
-
-	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
 }
 
 
@@ -349,17 +334,17 @@ static void ui_event_detailed_weather_update(void *arg){
 
 	UI_DetailedWeatherValues_t *data = (UI_DetailedWeatherValues_t *)arg;
 
-	detailed_weather_update_city_name(data->city_name);
-	detailed_weather_update_country_name(data->country_name);
-	detailed_weather_update_weather_icon(data->icon_path);
-	detailed_weather_update_avg_temp(data->average_temp);
-	detailed_weather_update_min_max_temp(data->min_temp, data->max_temp);
-	detailed_weather_update_sunrise_sunset_time(data->sunrise_time, data->sunset_time);
-	detailed_weather_update_precip_percent_rain(data->recip_rain, data->percent_rain);
-	detailed_weather_update_avg_max_wind(data->wind_avg, data->wind_max);
-	detailed_weather_update_precip_percent_snow(data->recip_snow, data->percent_snow);
+	UI_WeatherScreen_UpdateCityName(data->city_name);
+	UI_WeatherScreen_UpdateCountryName(data->country_name);
+	UI_WeatherScreen_UpdateWeatherIcon(data->icon_path);
+	UI_WeatherScreen_UpdateAvgTemp(data->average_temp);
+	UI_WeatherScreen_UpdateMinMaxTemp(data->min_temp, data->max_temp);
+	UI_WeatherScreen_UpdateSunriseSunsetTime(data->sunrise_time, data->sunset_time);
+	UI_WeatherScreen_UpdatePrecipPercentRain(data->recip_rain, data->percent_rain);
+	UI_WeatherScreen_UpdateAvgMaxWind(data->wind_avg, data->wind_max);
+	UI_WeatherScreen_UpdatePrecipPercentSnow(data->recip_snow, data->percent_snow);
 
-	_ui_screen_change(&ui_WeatherDetailsScrren, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, ui_WeatherDetailsScrren_screen_init);
+	UI_WeatherScreen_Load();
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -377,157 +362,8 @@ static void ui_event_wifi_scr_back_btn_clicked(void *arg){
 	UI_MainScreen_Load(0);
 }
 
+static void ui_event_weather_scr_back_btn_clicked(void *arg){
 
-
-/*****************************
- * detailed functions
- * ***************************/
-
-static void detailed_weather_update_city_name(char *city_name){
-
-	if(0 == city_name) return;
-
-	lv_label_set_text(ui_WeatherScreenCity, city_name);
-	if(heap_caps_get_allocated_size(city_name)) free(city_name);
+	UI_MainScreen_Load(0);
 }
-
-static void detailed_weather_update_country_name(char *country_name){
-
-	if(0 == country_name) return;
-
-	lv_label_set_text(ui_WeatherScreenCountry, country_name);
-	if(heap_caps_get_allocated_size(country_name)) free(country_name);
-}
-
-static void detailed_weather_update_weather_icon(char *icon_path){
-
-	if(0 == icon_path) return;
-
-	set_weather_icon(icon_path, ui_WeatherScreenIcon);
-}
-
-static void detailed_weather_update_avg_temp(int avg_temp){
-
-	uint8_t r, g, b, diff;
-
-	if(((int)-50 > avg_temp) || ((int)50 < avg_temp)) return;
-
-	// set temprature value as text and as arc value
-	lv_label_set_text_fmt(ui_WeatherScreenTemp, "%+d°C", avg_temp);
-	lv_arc_set_value(ui_WeatherScreenTempArc, avg_temp);
-
-	// calculate color of ui_WeatherScreenTempArc
-	/* <------------------------------------------------------------------------------------------------>
-	 * -50                                   -10          0          10          25                    50     degC
-	 * 0                                      0                      0 --------> 255                   255    R
-	 * 0 -----------------------------------> 255                    255         255 <---------------- 0      G
-	 * 255                                    255 <----------------- 0           0                     0      B
-	 *
-	 * The lowest values of temperature are pure blue, rising up, color shifts to green, then yellow, orange and
-	 * pure red by highest values
-	 * */
-
-	if((int)-10 >= avg_temp){
-
-		r = 0;
-		b = 255;
-		diff = abs((int)-50 - avg_temp);
-		g = ((unsigned int)(diff * 255))/(unsigned int)40;
-	}
-	else if(((int)-10 < avg_temp) && ((int)10 >= avg_temp)){
-
-		r = 0;
-		g = 255;
-		diff = abs((int)10 - avg_temp);
-		b = ((unsigned int)(diff * 255))/(unsigned int)20;
-	}
-	else if(((int)10 < avg_temp) && ((int)25 >= avg_temp)){
-
-		g = 255;
-		b = 0;
-		diff = abs(avg_temp - (int)10);
-		r = ((unsigned int)(diff * 255))/(unsigned int)15;
-	}
-	else{
-
-		r = 255;
-		b = 0;
-		diff = abs((int)50 - avg_temp);
-		g = ((unsigned int)(diff * 255))/(unsigned int)25;
-	}
-
-	lv_obj_set_style_arc_color(ui_WeatherScreenTempArc, lv_color_make(r, g, b), LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_arc_color(ui_WeatherScreenTempArc, lv_color_make(r, g, b), LV_PART_INDICATOR | LV_STATE_DEFAULT);
-
-}
-
-static void detailed_weather_update_min_max_temp(int min_temp, int max_temp){
-
-	lv_label_set_text_fmt(ui_WeatherScreenTempMinMax, "min/max\n%+d°C / %+d°C", min_temp, max_temp);
-}
-
-static void detailed_weather_update_sunrise_sunset_time(char *sunrise_time, char *sunset_time){
-
-	if((0 == sunrise_time) || (0 == sunset_time)) goto cleanup;
-
-	lv_label_set_text_fmt(ui_WeatherScreenSunriseLabel, "%s\n%s", sunrise_time, sunset_time);
-
-	cleanup:
-		if(sunrise_time){
-			if(heap_caps_get_allocated_size(sunrise_time)) free(sunrise_time);
-		}
-		if(sunset_time){
-			if(heap_caps_get_allocated_size(sunset_time)) free(sunset_time);
-		}
-}
-
-static void detailed_weather_update_precip_percent_rain(int precip, int percent){
-
-	lv_label_set_text_fmt(ui_WeatherScreenRainLabel, "%dmm\n%d%%", precip, percent);
-}
-
-static void detailed_weather_update_avg_max_wind(int avg, int max){
-
-	lv_label_set_text_fmt(ui_WeatherScreenWindLabel, "%dkm/h\n%dkm/h", avg, max);
-}
-
-static void detailed_weather_update_precip_percent_snow(int precip, int percent){
-
-	lv_label_set_text_fmt(ui_WeatherScreenSnowLabel, "%dmm\n%d%%", precip, percent);
-}
-
-/*****************************
- * helpers
- * ***************************/
-
-
-/* prepare correct file path to set image from sd card */
-static void set_weather_icon(char *path, lv_obj_t * obj){
-
-	size_t len;
-	int a;
-	char *buff = 0;
-
-	// allocate buffer for image path
-	len = strnlen(path, 64);
-	if(64 == len) goto cleanup;
-	buff = malloc(len + 3);
-	if(0 == buff) goto cleanup;
-
-	// prepare path string
-	a = sprintf(buff, "%c:%s", LV_FS_STDIO_LETTER, path);
-	if(a != (len + 2)) goto cleanup;
-
-	// set image from path
-	lv_img_set_src(obj, buff);
-
-	cleanup:
-		if(buff){
-			if(heap_caps_get_allocated_size(buff)) free(buff);
-		}
-		if(path){
-			if(heap_caps_get_allocated_size(path)) free(path);
-		}
-}
-
 

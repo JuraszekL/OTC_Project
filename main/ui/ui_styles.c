@@ -3,8 +3,13 @@
 
 ThemeColorsSet_t UI_CurrentTheme;
 
-lv_style_t UI_ButtonStyle, UI_ButtonLabelStyle, UI_PopupPanelStyle, UI_ScreenStyle, UI_ClockLabelStyle,
-			UI_Label30ContrastStyle, UI_Label30DarkStyle, UI_Label14ContrastStyle, UI_Label16DarkUnderlineStyle,
+lv_style_t 	UI_ButtonStyle, UI_ButtonLabelStyle,
+			UI_PopupPanelStyle,
+			UI_ScreenStyle,
+			UI_ClockLabelStyle, UI_LabelIcon36DarkStyle,
+			UI_Label30ContrastStyle, UI_Label30DarkStyle,
+			UI_Label14ContrastStyle,
+			UI_Label16DarkUnderlineStyle, UI_Label16ContrastStyle,
 			UI_ArcRSSIStyle;
 
 void UI_InitStyles(void){
@@ -53,6 +58,12 @@ void UI_InitStyles(void){
 	lv_style_set_text_font(&UI_ClockLabelStyle, &ui_font_digital144);
 	lv_style_set_text_opa(&UI_ClockLabelStyle, LV_OPA_COVER);
 
+	lv_style_init(&UI_LabelIcon36DarkStyle);
+	lv_style_set_bg_opa(&UI_LabelIcon36DarkStyle, LV_OPA_TRANSP);
+	lv_style_set_text_color(&UI_LabelIcon36DarkStyle, UI_CurrentTheme.main_color_dark);
+	lv_style_set_text_font(&UI_LabelIcon36DarkStyle, &ui_font_UIIconsNew36);
+	lv_style_set_text_opa(&UI_LabelIcon36DarkStyle, LV_OPA_COVER);
+
 	lv_style_init(&UI_Label30ContrastStyle);
 	lv_style_set_bg_opa(&UI_Label30ContrastStyle, LV_OPA_TRANSP);
 	lv_style_set_text_color(&UI_Label30ContrastStyle, UI_CurrentTheme.bg_contr_color);
@@ -64,6 +75,12 @@ void UI_InitStyles(void){
 	lv_style_set_text_color(&UI_Label14ContrastStyle, UI_CurrentTheme.bg_contr_color);
 	lv_style_set_text_font(&UI_Label14ContrastStyle, &lv_font_montserrat_14);
 	lv_style_set_text_opa(&UI_Label14ContrastStyle, LV_OPA_COVER);
+
+	lv_style_init(&UI_Label16ContrastStyle);
+	lv_style_set_bg_opa(&UI_Label16ContrastStyle, LV_OPA_TRANSP);
+	lv_style_set_text_color(&UI_Label16ContrastStyle, UI_CurrentTheme.bg_contr_color);
+	lv_style_set_text_font(&UI_Label16ContrastStyle, &lv_font_montserrat_16);
+	lv_style_set_text_opa(&UI_Label16ContrastStyle, LV_OPA_COVER);
 
 	lv_style_init(&UI_Label30DarkStyle);
 	lv_style_set_bg_opa(&UI_Label30DarkStyle, LV_OPA_TRANSP);

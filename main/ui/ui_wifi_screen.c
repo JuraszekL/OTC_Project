@@ -18,7 +18,7 @@ static void ui_wifi_screen_evt_handler(lv_event_t * e);
  *	Global variables
  *
  ***************************************************************/
-lv_obj_t *ui_WifiScreen, *ui_WifiScreenBackButton, *ui_WifiScreenRSSIArc, *ui_WifiScreenRSSIValueLabel,
+static lv_obj_t *ui_WifiScreen, *ui_WifiScreenBackButton, *ui_WifiScreenRSSIArc, *ui_WifiScreenRSSIValueLabel,
 			*ui_WifiScreenRSSIdBmLabel, *ui_WifiScreenSSIDLabel, *ui_WifiScreenWifiDetails, *ui_WhiteLineTop1;
 
 extern const char *Authentication_Modes[];
@@ -33,7 +33,7 @@ extern const char *Authentication_Modes[];
 /* initialize wifi screen */
 void UI_WifiScreen_Init(void){
 
-	lv_obj_t *wifi_but_label;
+	lv_obj_t *back_but_label;
 
     ui_WifiScreen = lv_obj_create(NULL);
     lv_obj_add_style(ui_WifiScreen, &UI_ScreenStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -46,9 +46,9 @@ void UI_WifiScreen_Init(void){
     lv_obj_set_align(ui_WifiScreenBackButton, LV_ALIGN_BOTTOM_LEFT);
     lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_ALL, NULL);
 
-    wifi_but_label = lv_label_create(ui_WifiScreenBackButton);
-    lv_obj_add_style(wifi_but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(wifi_but_label, "%c", ICON_LEFT_ARROW);
+    back_but_label = lv_label_create(ui_WifiScreenBackButton);
+    lv_obj_add_style(back_but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(back_but_label, "%c", ICON_LEFT_ARROW);
 
     ui_WifiScreenRSSIArc = lv_arc_create(ui_WifiScreen);
     lv_obj_add_style(ui_WifiScreenRSSIArc, &UI_ArcRSSIStyle, LV_PART_MAIN | LV_STATE_DEFAULT);

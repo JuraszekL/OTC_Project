@@ -24,27 +24,6 @@ extern lv_obj_t * ui_ByJuraszekLLabel;
 extern lv_obj_t * ui_LogosImage;
 extern lv_obj_t * ui_VersionLabel;
 
-// SCREEN: ui_WeatherDetailsScrren
-void ui_WeatherDetailsScrren_screen_init(void);
-extern lv_obj_t * ui_WeatherDetailsScrren;
-void ui_event_WeatherScreenBackButton(lv_event_t * e);
-extern lv_obj_t * ui_WeatherScreenBackButton;
-extern lv_obj_t * ui_BackArrowIconLabel;
-extern lv_obj_t * ui_WeatherScreenCity;
-extern lv_obj_t * ui_WeatherScreenCountry;
-extern lv_obj_t * ui_WeatherScreenIcon;
-extern lv_obj_t * ui_WeatherScreenTempArc;
-extern lv_obj_t * ui_WeatherScreenTemp;
-extern lv_obj_t * ui_WeatherScreenTempMinMax;
-extern lv_obj_t * ui_WeatherScreenSunriseIconLabel;
-extern lv_obj_t * ui_WeatherScreenRainIconLabel;
-extern lv_obj_t * ui_WeatherScreenSnowIconLabel;
-extern lv_obj_t * ui_WeatherScreenWindIconLabel;
-extern lv_obj_t * ui_WeatherScreenSunriseLabel;
-extern lv_obj_t * ui_WeatherScreenRainLabel;
-extern lv_obj_t * ui_WeatherScreenWindLabel;
-extern lv_obj_t * ui_WeatherScreenSnowLabel;
-
 extern lv_obj_t * ui____initial_actions0;
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
