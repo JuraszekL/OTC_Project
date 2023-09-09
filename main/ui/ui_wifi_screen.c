@@ -19,7 +19,7 @@ static void ui_wifi_screen_evt_handler(lv_event_t * e);
  *
  ***************************************************************/
 static lv_obj_t *ui_WifiScreen, *ui_WifiScreenBackButton, *ui_WifiScreenRSSIArc, *ui_WifiScreenRSSIValueLabel,
-			*ui_WifiScreenRSSIdBmLabel, *ui_WifiScreenSSIDLabel, *ui_WifiScreenWifiDetails, *ui_WhiteLineTop1;
+			*ui_WifiScreenRSSIdBmLabel, *ui_WifiScreenSSIDLabel, *ui_WifiScreenAPDetailsLabel, *ui_WifiScreenHorLine;
 
 extern const char *Authentication_Modes[];
 
@@ -33,22 +33,15 @@ extern const char *Authentication_Modes[];
 /* initialize wifi screen */
 void UI_WifiScreen_Init(void){
 
-	lv_obj_t *back_but_label;
+	UI_ScreenCreate(&ui_WifiScreen);
 
-    ui_WifiScreen = lv_obj_create(NULL);
-    lv_obj_add_style(ui_WifiScreen, &UI_ScreenStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_clear_flag(ui_WifiScreen, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+	UI_BackButtonCreate(&ui_WifiScreen, &ui_WifiScreenBackButton);
+	lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_ALL, NULL);
 
-    ui_WifiScreenBackButton = lv_btn_create(ui_WifiScreen);
-    lv_obj_add_style(ui_WifiScreenBackButton, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WifiScreenBackButton, 20);
-    lv_obj_set_y(ui_WifiScreenBackButton, -20);
-    lv_obj_set_align(ui_WifiScreenBackButton, LV_ALIGN_BOTTOM_LEFT);
-    lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_ALL, NULL);
-
-    back_but_label = lv_label_create(ui_WifiScreenBackButton);
-    lv_obj_add_style(back_but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(back_but_label, "%c", ICON_LEFT_ARROW);
+    UI_HorizontalLineCreate(&ui_WifiScreen, &ui_WifiScreenHorLine);
+	lv_obj_set_x(ui_WifiScreenHorLine, 0);
+	lv_obj_set_y(ui_WifiScreenHorLine, 140);
+	lv_obj_set_align(ui_WifiScreenHorLine, LV_ALIGN_TOP_MID);
 
     ui_WifiScreenRSSIArc = lv_arc_create(ui_WifiScreen);
     lv_obj_add_style(ui_WifiScreenRSSIArc, &UI_ArcRSSIStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -91,22 +84,13 @@ void UI_WifiScreen_Init(void){
     lv_obj_set_style_text_align(ui_WifiScreenSSIDLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_WifiScreenSSIDLabel, "");
 
-    ui_WifiScreenWifiDetails = lv_label_create(ui_WifiScreen);
-    lv_obj_add_style(ui_WifiScreenWifiDetails, &UI_Label14ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_width(ui_WifiScreenWifiDetails, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(ui_WifiScreenWifiDetails, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_WifiScreenWifiDetails, 20);
-    lv_obj_set_y(ui_WifiScreenWifiDetails, 60);
-    lv_label_set_text(ui_WifiScreenWifiDetails, "");
-
-    //TODO zmienić
-    ui_WhiteLineTop1 = lv_obj_create(ui_WifiScreen);
-    lv_obj_set_width(ui_WhiteLineTop1, 320);
-    lv_obj_set_height(ui_WhiteLineTop1, 2);
-    lv_obj_set_x(ui_WhiteLineTop1, 0);
-    lv_obj_set_y(ui_WhiteLineTop1, 140);
-    lv_obj_set_align(ui_WhiteLineTop1, LV_ALIGN_TOP_MID);
-    lv_obj_clear_flag(ui_WhiteLineTop1, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
+    ui_WifiScreenAPDetailsLabel = lv_label_create(ui_WifiScreen);
+    lv_obj_add_style(ui_WifiScreenAPDetailsLabel, &UI_Label14ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_width(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);   /// 1
+    lv_obj_set_height(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);    /// 1
+    lv_obj_set_x(ui_WifiScreenAPDetailsLabel, 20);
+    lv_obj_set_y(ui_WifiScreenAPDetailsLabel, 60);
+    lv_label_set_text(ui_WifiScreenAPDetailsLabel, "");
 
     UI_WifiListInit(ui_WifiScreen);
 }
@@ -177,7 +161,7 @@ void UI_WifiScreen_SetApDetails(UI_DetailedAPData_t *data){
 		lv_arc_set_value(ui_WifiScreenRSSIArc, data->rssi);
 		lv_label_set_text_fmt(ui_WifiScreenRSSIValueLabel, "%d", data->rssi);
 		lv_label_set_text(ui_WifiScreenSSIDLabel, data->ssid);
-		lv_label_set_text_fmt(ui_WifiScreenWifiDetails, "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
+		lv_label_set_text_fmt(ui_WifiScreenAPDetailsLabel, "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
 				"IPv4: %s\n%s", data->mac[0], data->mac[1], data->mac[2], data->mac[3], data->mac[4],
 				data->mac[5], (char *)data->ip, mode_str);
 	}
@@ -186,7 +170,7 @@ void UI_WifiScreen_SetApDetails(UI_DetailedAPData_t *data){
 		lv_arc_set_value(ui_WifiScreenRSSIArc, -120);
 		lv_label_set_text(ui_WifiScreenRSSIValueLabel, "---");
 		lv_label_set_text(ui_WifiScreenSSIDLabel, "");
-		lv_label_set_text(ui_WifiScreenWifiDetails, "");
+		lv_label_set_text(ui_WifiScreenAPDetailsLabel, "");
 	}
 }
 

@@ -14,6 +14,30 @@ extern "C" {
 
 #include "ui_helpers.h"
 #include "ui_events.h"
+
+
+/**************************************************************
+ * Font icon characters
+ ***************************************************************/
+#define ICON_WIFI			'A'
+#define ICON_NO_WIFI		'B'
+#define ICON_SYNC			'C'
+#define ICON_NO_SYNC		'D'
+#define ICON_UP_ARROW		'E'
+#define ICON_LEFT_ARROW		'F'
+#define ICON_RIGHT_ARROW	'G'
+#define ICON_DOWN_ARROW		'H'
+#define ICON_SUNRISE		'I'
+#define ICON_RAIN			'J'
+#define ICON_WIND			'K'
+#define ICON_SNOW			'L'
+#define ICON_PADLOCK		'M'
+#define ICON_SIGNAL_FULL	'N'
+#define ICON_SIGNAL_GOOD	'O'
+#define ICON_SIGNAL_MID		'P'
+#define ICON_SIGNAL_LOW		'Q'
+
+
 // SCREEN: ui_StartupScreen
 void ui_StartupScreen_screen_init(void);
 extern lv_obj_t * ui_StartupScreen;
@@ -36,6 +60,9 @@ LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
 
 void ui_init(void);
+void UI_ScreenCreate(lv_obj_t **screen);
+void UI_BackButtonCreate(lv_obj_t **screen, lv_obj_t **button);
+void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line);
 
 #ifdef __cplusplus
 } /*extern "C"*/

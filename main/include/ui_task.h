@@ -1,26 +1,7 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
-/**************************************************************
- * Font icon characters
- ***************************************************************/
-#define ICON_WIFI			'A'
-#define ICON_NO_WIFI		'B'
-#define ICON_SYNC			'C'
-#define ICON_NO_SYNC		'D'
-#define ICON_UP_ARROW		'E'
-#define ICON_LEFT_ARROW		'F'
-#define ICON_RIGHT_ARROW	'G'
-#define ICON_DOWN_ARROW		'H'
-#define ICON_SUNRISE		'I'
-#define ICON_RAIN			'J'
-#define ICON_WIND			'K'
-#define ICON_SNOW			'L'
-#define ICON_PADLOCK		'M'
-#define ICON_SIGNAL_FULL	'N'
-#define ICON_SIGNAL_GOOD	'O'
-#define ICON_SIGNAL_MID		'P'
-#define ICON_SIGNAL_LOW		'Q'
+
 
 
 /**************************************************************

@@ -10,7 +10,7 @@ lv_style_t 	UI_ButtonStyle, UI_ButtonLabelStyle,
 			UI_Label30ContrastStyle, UI_Label30DarkStyle,
 			UI_Label14ContrastStyle,
 			UI_Label16DarkUnderlineStyle, UI_Label16ContrastStyle,
-			UI_ArcRSSIStyle;
+			UI_ArcRSSIStyle, UI_HorizontalLineStyle;
 
 void UI_InitStyles(void){
 
@@ -80,6 +80,7 @@ void UI_InitStyles(void){
 	lv_style_set_bg_opa(&UI_Label16ContrastStyle, LV_OPA_TRANSP);
 	lv_style_set_text_color(&UI_Label16ContrastStyle, UI_CurrentTheme.bg_contr_color);
 	lv_style_set_text_font(&UI_Label16ContrastStyle, &lv_font_montserrat_16);
+	lv_style_set_text_align(&UI_Label16ContrastStyle, LV_TEXT_ALIGN_CENTER);
 	lv_style_set_text_opa(&UI_Label16ContrastStyle, LV_OPA_COVER);
 
 	lv_style_init(&UI_Label30DarkStyle);
@@ -102,4 +103,10 @@ void UI_InitStyles(void){
 	lv_style_set_arc_color(&UI_ArcRSSIStyle, UI_CurrentTheme.bg_contr_color);
 	lv_style_set_arc_opa(&UI_ArcRSSIStyle, LV_OPA_50);
 	lv_style_set_arc_width(&UI_ArcRSSIStyle, 5);
+
+	lv_style_init(&UI_HorizontalLineStyle);
+	lv_style_set_width(&UI_HorizontalLineStyle, 320);
+	lv_style_set_height(&UI_HorizontalLineStyle, 2);
+	lv_style_set_bg_opa(&UI_HorizontalLineStyle, LV_OPA_COVER);
+	lv_style_set_arc_color(&UI_HorizontalLineStyle, UI_CurrentTheme.bg_contr_color);
 }
