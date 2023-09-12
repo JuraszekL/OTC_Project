@@ -1,8 +1,4 @@
-#include "ui_weather_screen.h"
-#include "ui_styles.h"
 #include "ui.h"
-#include "ui_task.h"
-#include "lvgl.h"
 
 /**************************************************************
  *
@@ -303,7 +299,7 @@ static void ui_weather_screen_evt_handler(lv_event_t * e){
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
 
-    if((event_code == LV_EVENT_CLICKED) && (target == ui_WeatherScreenBackButton)) {
+    if((event_code == LV_EVENT_RELEASED) && (target == ui_WeatherScreenBackButton)) {
 
     	UI_ReportEvt(UI_EVT_WEATHERSCR_BACK_BTN_CLICKED, 0);
     }

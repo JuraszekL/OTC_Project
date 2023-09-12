@@ -1,16 +1,7 @@
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_log.h"
+#include "main.h"
 #include "driver/gptimer.h"
 #include "esp_wifi.h"
-
-#include "main.h"
-#include "ui_task.h"
-#include "spiffs_task.h"
-#include "wifi.h"
+#include <string.h>
 
 /**************************************************************
  *
@@ -27,7 +18,7 @@
 #define WIFI_SAVE_PASSWORD_BIT				(1U << 5)
 
 /* other definitions */
-#define WIFI_RECONNECT_ATTEMPTS				2
+#define WIFI_RECONNECT_ATTEMPTS				3
 
 /**************************************************************
  *
@@ -77,9 +68,7 @@ static void fill_wifi_list_with_found_aps(void);
  *
  *	Global variables
  *
- ***************************************************************/
-SemaphoreHandle_t WifiList_MutexHandle;
-
+ **************************************************************/
 static EventGroupHandle_t WifiEvents;
 static QueueHandle_t wifi_queue_handle;
 static SemaphoreHandle_t wifi_reconnect_semaphore_handle;
@@ -116,10 +105,6 @@ void Wifi_Task(void *arg){
 	// create wifi routines queue
 	wifi_queue_handle = xQueueCreate(3U, sizeof(struct wifi_queue_data));
 	assert(wifi_queue_handle);
-
-	// mutex for Wifi operations
-	WifiList_MutexHandle = xSemaphoreCreateMutex();
-	assert(WifiList_MutexHandle);
 
 	// initialize WiFi and NETIF
 	network_init();
@@ -281,7 +266,6 @@ static void wifi_start_routine(void *arg){
 	xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 	xEventGroupSetBits(WifiEvents, WIFI_AUTOCONNECT_ENABLE_BIT);
 	UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
-//	wifi_routine_request(wifi_scan_start, NULL);
 }
 
 /* function to be performed when scan start is requested */
@@ -312,11 +296,6 @@ static void wifi_scan_start_routine(void *arg){
 static void wifi_scan_done_routine(void *arg){
 
 	esp_err_t res;
-	BaseType_t a;
-
-	// if nothing else uses wifi resources
-	a = xSemaphoreTake(WifiList_MutexHandle, pdMS_TO_TICKS(1000));
-	if(pdFALSE == a) goto cleanup;
 
 	// check number of found AP's
 	res = esp_wifi_scan_get_ap_num(&ap_count);
@@ -349,7 +328,6 @@ static void wifi_scan_done_routine(void *arg){
 	cleanup:
 		esp_wifi_clear_ap_list();
 		xEventGroupClearBits(WifiEvents, WIFI_SCAN_IN_PROGRESS_BIT);
-		xSemaphoreGive(WifiList_MutexHandle);
 }
 
 /* function called when disconnected from AP or connection to AP has failed */
@@ -497,9 +475,6 @@ static void wifi_connect_routine(void *arg){
 	// return if already trying to connect
 	if(bits & WIFI_CONNECTION_IN_PROGRESS_BIT) goto cleanup;
 
-	// disconnect current AP if connected
-	if(bits & WIFI_CONNECTED_BIT) esp_wifi_disconnect();
-
 	// copy ssid to config structure
 	a = strnlen(creds->ssid, 31);
 	if((0 == a) || (31 == a)) goto cleanup;
@@ -517,7 +492,7 @@ static void wifi_connect_routine(void *arg){
 
 	// set config and connect
 	if(ESP_OK != esp_wifi_set_config(WIFI_IF_STA, &wifi_config)) goto cleanup;
-	if(ESP_OK != esp_wifi_connect()) goto cleanup;
+//	if(ESP_OK != esp_wifi_connect()) goto cleanup;
 
 	// set stataus bits
 	UI_ReportEvt(UI_EVT_WIFI_CONNECTING, arg);
@@ -526,6 +501,17 @@ static void wifi_connect_routine(void *arg){
 
 		// set this bit if user requested to save password (UI)
 		xEventGroupSetBits(WifiEvents, WIFI_SAVE_PASSWORD_BIT);
+	}
+
+	// disconnect current AP if connected
+	// "disconnected" event should call "connect" function
+	if(bits & WIFI_CONNECTED_BIT) {
+
+		esp_wifi_disconnect();
+	}
+	else{
+
+		esp_wifi_connect();
 	}
 	return;
 

@@ -11,10 +11,11 @@ extern "C" {
 #endif
 
 #include "lvgl.h"
-
-#include "ui_helpers.h"
-#include "ui_events.h"
-
+#include "ui_styles.h"
+#include "screens/ui_main_screen.h"
+#include "screens/ui_wifi_screen.h"
+#include "screens/ui_weather_screen.h"
+#include "screens/ui_startup_screen.h"
 
 /**************************************************************
  * Font icon characters
@@ -37,19 +38,6 @@ extern "C" {
 #define ICON_SIGNAL_MID		'P'
 #define ICON_SIGNAL_LOW		'Q'
 
-
-// SCREEN: ui_StartupScreen
-void ui_StartupScreen_screen_init(void);
-extern lv_obj_t * ui_StartupScreen;
-extern lv_obj_t * ui_StartupScreenPanel;
-extern lv_obj_t * ui_OTCPROJECTLabel;
-extern lv_obj_t * ui_OnlineTableClockLabel;
-extern lv_obj_t * ui_ByJuraszekLLabel;
-extern lv_obj_t * ui_LogosImage;
-extern lv_obj_t * ui_VersionLabel;
-
-extern lv_obj_t * ui____initial_actions0;
-
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 
 LV_FONT_DECLARE(ui_font_UIIconsNew16);
@@ -59,7 +47,6 @@ LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
 
-void ui_init(void);
 void UI_ScreenCreate(lv_obj_t **screen);
 void UI_BackButtonCreate(lv_obj_t **screen, lv_obj_t **button);
 void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line);

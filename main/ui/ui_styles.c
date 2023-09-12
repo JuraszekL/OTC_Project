@@ -10,7 +10,9 @@ lv_style_t 	UI_ButtonStyle, UI_ButtonLabelStyle,
 			UI_Label30ContrastStyle, UI_Label30DarkStyle,
 			UI_Label14ContrastStyle,
 			UI_Label16DarkUnderlineStyle, UI_Label16ContrastStyle,
-			UI_ArcRSSIStyle, UI_HorizontalLineStyle;
+			UI_ArcRSSIStyle, UI_HorizontalLineStyle,
+			UI_StartupPanelStyle, UI_Varino30BackgroundLabelStyle, UI_Varino18DarkLabelStyle,
+			UI_Varino12ContrastLabelStyle;
 
 void UI_InitStyles(void){
 
@@ -101,12 +103,41 @@ void UI_InitStyles(void){
 	lv_style_set_height(&UI_ArcRSSIStyle, 100);
 	lv_style_set_bg_opa(&UI_ArcRSSIStyle, LV_OPA_TRANSP);
 	lv_style_set_arc_color(&UI_ArcRSSIStyle, UI_CurrentTheme.bg_contr_color);
-	lv_style_set_arc_opa(&UI_ArcRSSIStyle, LV_OPA_50);
+	lv_style_set_arc_opa(&UI_ArcRSSIStyle, LV_OPA_30);
 	lv_style_set_arc_width(&UI_ArcRSSIStyle, 5);
 
 	lv_style_init(&UI_HorizontalLineStyle);
 	lv_style_set_width(&UI_HorizontalLineStyle, 320);
 	lv_style_set_height(&UI_HorizontalLineStyle, 2);
 	lv_style_set_bg_opa(&UI_HorizontalLineStyle, LV_OPA_COVER);
-	lv_style_set_arc_color(&UI_HorizontalLineStyle, UI_CurrentTheme.bg_contr_color);
+	lv_style_set_bg_color(&UI_HorizontalLineStyle, UI_CurrentTheme.bg_contr_color);
+
+	lv_style_init(&UI_StartupPanelStyle);
+	lv_style_set_width(&UI_StartupPanelStyle, 280);
+	lv_style_set_height(&UI_StartupPanelStyle, 100);
+	lv_style_set_bg_opa(&UI_StartupPanelStyle, LV_OPA_TRANSP);
+	lv_style_set_bg_color(&UI_StartupPanelStyle, UI_CurrentTheme.main_color_dark);
+	lv_style_set_border_width(&UI_StartupPanelStyle, 0);
+	lv_style_set_shadow_color(&UI_StartupPanelStyle, UI_CurrentTheme.main_color_dark);
+	lv_style_set_shadow_opa(&UI_StartupPanelStyle, LV_OPA_TRANSP);
+	lv_style_set_shadow_width(&UI_StartupPanelStyle, 15);
+	lv_style_set_shadow_spread(&UI_StartupPanelStyle, 5);
+
+	lv_style_init(&UI_Varino30BackgroundLabelStyle);
+	lv_style_set_bg_opa(&UI_Varino30BackgroundLabelStyle, LV_OPA_TRANSP);
+	lv_style_set_text_color(&UI_Varino30BackgroundLabelStyle, UI_CurrentTheme.background_color);
+	lv_style_set_text_font(&UI_Varino30BackgroundLabelStyle, &ui_font_Varino30);
+	lv_style_set_text_opa(&UI_Varino30BackgroundLabelStyle, LV_OPA_COVER);
+
+	lv_style_init(&UI_Varino18DarkLabelStyle);
+	lv_style_set_bg_opa(&UI_Varino18DarkLabelStyle, LV_OPA_TRANSP);
+	lv_style_set_text_color(&UI_Varino18DarkLabelStyle, UI_CurrentTheme.main_color_dark);
+	lv_style_set_text_font(&UI_Varino18DarkLabelStyle, &ui_font_Varino18);
+	lv_style_set_text_opa(&UI_Varino18DarkLabelStyle, LV_OPA_COVER);
+
+	lv_style_init(&UI_Varino12ContrastLabelStyle);
+	lv_style_set_bg_opa(&UI_Varino12ContrastLabelStyle, LV_OPA_TRANSP);
+	lv_style_set_text_color(&UI_Varino12ContrastLabelStyle, UI_CurrentTheme.bg_contr_color);
+	lv_style_set_text_font(&UI_Varino12ContrastLabelStyle, &ui_font_Varino12);
+	lv_style_set_text_opa(&UI_Varino12ContrastLabelStyle, LV_OPA_COVER);
 }

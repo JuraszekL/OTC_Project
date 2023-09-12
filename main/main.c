@@ -1,22 +1,8 @@
 #include "main.h"
-#include <stdio.h>
-#include "freertos/task.h"
-#include "esp_log.h"
 #include "nvs_flash.h"
 #include "esp_event.h"
-#include "esp_random.h"
 
 #include "cJSON.h"
-
-#include "display.h"
-#include "touchpad.h"
-#include "ui_task.h"
-#include "wifi.h"
-#include "clock.h"
-#include "online_requests.h"
-#include "sdcard.h"
-#include "spiffs_task.h"
-#include "ui_wifi_list.h"
 
 static void one_second_timer_callback(TimerHandle_t xTimer);
 

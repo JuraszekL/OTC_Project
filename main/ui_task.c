@@ -1,34 +1,7 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "freertos/semphr.h"
-#include "esp_log.h"
-
-#include "lvgl.h"
-#include "ui.h"
-#include "ui_styles.h"
-#include "ui_main_screen.h"
-#include "ui_wifi_screen.h"
-#include "ui_weather_screen.h"
-#include "ui_task.h"
-
 #include "main.h"
-#include "animations.h"
-#include "wifi.h"
-#include "display.h"
-#include "online_requests.h"
+#include "ui.h"
 
-
-
-/**************************************************************
- *
- *	Macros
- *
- ***************************************************************/
-#define VERSION	("v." VERSION_MAJOR "." VERSION_MINOR "." VERSION_PATCH)
-
+#define UI_EVT_RUN_STARTUP_SCREEN		0xFF
 /**************************************************************
  *
  *	Typedefs
@@ -46,9 +19,7 @@ struct ui_queue_data {
  *
  *	Function prototypes
  *
- ***************************************************************/
-static void startup_screen(void);
-
+ **************************************************************/
 static void ui_event_wifi_disconnected(void *arg);
 static void ui_event_wifi_connected(void *arg);
 static void ui_event_wifi_connecting(void *arg);
@@ -56,6 +27,7 @@ static void ui_event_wifi_connect_error(void *arg);
 static void ui_event_wifi_get_pass(void *arg);
 static void ui_event_wifilist_add(void *arg);
 static void ui_event_wifilist_clear(void *arg);
+static void ui_event_wifilist_clicked(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
@@ -64,13 +36,15 @@ static void ui_event_detailed_weather_update(void *arg);
 static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
 static void ui_event_weather_scr_back_btn_clicked(void *arg);
+static void ui_event_startup_screen_ready(void *arg);
 
+static void ui_event_run_startup_screen(void *arg);
 /**************************************************************
  *
  *	Global variables
  *
  ***************************************************************/
-const char version[] = {VERSION};
+
 const ui_event event_tab[] = {
 
 		[UI_EVT_WIFI_CONNECTED] = ui_event_wifi_connected,
@@ -80,6 +54,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFI_GET_PASS] = ui_event_wifi_get_pass,
 		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
 		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
+		[UI_EVT_WIFI_LIST_CLICKED] = ui_event_wifilist_clicked,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
@@ -88,6 +63,9 @@ const ui_event event_tab[] = {
 		[UI_EVT_MAINSCR_WIFI_BTN_CLICKED] = ui_event_main_scr_wifi_btn_clicked,
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 		[UI_EVT_WEATHERSCR_BACK_BTN_CLICKED] =  ui_event_weather_scr_back_btn_clicked,
+		[UI_EVT_STARTUP_SCREEN_READY] = ui_event_startup_screen_ready,
+
+		[UI_EVT_RUN_STARTUP_SCREEN] = ui_event_run_startup_screen,
 };
 
 static QueueHandle_t ui_queue_handle;
@@ -104,25 +82,23 @@ void UI_Task(void *arg){
 	struct ui_queue_data data;
 
 	// create UI events queue
-	ui_queue_handle = xQueueCreate(3U, sizeof(struct ui_queue_data));
+	ui_queue_handle = xQueueCreate(5U, sizeof(struct ui_queue_data));
 	assert(ui_queue_handle);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, UI_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
+	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
 	UI_InitStyles();
 
-	// run startup screen
-	startup_screen();
-
-	xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
+	UI_StartupScreen_Init();
 	UI_MainScreen_Init();
-//	ui_WeatherDetailsScrren_screen_init();
 	UI_WeatherScrren_Init();
 	UI_WifiScreen_Init();
 
-	UI_MainScreen_Load(2000);
 	xSemaphoreGive(LVGL_MutexHandle);
+
+	UI_ReportEvt(UI_EVT_RUN_STARTUP_SCREEN, 0);
 
 	while(1){
 
@@ -169,35 +145,6 @@ void UI_ReportEvt(UI_EventType_t Type, void *arg){
  *
  ***************************************************************/
 
-/* setup and display startup screend */
-static void startup_screen(void){
-
-	// init startup screen
-	ui_StartupScreen_screen_init();
-
-	// hide all elements
-	lv_obj_set_style_bg_opa(ui_StartupScreenPanel, 0, 0);
-	lv_obj_set_style_text_opa(ui_OnlineTableClockLabel, 0, 0);
-	lv_obj_set_style_text_opa(ui_ByJuraszekLLabel, 0, 0);
-	lv_obj_set_style_shadow_opa(ui_StartupScreenPanel, 0, 0);
-	lv_obj_add_flag(ui_LogosImage, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_add_flag(ui_VersionLabel, LV_OBJ_FLAG_HIDDEN);
-
-	// set version number to label
-	lv_label_set_text(ui_VersionLabel, version);
-
-	// load screen
-	lv_disp_load_scr(ui_StartupScreen);
-
-	// start animation
-	Anm_InitScr2200msOpa();
-
-	// show image with logos and version label
-	vTaskDelay(pdMS_TO_TICKS(2500));
-	lv_obj_clear_flag(ui_LogosImage, LV_OBJ_FLAG_HIDDEN);
-	lv_obj_clear_flag(ui_VersionLabel, LV_OBJ_FLAG_HIDDEN);
-}
-
 /*****************************
  * UI event functions
  * ***************************/
@@ -236,6 +183,8 @@ static void ui_event_wifi_connected(void *arg){
 }
 
 static void ui_event_wifi_connecting(void *arg){
+
+	if(0 == arg) return;
 
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
@@ -367,3 +316,22 @@ static void ui_event_weather_scr_back_btn_clicked(void *arg){
 	UI_MainScreen_Load(0);
 }
 
+static void ui_event_startup_screen_ready(void *arg){
+
+	UI_StartupScreen_Cleanup();
+	UI_MainScreen_Load(2000);
+}
+
+static void ui_event_wifilist_clicked(void *arg){
+
+	if(0 == arg) return;
+
+	lv_obj_t *obj = (lv_obj_t *)arg;
+
+	UI_WifiScreen_WifiListClicked(obj);
+}
+
+static void ui_event_run_startup_screen(void *arg){
+
+	UI_StarttupScreen_Load();
+}

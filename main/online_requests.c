@@ -1,21 +1,16 @@
-#include <stdio.h>
-#include <math.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_log.h"
+#include "main.h"
 #include "esp_http_client.h"
 #include "esp_sntp.h"
 #include "string.h"
+#include <math.h>
 
 #include "cJSON.h"
 
-#include "main.h"
-#include "wifi.h"
-#include "clock.h"
-#include "ui_task.h"
-#include "online_requests.h"
-
+/**************************************************************
+ *
+ *	Definitions
+ *
+ ***************************************************************/
 #define HTML_URL_LENGTH_MAX		1024U
 
 /**************************************************************

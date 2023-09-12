@@ -1,13 +1,6 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_log.h"
+#include "main.h"
 #include "esp_vfs_fat.h"
 #include "sdmmc_cmd.h"
-
-#include "main.h"
-#include "sdcard.h"
 
 /**************************************************************
  *

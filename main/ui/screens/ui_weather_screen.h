@@ -1,7 +1,5 @@
-#ifndef MAIN_UI_UI_WEATHER_SCREEN_H_
-#define MAIN_UI_UI_WEATHER_SCREEN_H_
-
-#include "main.h"
+#ifndef MAIN_UI_SCREENS_UI_WEATHER_SCREEN_H_
+#define MAIN_UI_SCREENS_UI_WEATHER_SCREEN_H_
 
 /**************************************************************
  * Public functions
@@ -18,4 +16,4 @@ void UI_WeatherScreen_UpdatePrecipPercentRain(int precip, int percent);
 void UI_WeatherScreen_UpdateAvgMaxWind(int avg, int max);
 void UI_WeatherScreen_UpdatePrecipPercentSnow(int precip, int percent);
 
-#endif /* MAIN_UI_UI_WEATHER_SCREEN_H_ */
+#endif /* MAIN_UI_SCREENS_UI_WEATHER_SCREEN_H_ */

@@ -1,27 +1,13 @@
-/**************************************************************
- *	include
- ***************************************************************/
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "freertos/semphr.h"
-#include "esp_err.h"
-#include "esp_log.h"
+#include "main.h"
 #include "esp_lcd_panel_io.h"
 #include "esp_lcd_panel_vendor.h"
 #include "esp_lcd_panel_ops.h"
 #include "esp_timer.h"
 #include "driver/gpio.h"
 
-#include "esp_lcd_ili9488.h"
 #include "lvgl.h"
+#include "esp_lcd_ili9488.h"
 #include "ft6x36.h"
-
-#include "main.h"
-#include "display.h"
-#include "touchpad.h"
-#include "animations.h"
 
 /**************************************************************
  *
@@ -252,10 +238,10 @@ static void lcd_LVGL_tick(void *arg){
 static void lcd_get_touch_data(struct _lv_indev_drv_t * indev_drv, lv_indev_data_t * data){
 
 	TouchPad_Data_t tp = {0};
-	esp_err_t res;
+	int res;
 
-	res = xQueueReceive(TouchPad_QueueHandle, &tp, 0);
-	if((pdFALSE == res) || (lifted_up == tp.evt) || (no_event == tp.evt)){
+	res = TouchPad_GetData(&tp);
+	if(-1 == res){
 
 		data->state = LV_INDEV_STATE_RELEASED;
 		return;

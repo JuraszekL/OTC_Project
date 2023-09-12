@@ -1,16 +1,6 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_log.h"
+#include "main.h"
 #include <sys/time.h>
 #include "esp_sntp.h"
-
-#include "main.h"
-#include "ui_task.h"
-#include "wifi.h"
-#include "online_requests.h"
-#include "clock.h"
 
 /**************************************************************
  *

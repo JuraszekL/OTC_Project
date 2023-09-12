@@ -1,9 +1,6 @@
 #ifndef MAIN_INCLUDE_UI_TASK_H_
 #define MAIN_INCLUDE_UI_TASK_H_
 
-
-
-
 /**************************************************************
  * UI event types
  ***************************************************************/
@@ -16,6 +13,7 @@ typedef enum {
 	UI_EVT_WIFI_GET_PASS,
 	UI_EVT_WIFI_LIST_ADD,
 	UI_EVT_WIFI_LIST_CLEAR,
+	UI_EVT_WIFI_LIST_CLICKED,
 	UI_EVT_TIME_CHANGED,
 	UI_EVT_CLOCK_NOT_SYNC,
 	UI_EVT_CLOCK_SYNC,
@@ -24,6 +22,7 @@ typedef enum {
 	UI_EVT_MAINSCR_WIFI_BTN_CLICKED,
 	UI_EVT_WIFISCR_BACK_BTN_CLICKED,
 	UI_EVT_WEATHERSCR_BACK_BTN_CLICKED,
+	UI_EVT_STARTUP_SCREEN_READY,
 
 } UI_EventType_t;
 

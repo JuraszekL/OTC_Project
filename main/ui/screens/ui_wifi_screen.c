@@ -1,10 +1,7 @@
-#include "ui_wifi_screen.h"
-#include "ui_wifi_popup.h"
-#include "ui_wifi_list.h"
-#include "ui_styles.h"
 #include "ui.h"
-#include "ui_task.h"
-#include "lvgl.h"
+
+#include "components/ui_wifi_list.h"
+#include "components/ui_wifi_popup.h"
 
 /**************************************************************
  *
@@ -152,6 +149,8 @@ void UI_WifiScreen_GetPass(WifiCreds_t *creds){
 void UI_WifiScreen_SetApDetails(UI_DetailedAPData_t *data){
 
 	const char *mode_str = 0;
+	uint8_t r, g, b = 0, diff;
+	lv_style_value_t value;
 
 	if(0 != data){
 
@@ -164,13 +163,52 @@ void UI_WifiScreen_SetApDetails(UI_DetailedAPData_t *data){
 		lv_label_set_text_fmt(ui_WifiScreenAPDetailsLabel, "MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
 				"IPv4: %s\n%s", data->mac[0], data->mac[1], data->mac[2], data->mac[3], data->mac[4],
 				data->mac[5], (char *)data->ip, mode_str);
+
+		/* calculate RSSI arc color
+		 * <---------------------------------------------------------------------------->
+		 * -30						-60						-90						-120	dBm
+		 * 0 ---------------------> 255						255						255		R
+		 * 255						255 <-------------------0						0		G
+		 * 0						0						0						0		B
+		 *
+		 * RSSI arc has pure green colour if signal strength is -30dBm, then shifts to yellow, and below
+		 * -60dBm moves into red reaching pure red at -90dBm.
+		 * */
+
+
+		if((int)-60 <= data->rssi){
+
+			g = 255;
+			diff = abs((int)-30 - data->rssi);
+			r = ((unsigned int)(diff * 255))/(unsigned int)30;
+		}
+		else if(((int)-60 > data->rssi) && ((int)-90 <= data->rssi)){
+
+			r = 255;
+			diff = abs((int)-90 - data->rssi);
+			g = ((unsigned int)(diff * 255))/(unsigned int)30;
+		}
+		else{
+
+			r = 255;
+			g = 0;
+		}
+
+		lv_obj_set_style_arc_color(ui_WifiScreenRSSIArc, lv_color_make(r, g, b), LV_PART_MAIN | LV_STATE_DEFAULT);
+		lv_obj_set_style_arc_color(ui_WifiScreenRSSIArc, lv_color_make(r, g, b), LV_PART_INDICATOR | LV_STATE_DEFAULT);
 	}
 	else{
 
+		// set default values for AP info
 		lv_arc_set_value(ui_WifiScreenRSSIArc, -120);
 		lv_label_set_text(ui_WifiScreenRSSIValueLabel, "---");
 		lv_label_set_text(ui_WifiScreenSSIDLabel, "");
 		lv_label_set_text(ui_WifiScreenAPDetailsLabel, "");
+		if(LV_RES_OK == lv_style_get_prop(&UI_ArcRSSIStyle, LV_STYLE_ARC_COLOR, &value)){
+
+			lv_obj_set_style_arc_color(ui_WifiScreenRSSIArc, value.color, LV_PART_MAIN | LV_STATE_DEFAULT);
+			lv_obj_set_style_arc_color(ui_WifiScreenRSSIArc, value.color, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+		}
 	}
 }
 
@@ -189,6 +227,46 @@ void UI_WifiScreen_ClearList(void){
 	UI_WifiListClear();
 }
 
+/* perform action when object on wifi list has been clicked */
+void UI_WifiScreen_WifiListClicked(lv_obj_t * obj){
+
+	if(0 == obj) return;
+
+	const char *ssid = 0;
+	WifiCreds_t *creds = 0;
+	int a;
+
+	// get ssid of clicked object
+	UI_WifiList_GetClickedSSID(obj, &ssid);
+	if(0 == ssid) return;
+
+	// prepare return data
+	creds = calloc(1, sizeof(WifiCreds_t));
+	if(0 == creds) goto error;
+	a = strnlen(ssid, 33);
+	if(33 == a) goto error;
+	creds->ssid = malloc(a + 1);
+	if(0 == creds->ssid) goto error;
+	memcpy(creds->ssid, ssid, a + 1);
+
+	ESP_LOGI("ui_wifi_list.c", "calling Wifi_Connect");
+	Wifi_Connect(creds);
+	return;
+
+    error:
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
+
+		UI_WifiList_SetClickable();
+}
+
 /**************************************************************
  *
  * Private function definitions
@@ -201,7 +279,7 @@ static void ui_wifi_screen_evt_handler(lv_event_t * e){
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
 
-    if((event_code == LV_EVENT_CLICKED) && (target == ui_WifiScreenBackButton)) {
+    if((event_code == LV_EVENT_RELEASED) && (target == ui_WifiScreenBackButton)) {
 
     	UI_ReportEvt(UI_EVT_WIFISCR_BACK_BTN_CLICKED, 0);
     }

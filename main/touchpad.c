@@ -1,14 +1,21 @@
-#include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
+#include "main.h"
 #include "driver/gpio.h"
 #include "driver/i2c.h"
 
 #include "ft6x36.h"
 
-#include "main.h"
-#include "touchpad.h"
+/**************************************************************
+ * I2C configuration
+ ***************************************************************/
+#define I2C_PORT_NR			I2C_NUM_0
+#define I2C_SCL_GPIO		GPIO_NUM_39
+#define I2C_SDA_GPIO		GPIO_NUM_38
+#define I2C_CLK_FREQ		400000U
+
+/**************************************************************
+ * Touchpad interrupt configuration
+ ***************************************************************/
+#define TOUCHPAD_INT_GPIO	GPIO_NUM_0
 
 /**************************************************************
  *
@@ -97,6 +104,19 @@ void TouchPad_PeriphInit(void){
 	tp_int_gpio_conf.intr_type = GPIO_INTR_NEGEDGE;
 
 	ESP_ERROR_CHECK(gpio_config(&tp_int_gpio_conf));
+}
+
+/* Get touchpad data */
+int TouchPad_GetData(TouchPad_Data_t *data){
+
+	if(0 == data) return -1;
+
+	esp_err_t res;
+
+	res = xQueueReceive(TouchPad_QueueHandle, data, 0);
+	if((pdFALSE == res) || (lifted_up == data->evt) || (no_event == data->evt)) return -1;
+
+	return 0;
 }
 
 /**************************************************************

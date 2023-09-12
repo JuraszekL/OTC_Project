@@ -1,10 +1,5 @@
-#include "ui_wifi_popup.h"
-#include "ui_styles.h"
 #include "ui.h"
-#include "ui_task.h"
-#include "wifi.h"
-#include "lvgl.h"
-#include "esp_log.h"
+#include "ui_wifi_list.h"
 
 /**************************************************************
  *
@@ -59,6 +54,8 @@ static lv_obj_t *top_background, *panel, *top_text, *spinner, *wifi_popup_line, 
  * Public function definitions
  *
  ***************************************************************/
+
+/* popup when wifi connection is in progress */
 void UI_WifiPopup_Connecting(char *ssid){
 
 	char buff[64] = {0};
@@ -89,6 +86,7 @@ void UI_WifiPopup_Connecting(char *ssid){
     wifi_popup_create_spinner();
 }
 
+/* popup when wifi has been connected */
 void UI_WifiPopup_Connected(char *ssid){
 
 	char buff[64] = {0};
@@ -119,6 +117,7 @@ void UI_WifiPopup_Connected(char *ssid){
 	wifi_popup_create_line(ok_line);
 }
 
+/* popup when wifi has not been connected */
 void UI_WifiPopup_NotConnected(void){
 
 	// check if popup base is valid
@@ -140,7 +139,7 @@ void UI_WifiPopup_NotConnected(void){
 	wifi_popup_create_line(nok_line);
 }
 
-/* create popup where user can enter the password */
+/* popup where user can enter the password */
 void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 
 	// check if popup base is valid
@@ -171,7 +170,6 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 	wifi_popup_create_keyboard();
 }
 
-
 /**************************************************************
  *
  * Private function definitions
@@ -179,38 +177,38 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
  ***************************************************************/
 static void wifi_popup_event_handler(lv_event_t * e){
 
-    lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * obj = lv_event_get_target(e);
+	lv_event_code_t code = lv_event_get_code(e);
+	lv_obj_t * obj = lv_event_get_target(e);
 
-    // event occured at password text area
-    if(obj == password_text){
+	// event occured at password text area
+	if(obj == password_text){
 
-    	if(LV_EVENT_FOCUSED == code){
+		if(LV_EVENT_FOCUSED == code){
 
-    		wifi_popup_show_hide_keyboard(show_keyboard);
-    	}
-    	else if(LV_EVENT_DEFOCUSED == code){
+			wifi_popup_show_hide_keyboard(show_keyboard);
+		}
+		else if(LV_EVENT_DEFOCUSED == code){
 
-    		wifi_popup_show_hide_keyboard(hide_keyboard);
-    	}
-    }
-    // hide checkbox has been toggled
-    else if((obj == hide_checkbox) && (LV_EVENT_VALUE_CHANGED == code)){
+			wifi_popup_show_hide_keyboard(hide_keyboard);
+		}
+	}
+	// hide checkbox has been toggled
+	else if((obj == hide_checkbox) && (LV_EVENT_VALUE_CHANGED == code)){
 
-    	if(LV_STATE_CHECKED & lv_obj_get_state(obj)){
+		if(LV_STATE_CHECKED & lv_obj_get_state(obj)){
 
-    		lv_textarea_set_password_mode(password_text, true);
-    	}
-    	else{
+			lv_textarea_set_password_mode(password_text, true);
+		}
+		else{
 
-    		lv_textarea_set_password_mode(password_text, false);
-    	}
-    }
-    // back button at wifi popup panel has been clicked
-    else if((obj == back_button) && (LV_EVENT_PRESSED == code)){
+			lv_textarea_set_password_mode(password_text, false);
+		}
+	}
+	// back button at wifi popup panel has been clicked
+	else if((obj == back_button) && (LV_EVENT_RELEASED == code)){
 
-    	// free resources
-    	WifiCreds_t *creds = lv_event_get_user_data(e);
+		// free resources
+		WifiCreds_t *creds = lv_event_get_user_data(e);
 		if(creds){
 			if(creds->ssid){
 				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
@@ -222,15 +220,20 @@ static void wifi_popup_event_handler(lv_event_t * e){
 		}
 
 		// delete popup
-    	lv_obj_del_async(top_background);
-    }
+		lv_obj_del_async(top_background);
+	}
 
-    // ok button at wifi popup panel has been clicked
-    else if((obj == ok_button) && (LV_EVENT_PRESSED == code)){
+	// ok button at wifi popup panel has been clicked
+	else if((obj == ok_button) && (LV_EVENT_RELEASED == code)){
 
-    	wifi_popup_connect(lv_event_get_user_data(e));
-    	lv_obj_del_async(top_background);
-    }
+		wifi_popup_connect(lv_event_get_user_data(e));
+		lv_obj_del_async(top_background);
+	}
+
+	else if((obj == top_background) && (LV_EVENT_DELETE == code)){
+
+		UI_WifiList_SetClickable();
+	}
 }
 
 /* create base of wifi popup object */
@@ -242,6 +245,7 @@ static void wifi_popup_create_panel(void){
 	lv_obj_set_style_bg_opa(top_background, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(top_background, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_clear_flag(top_background, LV_OBJ_FLAG_SCROLLABLE);
+	lv_obj_add_event_cb(top_background, wifi_popup_event_handler, LV_EVENT_DELETE, NULL);
 
 	panel = lv_obj_create(top_background);
 	lv_obj_add_style(panel, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -264,6 +268,7 @@ static void wifi_popup_create_line(uint8_t line_type){
 	// create an object
 	wifi_popup_line = lv_line_create(panel);
 	lv_obj_set_align(wifi_popup_line, LV_ALIGN_BOTTOM_MID);
+	lv_obj_set_x(wifi_popup_line, -5);
 	lv_obj_add_style(wifi_popup_line, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_line_opa(wifi_popup_line, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -312,7 +317,6 @@ static void wifi_popup_create_password_text_area(void){
     lv_obj_set_width(password_text, lv_pct(80));
     lv_obj_set_align(password_text, LV_ALIGN_TOP_MID);
     lv_obj_set_y(password_text, 30);
-//    lv_obj_set_style_bg_color(password_text, lv_color_hex(0xF2F2F2), 0);
     lv_obj_add_event_cb(password_text, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
 }
 

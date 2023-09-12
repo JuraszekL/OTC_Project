@@ -1,9 +1,4 @@
-#include "ui_main_screen.h"
-#include "ui_styles.h"
 #include "ui.h"
-#include "ui_task.h"
-#include "online_requests.h"
-#include "lvgl.h"
 
 /**************************************************************
  *
@@ -83,7 +78,7 @@ void UI_MainScreen_Init(void){
     lv_obj_set_width(ui_MainScreenWeatherIcon, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenWeatherIcon, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenWeatherIcon, 55);
-    lv_obj_set_y(ui_MainScreenWeatherIcon, 100);
+    lv_obj_set_y(ui_MainScreenWeatherIcon, 80);
     lv_obj_set_align(ui_MainScreenWeatherIcon, LV_ALIGN_LEFT_MID);
     lv_obj_add_flag(ui_MainScreenWeatherIcon, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_ADV_HITTEST);
     lv_obj_clear_flag(ui_MainScreenWeatherIcon, LV_OBJ_FLAG_SCROLLABLE);
@@ -95,7 +90,7 @@ void UI_MainScreen_Init(void){
     lv_obj_set_width(ui_MainScreenWeatherLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenWeatherLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenWeatherLabel, 160);
-    lv_obj_set_y(ui_MainScreenWeatherLabel, 100);
+    lv_obj_set_y(ui_MainScreenWeatherLabel, 80);
     lv_obj_set_align(ui_MainScreenWeatherLabel, LV_ALIGN_LEFT_MID);
     lv_obj_set_style_text_align(ui_MainScreenWeatherLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_MainScreenWeatherLabel, "");
@@ -253,11 +248,11 @@ static void ui_main_screen_evt_handler(lv_event_t * e){
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
 
-    if((event_code == LV_EVENT_CLICKED) && (target == ui_MainScreenWeatherIcon)) {
+    if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenWeatherIcon)) {
 
     	OnlineRequest_Send(ONLINEREQ_DETAILED_UPDATE, NULL);
     }
-    else if((event_code == LV_EVENT_CLICKED) && (target == ui_MainScreenWifiButton)) {
+    else if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenWifiButton)) {
 
     	UI_ReportEvt(UI_EVT_MAINSCR_WIFI_BTN_CLICKED, 0);
     }

@@ -1,24 +1,15 @@
-#include <stdio.h>
-#include <string.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "freertos/event_groups.h"
-#include "esp_log.h"
+#include "main.h"
 #include "esp_event.h"
 #include "esp_spiffs.h"
 #include "esp_efuse.h"
 #include "esp_random.h"
 #include "mbedtls/aes.h"
+#include <string.h>
 #include "errno.h"
 
 #include "cJSON.h"
 
-#include "main.h"
-#include "ui_task.h"
-#include "wifi.h"
-#include "spiffs_task.h"
-
-#define FORMAT_SPIFFS
+//#define FORMAT_SPIFFS
 //#define ZJEB_DANE
 
 /**************************************************************

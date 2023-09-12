@@ -1,5 +1,5 @@
-#ifndef MAIN_UI_UI_MAIN_SCREEN_H_
-#define MAIN_UI_UI_MAIN_SCREEN_H_
+#ifndef MAIN_UI_SCREENS_UI_MAIN_SCREEN_H_
+#define MAIN_UI_SCREENS_UI_MAIN_SCREEN_H_
 
 #include "main.h"
 #include <sys/time.h>
@@ -19,4 +19,4 @@ void UI_MainScreen_UpdateWeatherData(int temp, int press, int hum);
 void UI_MainScreen_SetTopIcon(UI_TopIconType_t type, char icon);
 void UI_MainScreen_UpdateTimeAndDate(struct tm *changed_time);
 
-#endif /* MAIN_UI_UI_MAIN_SCREEN_H_ */
+#endif /* MAIN_UI_SCREENS_UI_MAIN_SCREEN_H_ */

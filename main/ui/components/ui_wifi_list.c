@@ -1,10 +1,4 @@
-#include "ui_wifi_list.h"
 #include "ui.h"
-#include "ui_task.h"
-#include "lvgl.h"
-#include "spiffs_task.h"
-#include "wifi.h"
-#include "esp_log.h"
 
 /**************************************************************
  *
@@ -83,8 +77,11 @@ void UI_WifiListClear(void){
 	} while(0 != next);
 
 	wifi_list_objects = 0;
+
+	lv_obj_add_flag(wifi_list, LV_OBJ_FLAG_CLICKABLE);
 }
 
+/* add single object to list */
 void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 
 	if(false == lv_obj_is_valid(wifi_list)) return;	//skip if list is not initialized
@@ -116,7 +113,7 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 
 	// add button with wifi name
 	new_obj->obj = lv_list_add_btn(wifi_list, 0, name);
-	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_CLICKED, NULL);
+	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_ALL, NULL);
 	lv_obj_add_style(new_obj->obj, &style_list, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	// add right aligned label to the button
@@ -153,7 +150,25 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
     }
 }
 
+/* set list as clickable */
+void UI_WifiList_SetClickable(void){
 
+	// wait untill list is not "pressed"
+	while(LV_STATE_DEFAULT != lv_obj_get_state(wifi_list)){
+
+		vTaskDelay(1);
+	}
+
+	lv_obj_add_flag(wifi_list, LV_OBJ_FLAG_CLICKABLE);
+}
+
+/* gei ssid of clicked object */
+void UI_WifiList_GetClickedSSID(lv_obj_t *obj, const char **ssid){
+
+	if((0 == obj) || (0 == ssid)) return;
+
+	*ssid = lv_list_get_btn_text(wifi_list, obj);
+}
 
 /**************************************************************
  *
@@ -162,41 +177,16 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
  ***************************************************************/
 static void wifi_list_event_handler(lv_event_t * e){
 
-	WifiCreds_t *creds = 0;
-	int a;
-	const char *ssid = 0;
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t * obj = lv_event_get_target(e);
+    lv_obj_t *obj = lv_event_get_target(e);
+
     if(code == LV_EVENT_CLICKED) {
 
-//    	SPIFFS_IsPasswordSaved((char *)lv_list_get_btn_text(wifi_list, obj));
+    	lv_obj_clear_flag(wifi_list, LV_OBJ_FLAG_CLICKABLE);
 
-    	ssid = lv_list_get_btn_text(wifi_list, obj);
+    	UI_ReportEvt(UI_EVT_WIFI_LIST_CLICKED, obj);
 
-    	// prepare return data
-    	creds = calloc(1, sizeof(WifiCreds_t));
-    	if(0 == creds) goto error;
-    	a = strnlen(ssid, 33);
-    	if(33 == a) goto error;
-    	creds->ssid = malloc(a + 1);
-    	if(0 == creds->ssid) goto error;
-    	memcpy(creds->ssid, ssid, a + 1);
-
-    	ESP_LOGI("ui_wifi_list.c", "calling Wifi_Connect");
-    	Wifi_Connect(creds);
+    	return;
     }
-
-    return;
-
-    error:
-		if(creds){
-			if(creds->ssid){
-				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
-			}
-			if(creds->pass){
-				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
-			}
-			if(heap_caps_get_allocated_size(creds)) free(creds);
-		}
 }
 
