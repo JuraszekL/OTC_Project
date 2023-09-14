@@ -10,7 +10,6 @@
 #include "cJSON.h"
 
 //#define FORMAT_SPIFFS
-//#define ZJEB_DANE
 
 /**************************************************************
  *
@@ -18,7 +17,6 @@
  *
  ***************************************************************/
 #define WIFI_PASS_FILE_EXIST_BIT			(1U << 0)
-//#define WIFI_PASS_FILE_EMPTY_BIT			(1U << 1)
 
 #define SPIFFS_MOUNT_PATH 					"/spiffs"
 #define SPIFFS_PART_LABEL 					"spiffs"
@@ -27,7 +25,7 @@
 
 #define JSON_IV_LABEL						"iv"
 #define JSON_PASS_LABEL						"pass"
-#define JSON_ORG_LEN_LABEL					"org_len"
+#define JSON_ORG_LEN_LABEL					"pass_len"
 
 /**************************************************************
  *
@@ -51,15 +49,6 @@ struct spiffs_queue_data {
 
 };
 
-//typedef struct {
-//
-//	char *ssid;
-//	char *iv;
-//	char *pass;
-//	int org_len;
-//
-//} spiffs_wifi_record_t;
-
 /**************************************************************
  *
  *	Function prototypes
@@ -75,8 +64,8 @@ static void spiffs_save_pass_routine(void *arg);
 static int spiffs_restore_wifi_pass_backup_file(void);
 static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **file_buff, cJSON **json);
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff);
-static int json_add_wifi_record(cJSON **json, WifiCreds_t *data, char **output_string);
-static int json_get_wifi_pass(cJSON *json, char **pass);
+static int json_add_wifi_record_encrypted(cJSON **json, WifiCreds_t *data, char **output_string);
+static int json_get_wifi_pass_encrypted(cJSON *json, char **pass);
 
 /**************************************************************
  *
@@ -153,6 +142,8 @@ void SPIFFS_SavePass(WifiCreds_t *creds){
  * Private function definitions
  *
  ***************************************************************/
+
+/* mount filesystem */
 static void spiffs_mount(void){
 
 	esp_err_t ret;
@@ -168,7 +159,7 @@ static void spiffs_mount(void){
 	ESP_ERROR_CHECK(esp_vfs_spiffs_register(&conf));
 
 #ifdef FORMAT_SPIFFS
-	esp_spiffs_format(conf.partition_label);	//TODO zakomentować!
+	esp_spiffs_format(conf.partition_label);
 #endif
 	ret = esp_spiffs_info(conf.partition_label, &total, &used);
 	if(ret != ESP_OK){
@@ -209,6 +200,7 @@ static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool import
 	}
 }
 
+/* check file where wifi passwords are saved */
 static void spiffs_check_wifi_pass_file_routine(void *arg){
 
 	FILE *f = 0;
@@ -251,6 +243,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 	if(0 != spiffs_perform_read(NULL, &f, &file_size, &wifi_pass_json_raw, &wifi_pass_json)) goto error;
 	if(0 != file_size){
 
+		// free resources and close file if everything is ok
 		cJSON_Delete(wifi_pass_json);
 		free(wifi_pass_json_raw);
 	}
@@ -258,6 +251,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 	fclose(f);
 	return;
 
+	// try to restore backup file is fomething is wrong
 	error:
 		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
 		if(wifi_pass_json_raw){
@@ -267,6 +261,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 		ESP_LOGE("", "Error checking %s file", wifi_pass_file_path);
 		if(0 == spiffs_restore_wifi_pass_backup_file()) return;
 
+	// format partition if critical error occured
 	filesystem_error:
 		xEventGroupClearBits(spiffs_files_status, WIFI_PASS_FILE_EXIST_BIT);
 		ESP_LOGE("", "Critical filesystem error, %s file couldn't be opened, errno = %d", wifi_pass_file_path, errno);
@@ -275,7 +270,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 		return;
 }
 
-
+/* get password from file for recieved ssid */
 static void spiffs_get_pass_routine(void *arg){
 
 	FILE *f = 0;
@@ -285,12 +280,15 @@ static void spiffs_get_pass_routine(void *arg){
 	EventBits_t bits;
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
+	// break if file with saved password doesn't exist
 	bits = xEventGroupGetBits(spiffs_files_status);
 	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
 
+	// read and parse file
 	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
 			&wifi_pass_json)) goto error;
 
+	// if file is empty return 0 as password
 	if(0 == file_size){
 
 		creds->pass = 0;
@@ -299,21 +297,24 @@ static void spiffs_get_pass_routine(void *arg){
 		return;
 	}
 
+	// if password for recieved ssid is saved read and decrypt it
 	if(true == cJSON_HasObjectItem(wifi_pass_json, creds->ssid)){
 
 		ssid_json = cJSON_GetObjectItemCaseSensitive(wifi_pass_json, creds->ssid);
 		if(0 == ssid_json) goto error;
 
-		if(0 != json_get_wifi_pass(ssid_json, &creds->pass)) goto error;
-		//if(0 != json_get_crypted_wifi_pass(ssid_json, &creds->pass)) goto error; //TODO
+		if(0 != json_get_wifi_pass_encrypted(ssid_json, &creds->pass)) goto error;
 	}
 	else {
 
+		// return 0 as password if no
 		creds->pass = 0;
 	}
 
+	// report password to wifi task
 	Wifi_ReportPass(creds);
 
+	// cleanup
 	cJSON_Delete(wifi_pass_json);
 	free(wifi_pass_json_raw);
 	fclose(f);
@@ -337,7 +338,7 @@ static void spiffs_get_pass_routine(void *arg){
 		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
-
+/* save recieved password */
 static void spiffs_save_pass_routine(void *arg){
 
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
@@ -347,7 +348,7 @@ static void spiffs_save_pass_routine(void *arg){
 	cJSON *wifi_pass_json = 0;
 	EventBits_t bits;
 
-	// if file doesn't exists
+	// break if file doesn't exists
 	bits = xEventGroupGetBits(spiffs_files_status);
 	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
 
@@ -376,17 +377,11 @@ static void spiffs_save_pass_routine(void *arg){
 	// if no any password for given ssid was saved before
 	if(false == cJSON_HasObjectItem(wifi_pass_json, creds->ssid)){
 
-		if(0 != json_add_wifi_record(&wifi_pass_json, creds, &wifi_pass_json_raw)) goto error;
-	//	if(0 != json_add_crypted_wifi_record(&wifi_pass_json, data, &wifi_pass_json_raw)) goto error;	//TODO
+		// create id and save encrypted password
+		if(0 != json_add_wifi_record_encrypted(&wifi_pass_json, creds, &wifi_pass_json_raw)) goto error;
 
-		// get lenght of the string
+		// write the modified content to a file
 		a = strlen(wifi_pass_json_raw);
-		ESP_LOGI("", "a = %d", a);
-
-	#ifdef ZJEB_DANE
-		a -= 5;
-	#endif
-
 		if(0 != spiffs_perform_write(wifi_pass_file_path, &f, (a + 1), wifi_pass_json_raw)) goto error;
 
 		fclose(f);
@@ -536,184 +531,190 @@ static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *f
 	return 0;
 }
 
-/* add new wifi record to obtained json + return as string */
-static int json_add_wifi_record(cJSON **json, WifiCreds_t *data, char **output_string){
+/* add new json record with encrypted password */
+static int json_add_wifi_record_encrypted(cJSON **json, WifiCreds_t *data, char **output_string){
 
-//	cJSON *ssid = 0, *iv = 0, *pass = 0, *org_len = 0;
-	cJSON *ssid = 0, *pass = 0;
+		cJSON *json_ssid = 0, *json_iv = 0, *json_pass = 0, *json_pass_len = 0;
+		mbedtls_aes_context aes_ctx;
+		const esp_efuse_desc_t **aes_key_efuse;
+		unsigned char aes_key[32], iv[17], input[64], output[128] = {0};
+		size_t org_len, new_len;
+		uint8_t y, z;
+		esp_err_t ret;
 
-	// create new object with ssid as name
-	ssid = cJSON_CreateObject();
-	if(0 == ssid) return -1;
-	cJSON_AddItemToObject(*json, data->ssid, ssid);
+		// load AES key from efuse KEY0
+	    aes_key_efuse = esp_efuse_get_key(EFUSE_BLK_KEY0);
+	    ret = esp_efuse_read_field_blob(aes_key_efuse, aes_key, (sizeof(aes_key) * 8));
+	    if(ESP_OK != ret){
 
-//	// add input vector as string to the object
-//	iv = cJSON_CreateString(data->iv);
-//	if(0 == iv) return -1;
-//	cJSON_AddItemToObject(ssid, JSON_IV_LABEL, iv);
+	    	ESP_LOGE("", "Failed to read efuse");
+	    	goto error;
+	    }
 
-	// add password as string to the object
-	pass = cJSON_CreateString(data->pass);
-	if(0 == pass) return -1;
-	cJSON_AddItemToObject(ssid, JSON_PASS_LABEL, pass);
+	    // generate random input vector for encrypting password
+	    esp_fill_random(iv, 16U);
+	    for(y = 0; y < 16; y++){
 
-//	// add pasword length as number to the object
-//	org_len = cJSON_CreateNumber(data->org_len);
-//	if(0 == org_len) return -1;
-//	cJSON_AddItemToObject(ssid, JSON_ORG_LEN_LABEL, org_len);
+	    	// check if there is no 0 value within random numbers
+	    	// it can be treated like a string breaker
+	    	// set some value if is equal to 0
+	    	if(0 == iv[y]){
 
-	// convert created json to string
-	*output_string = cJSON_PrintUnformatted(*json);
-	if(0 == *output_string) return -1;
+	    		iv[y] = y + 7;
+	    	}
+	    }
 
-	return 0;
+	    // set NULL as last item in iv_key array
+	    iv[16] = 0;
+
+		// copy current iv_key value as a string to JSON object
+	    // it is important to do it before calling "mbedtls_aes_crypt_cbc" function because it will change
+	    // the content of iv_key anytime when is called
+	    json_iv = cJSON_CreateString((char *)iv);
+		if(0 == json_iv) goto error;
+
+		// initialize context of AES crypting operation
+		mbedtls_aes_init(&aes_ctx);
+		mbedtls_aes_setkey_enc(&aes_ctx, aes_key, 256);
+
+		// check length of password
+		org_len = strnlen(data->pass, 64);	// len = 23
+		if((0 == org_len) || (64 == org_len)) goto error;
+
+		// copy password to input buffer
+	    memcpy(input, data->pass, org_len);
+		new_len = org_len;
+
+		// AES can only encrypt data that is a multiple of 16 bytes
+		// to pass this condition we have to add padding bytes with '0' character
+
+	    z = org_len % 16U;	// how many characters are left and need to be padded	// z = 7
+
+	    // if there are characters to be padded
+	    if(0 != z){
+
+	    	// how many bytes are needed
+	    	y = 16U - z;		// y = 9
+	    	while(0 != y){
+
+	    		input[new_len] = '0';
+	    		new_len++;
+	    		y--;
+	    	}
+	    }
+
+	    // perform password encryption
+	    if(0 != mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_ENCRYPT, new_len, iv, input, output )){
+
+	    	ESP_LOGE("", "encryption has failed");
+	    	goto error;
+	    }
+
+		// create new object with ssid as name
+	    json_ssid = cJSON_CreateObject();
+		if(0 == json_ssid) goto error;
+		cJSON_AddItemToObject(*json, data->ssid, json_ssid);
+
+		// add iv object (created above)
+		cJSON_AddItemToObject(json_ssid, JSON_IV_LABEL, json_iv);
+
+		// add pasword length as number to the object
+		json_pass_len = cJSON_CreateNumber(org_len);
+		if(0 == json_pass_len) goto error;
+		cJSON_AddItemToObject(json_ssid, JSON_ORG_LEN_LABEL, json_pass_len);
+
+		// add password as string to the object
+		json_pass = cJSON_CreateString((char *)output);
+		if(0 == json_pass) goto error;
+		cJSON_AddItemToObject(json_ssid, JSON_PASS_LABEL, json_pass);
+
+		// convert created json to string
+		*output_string = cJSON_PrintUnformatted(*json);
+		if(0 == *output_string) goto error;
+
+		// cleanup
+		mbedtls_aes_free(&aes_ctx);
+		return 0;
+
+		error:
+			mbedtls_aes_free(&aes_ctx);
+			return -1;
 }
 
-static int json_get_wifi_pass(cJSON *json, char **pass){
+/* read and decrypt password from json record */
+static int json_get_wifi_pass_encrypted(cJSON *json, char **pass){
 
-	int len;
+	cJSON *json_pass = 0, *json_iv = 0, *json_pass_len = 0;
+	mbedtls_aes_context aes_ctx;
+	const esp_efuse_desc_t **aes_key_efuse;
+	unsigned char input[128], output[65] = {0}, iv[17], aes_key[32];
+	int len, org_len, a;
+	esp_err_t ret;
 
-	cJSON *json_pass = cJSON_GetObjectItemCaseSensitive(json, JSON_PASS_LABEL);
-	if(0 == json_pass) return -1;
+	// copy input vector to buffer
+	json_iv = cJSON_GetObjectItemCaseSensitive(json, JSON_IV_LABEL);
+	if(0 == json_iv) goto error;
+	if (0 == cJSON_IsString(json_iv) || (json_iv->valuestring == 0)) goto error;
 
-	if (0 == cJSON_IsString(json_pass) || (json_pass->valuestring == 0)) return -1;
+	len = strnlen(json_iv->valuestring, 17);
+	if((0 == len) || (17 == len)) goto error;
 
-	len = strnlen(json_pass->valuestring, 65);
-	if((0 == len) || (65 == len)) return -1;
+	memcpy(iv, json_iv->valuestring, (len + 1));
 
-	*pass = calloc(1, (len + 1));
-	if(0 == *pass) return -1;
+	// copy encrypted password to input buffer
+	json_pass = cJSON_GetObjectItemCaseSensitive(json, JSON_PASS_LABEL);
+	if(0 == json_pass) goto error;
+	if (0 == cJSON_IsString(json_pass) || (json_pass->valuestring == 0)) goto error;
 
-	memcpy(*pass, json_pass->valuestring, (len + 1));
+	len = strnlen(json_pass->valuestring, 128);
+	if((0 == len) || (128 == len)) goto error;
 
+	memcpy(input, json_pass->valuestring, (len + 1));
+
+	// get password length
+	json_pass_len = cJSON_GetObjectItemCaseSensitive(json, JSON_ORG_LEN_LABEL);
+	if(0 == json_pass_len) goto error;
+	if(0 == cJSON_IsNumber(json_pass_len)) goto error;
+	org_len = json_pass_len->valueint;
+
+	// load AES key from efuse KEY0
+    aes_key_efuse = esp_efuse_get_key(EFUSE_BLK_KEY0);
+    ret = esp_efuse_read_field_blob(aes_key_efuse, aes_key, (sizeof(aes_key) * 8));
+    if(ESP_OK != ret){
+
+    	ESP_LOGE("", "Failed to read efuse");
+    	goto error;
+    }
+
+	// initialize context of AES crypting operation
+	mbedtls_aes_init(&aes_ctx);
+	mbedtls_aes_setkey_dec(&aes_ctx, aes_key, 256);
+
+	// perform decryption of password
+	a = mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_DECRYPT, len, iv, input, output );
+	if(0 != a){
+
+		ESP_LOGE("", "decryption has failed, a = %d", a);
+		goto error;
+	}
+
+	// set 0 after the last characted
+    output[org_len] = 0;
+
+    // prepare output data
+	*pass = calloc(1, (org_len + 1));
+	if(0 == *pass) goto error;
+
+	memcpy(*pass, output, (org_len + 1));
+
+	// cleanup
+    mbedtls_aes_free(&aes_ctx);
 	return 0;
+
+	error:
+		if(*pass){
+			if(heap_caps_get_allocated_size(*pass)) free(*pass);
+		}
+		mbedtls_aes_free(&aes_ctx);
+		return -1;
 }
-//static int spiffs_mount(void){
-//
-//	FILE *f = 0;
-//	size_t org_len, new_len, a;
-//	uint8_t y, z;
-//
-//	mbedtls_aes_context aes_ctx;
-//	unsigned char aes_key[32], iv[16], iv2[16];
-//
-//	const esp_efuse_desc_t **aes_key_efuse;
-//
-//    esp_vfs_spiffs_conf_t conf = {
-//      .base_path = "/spiffs",
-//      .partition_label = "spiffs",
-//      .max_files = 3,
-//      .format_if_mount_failed = true,
-//    };
-//
-//    esp_err_t ret = esp_vfs_spiffs_register(&conf);
-//
-//    if (ret != ESP_OK) {
-//        if (ret == ESP_FAIL) {
-//            ESP_LOGE("", "Failed to mount or format filesystem");
-//        } else if (ret == ESP_ERR_NOT_FOUND) {
-//            ESP_LOGE("", "Failed to find SPIFFS partition");
-//        } else {
-//            ESP_LOGE("", "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
-//        }
-//        return -1;
-//    }
-//
-//    size_t total = 0, used = 0;
-//    ret = esp_spiffs_info(conf.partition_label, &total, &used);
-//    if (ret != ESP_OK) {
-//        ESP_LOGE("", "Failed to get SPIFFS partition information (%s). Formatting...", esp_err_to_name(ret));
-//        esp_spiffs_format(conf.partition_label);
-//        return -1;
-//    } else {
-//        ESP_LOGI("", "Partition size: total: %d, used: %d", total, used);
-//    }
-//
-//    aes_key_efuse = esp_efuse_get_key(EFUSE_BLK_KEY0);
-//    ret = esp_efuse_read_field_blob(aes_key_efuse, aes_key, (sizeof(aes_key) * 8));
-//    if(ESP_OK != ret){
-//
-//    	ESP_LOGE("", "Failed to read efuse");
-//    	return -1;
-//    }
-//
-//    esp_fill_random(iv, 16U);
-//	memcpy(iv2, iv, 16);
-//    mbedtls_aes_init(&aes_ctx);
-//    mbedtls_aes_setkey_enc(&aes_ctx, aes_key, 256);
-//    mbedtls_aes_setkey_dec(&aes_ctx, aes_key, 256);
-//
-//    org_len = strlen(string_to_encrypt);	// len = 23
-//    if(128 == org_len) return -1;
-//    new_len = org_len;
-//
-//    z = org_len % 16U;	// how many characters are left and need to be padded	// z = 7
-//    memcpy(input, string_to_encrypt, org_len);
-//
-//    // if there are characters to be padded
-//    if(0 != z){
-//
-//    	y = 16U - z;		// y = 9
-//    	while(0 != y){
-//
-//    		input[new_len] = '0';
-//    		new_len++;
-//    		y--;
-//    	}
-//    }
-//
-//    z = new_len % 16U;
-//    if(0 != z){
-//
-//    	ESP_LOGE("", "algorithm is fucked up a lot...");
-//    	return -1;
-//    }
-//    else{
-//
-//    	ESP_LOGI("", "org_len = %d, new_len = %d", org_len, new_len);
-//    }
-//
-//    if(0 != mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_ENCRYPT, new_len, iv, input, output )){
-//
-//    	ESP_LOGE("", "crypt has failed");
-//    	return -1;
-//    }
-//
-//    new_len = strnlen((char *)output, 128);
-//    ESP_LOGI("", "new_len = %d", new_len);
-//
-//
-//    f = fopen("/spiffs/wifi", "w+");
-//    if(0 == f){
-//
-//    	ESP_LOGE("", "Failed to create file");
-//    	return -1;
-//    }
-//
-//    a = fwrite(output, sizeof(char), new_len + 1, f);
-//
-//    ESP_LOGI("", "a = %d", a);
-//
-//    rewind(f);
-//    memset(input, 0, sizeof(input));
-//    memset(output, 0, sizeof(output));
-//
-//    a = fread(input, sizeof(char), new_len + 1, f);
-//
-//    if(0 != mbedtls_aes_crypt_cbc( &aes_ctx, MBEDTLS_AES_DECRYPT, new_len, iv2, input, output )){
-//
-//    	ESP_LOGE("", "crypt has failed");
-//    	return -1;
-//    }
-//
-//    output[org_len] = 0;
-//    ESP_LOGI("", "%s", output);
-//
-//    fclose(f);
-//
-//    mbedtls_aes_free(&aes_ctx);
-//
-//    esp_vfs_spiffs_unregister(conf.partition_label);
-//
-//	return 0;
-//}
