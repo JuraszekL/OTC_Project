@@ -7,7 +7,7 @@
 
 #include "lvgl.h"
 #include "esp_lcd_ili9488.h"
-#include "ft6x36.h"
+//#include "ft6x36.h"
 
 /**************************************************************
  *
