@@ -16,6 +16,7 @@ extern "C" {
 #include "screens/ui_wifi_screen.h"
 #include "screens/ui_weather_screen.h"
 #include "screens/ui_startup_screen.h"
+#include "screens/ui_setup_screen.h"
 
 /**************************************************************
  * Font icon characters
@@ -37,6 +38,7 @@ extern "C" {
 #define ICON_SIGNAL_GOOD	'O'
 #define ICON_SIGNAL_MID		'P'
 #define ICON_SIGNAL_LOW		'Q'
+#define ICON_SETUP			'R'
 
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 

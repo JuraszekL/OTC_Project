@@ -13,7 +13,8 @@ static void ui_main_screen_evt_handler(lv_event_t * e);
  *
  ***************************************************************/
 static lv_obj_t *ui_MainScreen, *ui_MainScreenClockLabel, *ui_MainScreenDateLabel, *ui_MainScreenTopIconsLabel,
-			*ui_MainScreenHorLine, *ui_MainScreenWeatherIcon, *ui_MainScreenWeatherLabel, *ui_MainScreenWifiButton;
+			*ui_MainScreenHorLine, *ui_MainScreenWeatherIcon, *ui_MainScreenWeatherLabel, *ui_MainScreenWifiButton,
+			*ui_MainScreenSetupButton;
 
 static struct {
 
@@ -38,7 +39,7 @@ extern const char *Eng_MonthName_3char[12];
 /* Initialize main screen */
 void UI_MainScreen_Init(void){
 
-	lv_obj_t *wifi_but_label;
+	lv_obj_t *but_label;
 
 	UI_ScreenCreate(&ui_MainScreen);
 
@@ -102,9 +103,20 @@ void UI_MainScreen_Init(void){
     lv_obj_set_align(ui_MainScreenWifiButton, LV_ALIGN_BOTTOM_LEFT);
     lv_obj_add_event_cb(ui_MainScreenWifiButton, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
 
-    wifi_but_label = lv_label_create(ui_MainScreenWifiButton);
-    lv_obj_add_style(wifi_but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(wifi_but_label, "%c", ICON_WIFI);
+    but_label = lv_label_create(ui_MainScreenWifiButton);
+    lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(but_label, "%c", ICON_WIFI);
+
+    ui_MainScreenSetupButton = lv_btn_create(ui_MainScreen);
+    lv_obj_add_style(ui_MainScreenSetupButton, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_x(ui_MainScreenSetupButton, -20);
+    lv_obj_set_y(ui_MainScreenSetupButton, -20);
+    lv_obj_set_align(ui_MainScreenSetupButton, LV_ALIGN_BOTTOM_RIGHT);
+    lv_obj_add_event_cb(ui_MainScreenSetupButton, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
+
+    but_label = lv_label_create(ui_MainScreenSetupButton);
+    lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(but_label, "%c", ICON_SETUP);
 }
 
 /* load main screen with selected delay */
@@ -255,5 +267,9 @@ static void ui_main_screen_evt_handler(lv_event_t * e){
     else if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenWifiButton)) {
 
     	UI_ReportEvt(UI_EVT_MAINSCR_WIFI_BTN_CLICKED, 0);
+    }
+    else if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenSetupButton)) {
+
+    	UI_ReportEvt(UI_EVT_MAINSCR_SETUP_BTN_CLICKED, 0);
     }
 }

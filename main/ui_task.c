@@ -37,6 +37,8 @@ static void ui_event_main_scr_wifi_btn_clicked(void *arg);
 static void ui_event_wifi_scr_back_btn_clicked(void *arg);
 static void ui_event_weather_scr_back_btn_clicked(void *arg);
 static void ui_event_startup_screen_ready(void *arg);
+static void ui_event_setup_scr_back_btn_clicked(void *arg);
+static void ui_event_main_scr_setup_btn_clicked(void *arg);
 
 static void ui_event_run_startup_screen(void *arg);
 /**************************************************************
@@ -64,6 +66,8 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFISCR_BACK_BTN_CLICKED] = ui_event_wifi_scr_back_btn_clicked,
 		[UI_EVT_WEATHERSCR_BACK_BTN_CLICKED] =  ui_event_weather_scr_back_btn_clicked,
 		[UI_EVT_STARTUP_SCREEN_READY] = ui_event_startup_screen_ready,
+		[UI_EVT_SETUPSCR_BACK_BTN_CLICKED] = ui_event_setup_scr_back_btn_clicked,
+		[UI_EVT_MAINSCR_SETUP_BTN_CLICKED] = ui_event_main_scr_setup_btn_clicked,
 
 		[UI_EVT_RUN_STARTUP_SCREEN] = ui_event_run_startup_screen,
 };
@@ -95,6 +99,7 @@ void UI_Task(void *arg){
 	UI_MainScreen_Init();
 	UI_WeatherScreen_Init();
 	UI_WifiScreen_Init();
+	UI_SetupScreen_Init();
 
 	xSemaphoreGive(LVGL_MutexHandle);
 
@@ -334,4 +339,14 @@ static void ui_event_wifilist_clicked(void *arg){
 static void ui_event_run_startup_screen(void *arg){
 
 	UI_StarttupScreen_Load();
+}
+
+static void ui_event_setup_scr_back_btn_clicked(void *arg){
+
+	UI_MainScreen_Load(0);
+}
+
+static void ui_event_main_scr_setup_btn_clicked(void *arg){
+
+	UI_SetupScreen_Load();
 }
