@@ -23,7 +23,7 @@ static void wifi_list_event_handler(lv_event_t * e);
  *	Global variables
  *
  ***************************************************************/
-static lv_style_t style_list;
+//static lv_style_t style_list;
 static lv_obj_t *wifi_list;
 static struct list_objects *wifi_list_objects;
 
@@ -38,19 +38,21 @@ void UI_WifiListInit(lv_obj_t *screen){
 
 	if(true == lv_obj_is_valid(wifi_list)) return;	//skip if already initialized
 
-	// init list style
-	lv_style_init(&style_list);
-	lv_style_set_bg_opa(&style_list, LV_OPA_TRANSP);
-	lv_style_set_border_opa(&style_list, LV_OPA_TRANSP);
-	lv_style_set_text_font(&style_list, &lv_font_montserrat_16);
-	lv_style_set_text_color(&style_list, lv_color_hex(0xF2921D));
+//	// init list style
+//	lv_style_init(&style_list);
+//	lv_style_set_bg_opa(&style_list, LV_OPA_TRANSP);
+//	lv_style_set_border_opa(&style_list, LV_OPA_TRANSP);
+//	lv_style_set_text_font(&style_list, &lv_font_montserrat_16);
+//	lv_style_set_text_color(&style_list, lv_color_hex(0xF2921D));
 
 	// init list
 	wifi_list = lv_list_create(screen);
     lv_obj_set_size(wifi_list, 320, 250);
     lv_obj_align(wifi_list, LV_ALIGN_TOP_MID, 0, 145);
+    lv_obj_set_style_bg_opa(wifi_list, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_style_border_opa(wifi_list, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-    lv_obj_add_style(wifi_list, &style_list, LV_PART_MAIN | LV_STATE_DEFAULT);
+//    lv_obj_add_style(wifi_list, &style_list, LV_PART_MAIN | LV_STATE_DEFAULT);
 }
 
 /* clear whole list */
@@ -114,7 +116,7 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 	// add button with wifi name
 	new_obj->obj = lv_list_add_btn(wifi_list, 0, name);
 	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_ALL, NULL);
-	lv_obj_add_style(new_obj->obj, &style_list, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(new_obj->obj, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	// add right aligned label to the button
 	button_icon_right = lv_label_create(new_obj->obj);

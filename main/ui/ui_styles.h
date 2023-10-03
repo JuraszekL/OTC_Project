@@ -5,10 +5,11 @@
 
 typedef struct {
 
-	lv_color_t background_color;
-	lv_color_t main_color_bright;
-	lv_color_t main_color_dark;
-	lv_color_t bg_contr_color;
+	lv_color_t background_color_base;
+	lv_color_t background_color_ext;
+	lv_color_t main_color_base;
+	lv_color_t main_color_ext;
+	lv_color_t contrast_color;
 
 } ThemeColorsSet_t;
 

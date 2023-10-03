@@ -50,7 +50,8 @@ LV_FONT_DECLARE(ui_font_Varino30);
 LV_FONT_DECLARE(ui_font_digital144);
 
 void UI_ScreenCreate(lv_obj_t **screen);
-void UI_BackButtonCreate(lv_obj_t **screen, lv_obj_t **button);
+void UI_ButtonCreate(lv_obj_t **parent, lv_obj_t **button, char icon);
+void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button);
 void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line);
 
 #ifdef __cplusplus

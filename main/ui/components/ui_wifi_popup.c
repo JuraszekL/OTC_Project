@@ -344,25 +344,15 @@ static void wifi_popup_create_checkboxes(void){
 /* create back and connect buttons */
 static void wifi_popup_create_buttons(void *arg){
 
-	lv_obj_t *but_label;
-
-	back_button = lv_btn_create(panel);
-	lv_obj_add_style(back_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	UI_ButtonCreate(&panel, &back_button, ICON_LEFT_ARROW);
 	lv_obj_set_align(back_button, LV_ALIGN_BOTTOM_LEFT);
+	lv_obj_set_x(back_button, 10);
 	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
 
-	but_label = lv_label_create(back_button);
-	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_label_set_text_fmt(but_label, "%c", ICON_LEFT_ARROW);
-
-	ok_button = lv_btn_create(panel);
-	lv_obj_add_style(ok_button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	UI_ButtonCreate(&panel, &ok_button, ICON_RIGHT_ARROW);
 	lv_obj_set_align(ok_button, LV_ALIGN_BOTTOM_RIGHT);
+	lv_obj_set_x(ok_button, -10);
 	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
-
-	but_label = lv_label_create(ok_button);
-	lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_label_set_text_fmt(but_label, "%c", ICON_RIGHT_ARROW);
 }
 
 /* create keyboard outside the screen */
