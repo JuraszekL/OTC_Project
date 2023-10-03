@@ -4,7 +4,7 @@
 /**************************************************************
  * Public functions
  ***************************************************************/
-void UI_WeatherScrren_Init(void);
+void UI_WeatherScreen_Init(void);
 void UI_WeatherScreen_Load(void);
 void UI_WeatherScreen_UpdateCityName(char *city_name);
 void UI_WeatherScreen_UpdateCountryName(char *country_name);

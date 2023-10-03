@@ -27,7 +27,7 @@ static lv_obj_t *ui_WeatherScreen, *ui_WeatherScreenBackButton,
  ***************************************************************/
 
 /* initialize weather screen */
-void UI_WeatherScrren_Init(void){
+void UI_WeatherScreen_Init(void){
 
 	UI_ScreenCreate(&ui_WeatherScreen);
 

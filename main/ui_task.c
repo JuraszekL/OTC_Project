@@ -93,7 +93,7 @@ void UI_Task(void *arg){
 
 	UI_StartupScreen_Init();
 	UI_MainScreen_Init();
-	UI_WeatherScrren_Init();
+	UI_WeatherScreen_Init();
 	UI_WifiScreen_Init();
 
 	xSemaphoreGive(LVGL_MutexHandle);
