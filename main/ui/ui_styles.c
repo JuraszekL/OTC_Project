@@ -3,9 +3,10 @@
 
 ThemeColorsSet_t UI_CurrentTheme;
 
-lv_style_t 	UI_ButtonStyle, UI_ButtonLabelStyle,
+lv_style_t 	UI_ScreenStyle, UI_ButtonStyle,
+			UI_Icon24Style,
+
 			UI_PopupPanelStyle,
-			UI_ScreenStyle,
 			UI_ClockLabelStyle, UI_LabelIcon36DarkStyle,
 			UI_Label30ContrastStyle, UI_Label30DarkStyle,
 			UI_Label14ContrastStyle,
@@ -28,22 +29,17 @@ void UI_InitStyles(void){
 	UI_CurrentTheme.contrast_color = lv_color_hex(0xeac025);
 
 	lv_style_init(&UI_ButtonStyle);
-//	lv_style_set_width(&UI_ButtonStyle, 100);
-//	lv_style_set_height(&UI_ButtonStyle, 50);
 	lv_style_set_bg_opa(&UI_ButtonStyle, LV_OPA_TRANSP);
 	lv_style_set_border_color(&UI_ButtonStyle, UI_CurrentTheme.main_color_base);
 	lv_style_set_border_opa(&UI_ButtonStyle, LV_OPA_COVER);
 	lv_style_set_border_width(&UI_ButtonStyle, 4);
 	lv_style_set_shadow_opa(&UI_ButtonStyle, LV_OPA_TRANSP);
 
-	lv_style_init(&UI_ButtonLabelStyle);
-	lv_style_set_width(&UI_ButtonLabelStyle, LV_SIZE_CONTENT);
-	lv_style_set_align(&UI_ButtonLabelStyle, LV_ALIGN_CENTER);
-	lv_style_set_height(&UI_ButtonLabelStyle, LV_SIZE_CONTENT);
-	lv_style_set_bg_opa(&UI_ButtonLabelStyle, LV_OPA_TRANSP);
-	lv_style_set_text_color(&UI_ButtonLabelStyle, UI_CurrentTheme.main_color_base);
-	lv_style_set_text_font(&UI_ButtonLabelStyle, &ui_font_UIIconsNew36);
-	lv_style_set_text_opa(&UI_ButtonLabelStyle, LV_OPA_COVER);
+	lv_style_init(&UI_Icon24Style);
+	lv_style_set_bg_opa(&UI_Icon24Style, LV_OPA_TRANSP);
+	lv_style_set_text_opa(&UI_Icon24Style, LV_OPA_COVER);
+	lv_style_set_text_color(&UI_Icon24Style, UI_CurrentTheme.contrast_color);
+	lv_style_set_text_font(&UI_Icon24Style, &ui_font_UIIcons24);
 
 	lv_style_init(&UI_PopupPanelStyle);
 	lv_style_set_bg_color(&UI_PopupPanelStyle, UI_CurrentTheme.background_color_base);

@@ -43,6 +43,7 @@ extern "C" {
 LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 
 LV_FONT_DECLARE(ui_font_UIIconsNew16);
+LV_FONT_DECLARE(ui_font_UIIcons24);
 LV_FONT_DECLARE(ui_font_UIIconsNew36);
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);

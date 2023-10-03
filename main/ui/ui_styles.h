@@ -15,7 +15,7 @@ typedef struct {
 
 extern ThemeColorsSet_t UI_CurrentTheme;
 
-extern lv_style_t 	UI_ButtonStyle, UI_ButtonLabelStyle,
+extern lv_style_t 	UI_ButtonStyle, UI_Icon24Style,
 					UI_PopupPanelStyle,
 					UI_ScreenStyle,
 					UI_ClockLabelStyle, UI_LabelIcon36DarkStyle,

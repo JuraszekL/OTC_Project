@@ -23,16 +23,17 @@ void UI_ScreenCreate(lv_obj_t **screen){
 
 void UI_ButtonCreate(lv_obj_t **parent, lv_obj_t **button, char icon){
 
-	lv_obj_t *back_but_label;
+	lv_obj_t *button_icon;
 
 	*button = lv_btn_create(*parent);
     lv_obj_add_style(*button, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(*button, UI_BUTTON_WIDTH);
     lv_obj_set_height(*button, UI_BUTTON_HEIGHT);
 
-    back_but_label = lv_label_create(*button);
-    lv_obj_add_style(back_but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text_fmt(back_but_label, "%c", icon);
+    button_icon = lv_label_create(*button);
+    lv_obj_add_style(button_icon, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_text_fmt(button_icon, "%c", icon);
+    lv_obj_set_align(button_icon, LV_ALIGN_CENTER);
 }
 
 void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button){

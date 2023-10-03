@@ -67,7 +67,7 @@ void UI_MainScreen_Init(void){
     lv_label_set_text(ui_MainScreenDateLabel, "");
 
     ui_MainScreenTopIconsLabel = lv_label_create(ui_MainScreen);
-    lv_obj_add_style(ui_MainScreenTopIconsLabel, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_MainScreenTopIconsLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_align(ui_MainScreenTopIconsLabel, LV_ALIGN_TOP_LEFT);
     lv_obj_set_width(ui_MainScreenTopIconsLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenTopIconsLabel, LV_SIZE_CONTENT);
