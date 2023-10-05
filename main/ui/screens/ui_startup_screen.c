@@ -52,14 +52,14 @@ void UI_StartupScreen_Init(void){
 	lv_obj_clear_flag(ui_StartupScreenPanel, LV_OBJ_FLAG_SCROLLABLE );     /// Flags
 
 	ui_StartupScreenPanelLabel = lv_label_create(ui_StartupScreenPanel);
-	lv_obj_add_style(ui_StartupScreenPanelLabel, &UI_Varino30BackgroundLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(ui_StartupScreenPanelLabel, &UI_StartupPanelTextStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenPanelLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenPanelLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_align(ui_StartupScreenPanelLabel, LV_ALIGN_CENTER);
 	lv_label_set_text(ui_StartupScreenPanelLabel, "OTC PROJECT");
 
 	ui_StartupScreenTitleLabel = lv_label_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenTitleLabel, &UI_Varino18DarkLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(ui_StartupScreenTitleLabel, &UI_Varino18Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenTitleLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenTitleLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_x(ui_StartupScreenTitleLabel, 0);
@@ -68,7 +68,7 @@ void UI_StartupScreen_Init(void){
 	lv_label_set_text(ui_StartupScreenTitleLabel, "ONLINE TABLE CLOCK");
 
 	ui_StartupScreenAuthorLabel = lv_label_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenAuthorLabel, &UI_Varino12ContrastLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(ui_StartupScreenAuthorLabel, &UI_Varino12Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenAuthorLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenAuthorLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_x(ui_StartupScreenAuthorLabel, 0);
@@ -87,7 +87,7 @@ void UI_StartupScreen_Init(void){
 	lv_obj_clear_flag(ui_StartupScreenLogosImage, LV_OBJ_FLAG_SCROLLABLE);      /// Flags
 
 	ui_StartupScreenVersionLabel = lv_label_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenVersionLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(ui_StartupScreenVersionLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenVersionLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenVersionLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_x(ui_StartupScreenVersionLabel, -5);

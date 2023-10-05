@@ -253,7 +253,7 @@ static void wifi_popup_create_panel(void){
 	lv_obj_set_align(panel, LV_ALIGN_CENTER);
 
 	top_text = lv_label_create(panel);
-	lv_obj_add_style(top_text, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(top_text, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(top_text, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(top_text, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_align(top_text, LV_ALIGN_TOP_MID);
@@ -300,17 +300,28 @@ static void wifi_popup_create_spinner(void){
 	lv_obj_set_size(spinner, 50, 50);
 	lv_obj_set_align(spinner, LV_ALIGN_BOTTOM_MID);
 	lv_obj_clear_flag(spinner, LV_OBJ_FLAG_CLICKABLE);      /// Flags
-	lv_obj_set_style_arc_color(spinner, lv_color_hex(0x262223), LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_arc_color(spinner, lv_color_hex(0xF26B1D), LV_PART_INDICATOR | LV_STATE_DEFAULT);
+	lv_obj_set_style_arc_opa(spinner, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_arc_color(spinner, UI_CurrentTheme.main_color_ext, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 	lv_obj_set_style_arc_width(spinner, 5, LV_PART_INDICATOR | LV_STATE_DEFAULT);
 }
 
 /* create text area where user can enter password */
 static void wifi_popup_create_password_text_area(void){
 
+	lv_style_value_t text_color;
+	lv_res_t res;
+
+	res = lv_style_get_prop(&UI_Text16Style, LV_STYLE_TEXT_COLOR, &text_color);
+	if(LV_RES_OK != res) return;
+
 	password_text = lv_textarea_create(panel);
-	lv_obj_add_style(password_text, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_add_style(password_text, &UI_PopupPanelStyle, LV_PART_CURSOR | LV_STATE_FOCUSED);
+	lv_obj_add_style(password_text, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_color(password_text, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+	// set cursor to have the same color that UI_Text16Style font
+	lv_obj_set_style_bg_color(password_text, text_color.color, LV_PART_CURSOR | LV_STATE_FOCUSED);
+	lv_obj_set_style_bg_opa(password_text, LV_OPA_COVER, LV_PART_CURSOR | LV_STATE_FOCUSED);
+
     lv_textarea_set_text(password_text, "");
     lv_textarea_set_password_mode(password_text, true);
     lv_textarea_set_one_line(password_text, true);
@@ -323,20 +334,14 @@ static void wifi_popup_create_password_text_area(void){
 /* create two checkboxes to hide and save password */
 static void wifi_popup_create_checkboxes(void){
 
-	save_checkbox = lv_checkbox_create(panel);
-	lv_obj_add_style(save_checkbox, &UI_PopupPanelStyle, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
-	lv_obj_add_style(save_checkbox, &UI_PopupPanelStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
+	UI_CheckboxCreate(&panel, &save_checkbox, "Save");
 	lv_obj_set_align(save_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(save_checkbox, lv_pct(15));
-    lv_checkbox_set_text(save_checkbox, "Save");
     lv_obj_add_state(save_checkbox, LV_STATE_CHECKED);
 
-	hide_checkbox = lv_checkbox_create(panel);
-	lv_obj_add_style(hide_checkbox, &UI_PopupPanelStyle, LV_PART_MAIN | LV_PART_INDICATOR | LV_STATE_DEFAULT);
-	lv_obj_add_style(hide_checkbox, &UI_PopupPanelStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
+    UI_CheckboxCreate(&panel, &hide_checkbox, "Hide");
 	lv_obj_set_align(hide_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(hide_checkbox, lv_pct(60));
-    lv_checkbox_set_text(hide_checkbox, "Hide");
     lv_obj_add_state(hide_checkbox, LV_STATE_CHECKED);
     lv_obj_add_event_cb(hide_checkbox, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
 }
@@ -364,24 +369,26 @@ static void wifi_popup_create_keyboard(void){
 	lv_obj_set_y(keyboard, 240);
 	lv_obj_set_size(keyboard, LV_PCT(100), LV_PCT(50));
 
-	// bacground dark
-	lv_obj_set_style_bg_color(keyboard, lv_color_hex(0x262223), LV_PART_MAIN | LV_STATE_DEFAULT);
+	// keyboard background
+	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
-	// background dark for normal keys
-	lv_obj_set_style_bg_opa(keyboard, LV_OPA_TRANSP, LV_PART_ITEMS);
+	// background for normal keys
+	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_ext, LV_PART_ITEMS | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_DEFAULT);
 
 	// background for checked keys
-	lv_obj_set_style_bg_color(keyboard, lv_color_hex(0xF26B1D), LV_PART_ITEMS | LV_STATE_CHECKED);
-	lv_obj_set_style_bg_opa(keyboard, LV_OPA_10, LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_base, LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_CHECKED);
 
 	// border for all keys
 	lv_obj_set_style_border_width(keyboard, 1, LV_PART_ITEMS);
-	lv_obj_set_style_border_color(keyboard, lv_color_hex(0xF26B1D), LV_PART_ITEMS);
+	lv_obj_set_style_border_color(keyboard, UI_CurrentTheme.main_color_base, LV_PART_ITEMS);
 	lv_obj_set_style_border_opa(keyboard, LV_OPA_60, LV_PART_ITEMS);
 
 	// text color for all keys
-	lv_obj_set_style_text_color(keyboard, lv_color_hex(0xF2921D), LV_PART_ITEMS);
-	lv_obj_set_style_text_color(keyboard, lv_color_hex(0xF2921D), LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_text_color(keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS);
+	lv_obj_set_style_text_color(keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS | LV_STATE_CHECKED);
 }
 
 /* show or hide keyboard on screen */

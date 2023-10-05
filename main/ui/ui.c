@@ -45,6 +45,23 @@ void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button){
     lv_obj_set_align(*button, LV_ALIGN_BOTTOM_LEFT);
 }
 
+void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label){
+
+	lv_obj_t *checkbox_label;
+
+	*checkbox = lv_checkbox_create(*parent);
+	lv_obj_add_style(*checkbox, &UI_CheckboxStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(*checkbox, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+	lv_obj_add_style(*checkbox, &UI_CheckboxStyle, LV_PART_MAIN | LV_STATE_CHECKED);
+	lv_obj_add_style(*checkbox, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
+	lv_checkbox_set_text(*checkbox, "");
+
+	checkbox_label = lv_label_create(*checkbox);
+	lv_obj_align_to(checkbox_label, *checkbox, LV_ALIGN_OUT_RIGHT_MID, 2, 0);
+	lv_obj_add_style(checkbox_label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_label_set_text(checkbox_label, label);
+}
+
 void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line){
 
 	*line = lv_obj_create(*screen);

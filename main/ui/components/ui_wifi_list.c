@@ -116,7 +116,8 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 	// add button with wifi name
 	new_obj->obj = lv_list_add_btn(wifi_list, 0, name);
 	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_ALL, NULL);
-	lv_obj_add_style(new_obj->obj, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_add_style(new_obj->obj, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(new_obj->obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	// add right aligned label to the button
 	button_icon_right = lv_label_create(new_obj->obj);
@@ -124,7 +125,7 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
     lv_obj_set_height(button_icon_right, LV_SIZE_CONTENT);
     lv_obj_set_align(button_icon_right, LV_ALIGN_RIGHT_MID);
     lv_obj_set_style_text_align(button_icon_right, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(button_icon_right, &ui_font_UIIconsNew16, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(button_icon_right, &UI_Icon16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     // set signal icon according to rssi
     if(rssi >= (int)-50){

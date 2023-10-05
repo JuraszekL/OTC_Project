@@ -35,12 +35,12 @@ void UI_WeatherScreen_Init(void){
 	lv_obj_add_event_cb(ui_WeatherScreenBackButton, ui_weather_screen_evt_handler, LV_EVENT_ALL, NULL);
 
     ui_WeatherScreenCityLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenCityLabel, &UI_Label30ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenCityLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenCityLabel, 30);
     lv_obj_set_y(ui_WeatherScreenCityLabel, 30);
 
     ui_WeatherScreenCountryLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenCountryLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenCountryLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_style_text_align(ui_WeatherScreenCountryLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenCountryLabel, 30);
     lv_obj_set_y(ui_WeatherScreenCountryLabel, 65);
@@ -68,18 +68,18 @@ void UI_WeatherScreen_Init(void){
     lv_obj_set_style_bg_opa(ui_WeatherScreenTempArc, 0, LV_PART_KNOB | LV_STATE_DEFAULT);
 
     ui_WeatherScreenTempLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenTempLabel, &UI_Label30ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenTempLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenTempLabel, 0);
     lv_obj_set_y(ui_WeatherScreenTempLabel, -70);
     lv_obj_set_align(ui_WeatherScreenTempLabel, LV_ALIGN_CENTER);
 
     ui_WeatherScreenTempMinMaxLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenTempMinMaxLabel, &UI_Label14ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenTempMinMaxLabel, &UI_Text14Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_align(ui_WeatherScreenTempMinMaxLabel, LV_ALIGN_CENTER);
     lv_obj_set_style_text_align(ui_WeatherScreenTempMinMaxLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
     ui_WeatherScreenSunriseIconLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenSunriseIconLabel, &UI_LabelIcon36DarkStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenSunriseIconLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenSunriseIconLabel, -110);
     lv_obj_set_y(ui_WeatherScreenSunriseIconLabel, 60);
     lv_obj_set_align(ui_WeatherScreenSunriseIconLabel, LV_ALIGN_CENTER);
@@ -87,7 +87,7 @@ void UI_WeatherScreen_Init(void){
     lv_label_set_text_fmt(ui_WeatherScreenSunriseIconLabel, "%c", ICON_SUNRISE);
 
     ui_WeatherScreenRainIconLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenRainIconLabel, &UI_LabelIcon36DarkStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenRainIconLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenRainIconLabel, -110);
     lv_obj_set_y(ui_WeatherScreenRainIconLabel, 120);
     lv_obj_set_align(ui_WeatherScreenRainIconLabel, LV_ALIGN_CENTER);
@@ -95,42 +95,42 @@ void UI_WeatherScreen_Init(void){
     lv_label_set_text_fmt(ui_WeatherScreenRainIconLabel, "%c", ICON_RAIN);
 
     ui_WeatherScreenSnowIconLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenSnowIconLabel, &UI_LabelIcon36DarkStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WeatherScreenSnowIconLabel, 50);
+    lv_obj_add_style(ui_WeatherScreenSnowIconLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_x(ui_WeatherScreenSnowIconLabel, 40);
     lv_obj_set_y(ui_WeatherScreenSnowIconLabel, 120);
     lv_obj_set_align(ui_WeatherScreenSnowIconLabel, LV_ALIGN_CENTER);
     lv_obj_set_style_text_align(ui_WeatherScreenSnowIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text_fmt(ui_WeatherScreenSnowIconLabel, "%c", ICON_SNOW);
 
     ui_WeatherScreenWindIconLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenWindIconLabel, &UI_LabelIcon36DarkStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WeatherScreenWindIconLabel, 50);
+    lv_obj_add_style(ui_WeatherScreenWindIconLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_x(ui_WeatherScreenWindIconLabel, 40);
     lv_obj_set_y(ui_WeatherScreenWindIconLabel, 60);
     lv_obj_set_align(ui_WeatherScreenWindIconLabel, LV_ALIGN_CENTER);
     lv_obj_set_style_text_align(ui_WeatherScreenWindIconLabel, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text_fmt(ui_WeatherScreenWindIconLabel, "%c", ICON_WIND);
 
     ui_WeatherScreenSunriseLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenSunriseLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenSunriseLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenSunriseLabel, -50);
     lv_obj_set_y(ui_WeatherScreenSunriseLabel, 60);
     lv_obj_set_align(ui_WeatherScreenSunriseLabel, LV_ALIGN_CENTER);
 
     ui_WeatherScreenRainLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenRainLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WeatherScreenRainLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenRainLabel, -50);
     lv_obj_set_y(ui_WeatherScreenRainLabel, 120);
     lv_obj_set_align(ui_WeatherScreenRainLabel, LV_ALIGN_CENTER);
 
     ui_WeatherScreenWindLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenWindLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WeatherScreenWindLabel, 110);
+    lv_obj_add_style(ui_WeatherScreenWindLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_x(ui_WeatherScreenWindLabel, 100);
     lv_obj_set_y(ui_WeatherScreenWindLabel, 60);
     lv_obj_set_align(ui_WeatherScreenWindLabel, LV_ALIGN_CENTER);
 
     ui_WeatherScreenSnowLabel = lv_label_create(ui_WeatherScreen);
-    lv_obj_add_style(ui_WeatherScreenSnowLabel, &UI_Label16ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WeatherScreenSnowLabel, 110);
+    lv_obj_add_style(ui_WeatherScreenSnowLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_x(ui_WeatherScreenSnowLabel, 100);
     lv_obj_set_y(ui_WeatherScreenSnowLabel, 120);
     lv_obj_set_align(ui_WeatherScreenSnowLabel, LV_ALIGN_CENTER);
 }

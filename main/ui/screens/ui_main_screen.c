@@ -49,7 +49,7 @@ void UI_MainScreen_Init(void){
 	lv_obj_set_align(ui_MainScreenHorLine, LV_ALIGN_TOP_MID);
 
     ui_MainScreenClockLabel = lv_label_create(ui_MainScreen);
-    lv_obj_add_style(ui_MainScreenClockLabel, &UI_ClockLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_MainScreenClockLabel, &UI_ClockStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_MainScreenClockLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenClockLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenClockLabel, 0);
@@ -58,7 +58,7 @@ void UI_MainScreen_Init(void){
     lv_label_set_text(ui_MainScreenClockLabel, "--:--");
 
     ui_MainScreenDateLabel = lv_label_create(ui_MainScreen);
-    lv_obj_add_style(ui_MainScreenDateLabel, &UI_Label30ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_MainScreenDateLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_MainScreenDateLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenDateLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenDateLabel, 0);
@@ -87,7 +87,7 @@ void UI_MainScreen_Init(void){
     lv_obj_add_event_cb(ui_MainScreenWeatherIcon, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
 
     ui_MainScreenWeatherLabel = lv_label_create(ui_MainScreen);
-    lv_obj_add_style(ui_MainScreenWeatherLabel, &UI_Label30DarkStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_MainScreenWeatherLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_MainScreenWeatherLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenWeatherLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenWeatherLabel, 160);

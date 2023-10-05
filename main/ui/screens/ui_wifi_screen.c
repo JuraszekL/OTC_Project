@@ -54,7 +54,7 @@ void UI_WifiScreen_Init(void){
     lv_arc_set_rotation(ui_WifiScreenRSSIArc, 270);
 
     ui_WifiScreenRSSIValueLabel = lv_label_create(ui_WifiScreenRSSIArc);
-    lv_obj_add_style(ui_WifiScreenRSSIValueLabel, &UI_Label30ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WifiScreenRSSIValueLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_WifiScreenRSSIValueLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WifiScreenRSSIValueLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WifiScreenRSSIValueLabel, 0);
@@ -63,7 +63,7 @@ void UI_WifiScreen_Init(void){
     lv_label_set_text(ui_WifiScreenRSSIValueLabel, "---");
 
     ui_WifiScreenRSSIdBmLabel = lv_label_create(ui_WifiScreenRSSIArc);
-    lv_obj_add_style(ui_WifiScreenRSSIdBmLabel, &UI_Label14ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WifiScreenRSSIdBmLabel, &UI_Text14Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_WifiScreenRSSIdBmLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WifiScreenRSSIdBmLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WifiScreenRSSIdBmLabel, 0);
@@ -72,7 +72,7 @@ void UI_WifiScreen_Init(void){
     lv_label_set_text(ui_WifiScreenRSSIdBmLabel, "dBm");
 
     ui_WifiScreenSSIDLabel = lv_label_create(ui_WifiScreen);
-    lv_obj_add_style(ui_WifiScreenSSIDLabel, &UI_Label16DarkUnderlineStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WifiScreenSSIDLabel, &UI_Text16UnderlineStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_WifiScreenSSIDLabel, 170);
     lv_obj_set_height(ui_WifiScreenSSIDLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WifiScreenSSIDLabel, 20);
@@ -82,7 +82,7 @@ void UI_WifiScreen_Init(void){
     lv_label_set_text(ui_WifiScreenSSIDLabel, "");
 
     ui_WifiScreenAPDetailsLabel = lv_label_create(ui_WifiScreen);
-    lv_obj_add_style(ui_WifiScreenAPDetailsLabel, &UI_Label14ContrastStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(ui_WifiScreenAPDetailsLabel, &UI_Text14Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_width(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);    /// 1
     lv_obj_set_x(ui_WifiScreenAPDetailsLabel, 20);
