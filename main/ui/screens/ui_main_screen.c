@@ -84,7 +84,7 @@ void UI_MainScreen_Init(void){
     lv_obj_add_flag(ui_MainScreenWeatherIcon, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_ADV_HITTEST);
     lv_obj_clear_flag(ui_MainScreenWeatherIcon, LV_OBJ_FLAG_SCROLLABLE);
     lv_img_set_zoom(ui_MainScreenWeatherIcon, 512);
-    lv_obj_add_event_cb(ui_MainScreenWeatherIcon, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MainScreenWeatherIcon, ui_main_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
     ui_MainScreenWeatherLabel = lv_label_create(ui_MainScreen);
     lv_obj_add_style(ui_MainScreenWeatherLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -96,29 +96,17 @@ void UI_MainScreen_Init(void){
     lv_obj_set_style_text_align(ui_MainScreenWeatherLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_MainScreenWeatherLabel, "");
 
-//    ui_MainScreenWifiButton = lv_btn_create(ui_MainScreen);
-//    lv_obj_add_style(ui_MainScreenWifiButton, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     UI_ButtonCreate(&ui_MainScreen, &ui_MainScreenWifiButton, ICON_WIFI);
     lv_obj_set_x(ui_MainScreenWifiButton, 20);
     lv_obj_set_y(ui_MainScreenWifiButton, -20);
     lv_obj_set_align(ui_MainScreenWifiButton, LV_ALIGN_BOTTOM_LEFT);
-    lv_obj_add_event_cb(ui_MainScreenWifiButton, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(ui_MainScreenWifiButton, ui_main_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
-//    but_label = lv_label_create(ui_MainScreenWifiButton);
-//    lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-//    lv_label_set_text_fmt(but_label, "%c", ICON_WIFI);
-
-//    ui_MainScreenSetupButton = lv_btn_create(ui_MainScreen);
-//    lv_obj_add_style(ui_MainScreenSetupButton, &UI_ButtonStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     UI_ButtonCreate(&ui_MainScreen, &ui_MainScreenSetupButton, ICON_SETUP);
     lv_obj_set_x(ui_MainScreenSetupButton, -20);
     lv_obj_set_y(ui_MainScreenSetupButton, -20);
     lv_obj_set_align(ui_MainScreenSetupButton, LV_ALIGN_BOTTOM_RIGHT);
-    lv_obj_add_event_cb(ui_MainScreenSetupButton, ui_main_screen_evt_handler, LV_EVENT_ALL, NULL);
-
-//    but_label = lv_label_create(ui_MainScreenSetupButton);
-//    lv_obj_add_style(but_label, &UI_ButtonLabelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-//    lv_label_set_text_fmt(but_label, "%c", ICON_SETUP);
+    lv_obj_add_event_cb(ui_MainScreenSetupButton, ui_main_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 }
 
 /* load main screen with selected delay */

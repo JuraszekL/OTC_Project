@@ -18,9 +18,8 @@ extern ThemeColorsSet_t UI_CurrentTheme;
 extern lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 					UI_Icon24Style, UI_Icon16Style,
 					UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
-					UI_Varino12Style, UI_Varino18Style,
-					UI_ClockStyle,UI_ArcRSSIStyle, UI_StartupPanelStyle, UI_StartupPanelTextStyle,
-					UI_HorizontalLineStyle, UI_PopupPanelStyle;
+					UI_ClockStyle,UI_ArcRSSIStyle,
+					UI_HorizontalLineStyle;
 
 void UI_InitStyles(void);
 

@@ -26,7 +26,7 @@ void UI_SetupScreen_Init(void){
 	UI_ScreenCreate(&ui_SetupScreen);
 
 	UI_BackButtonCreate(&ui_SetupScreen, &ui_SetupScreenBackButton);
-	lv_obj_add_event_cb(ui_SetupScreenBackButton, ui_setup_screen_evt_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui_SetupScreenBackButton, ui_setup_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 }
 
 /* load setup screen */

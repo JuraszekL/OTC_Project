@@ -45,36 +45,55 @@ void UI_StartupScreen_Init(void){
 	lv_obj_add_event_cb(ui_StartupScreen, ui_startup_screen_unloaded, LV_EVENT_SCREEN_UNLOADED, 0);
 
 	ui_StartupScreenPanel = lv_obj_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenPanel, &UI_StartupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_size(ui_StartupScreenPanel, 280, 100);
 	lv_obj_set_x(ui_StartupScreenPanel, 0);
 	lv_obj_set_y(ui_StartupScreenPanel, 50);
 	lv_obj_set_align(ui_StartupScreenPanel, LV_ALIGN_TOP_MID);
 	lv_obj_clear_flag(ui_StartupScreenPanel, LV_OBJ_FLAG_SCROLLABLE );     /// Flags
+	lv_obj_set_style_bg_opa(ui_StartupScreenPanel, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(ui_StartupScreenPanel, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(ui_StartupScreenPanel, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_color(ui_StartupScreenPanel, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_opa(ui_StartupScreenPanel, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_width(ui_StartupScreenPanel, 15, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_shadow_spread(ui_StartupScreenPanel, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	ui_StartupScreenPanelLabel = lv_label_create(ui_StartupScreenPanel);
-	lv_obj_add_style(ui_StartupScreenPanelLabel, &UI_StartupPanelTextStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenPanelLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenPanelLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_align(ui_StartupScreenPanelLabel, LV_ALIGN_CENTER);
 	lv_label_set_text(ui_StartupScreenPanelLabel, "OTC PROJECT");
+	lv_obj_set_style_bg_opa(ui_StartupScreenPanelLabel, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_StartupScreenPanelLabel, &ui_font_Varino30, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_StartupScreenPanelLabel, UI_CurrentTheme.background_color_base,
+			LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_opa(ui_StartupScreenPanelLabel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	ui_StartupScreenTitleLabel = lv_label_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenTitleLabel, &UI_Varino18Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenTitleLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenTitleLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_x(ui_StartupScreenTitleLabel, 0);
 	lv_obj_set_y(ui_StartupScreenTitleLabel, 170);
 	lv_obj_set_align(ui_StartupScreenTitleLabel, LV_ALIGN_TOP_MID);
 	lv_label_set_text(ui_StartupScreenTitleLabel, "ONLINE TABLE CLOCK");
+	lv_obj_set_style_bg_opa(ui_StartupScreenTitleLabel, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_StartupScreenTitleLabel, &ui_font_Varino18, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_StartupScreenTitleLabel, UI_CurrentTheme.main_color_ext,
+			LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_opa(ui_StartupScreenTitleLabel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	ui_StartupScreenAuthorLabel = lv_label_create(ui_StartupScreen);
-	lv_obj_add_style(ui_StartupScreenAuthorLabel, &UI_Varino12Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_width(ui_StartupScreenAuthorLabel, LV_SIZE_CONTENT);   /// 1
 	lv_obj_set_height(ui_StartupScreenAuthorLabel, LV_SIZE_CONTENT);    /// 1
 	lv_obj_set_x(ui_StartupScreenAuthorLabel, 0);
 	lv_obj_set_y(ui_StartupScreenAuthorLabel, -35);
 	lv_obj_set_align(ui_StartupScreenAuthorLabel, LV_ALIGN_CENTER);
 	lv_label_set_text(ui_StartupScreenAuthorLabel, "by JuraszekL");
+	lv_obj_set_style_bg_opa(ui_StartupScreenAuthorLabel, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_font(ui_StartupScreenAuthorLabel, &ui_font_Varino12, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_color(ui_StartupScreenAuthorLabel, UI_CurrentTheme.contrast_color,
+			LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_text_opa(ui_StartupScreenAuthorLabel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	ui_StartupScreenLogosImage = lv_img_create(ui_StartupScreen);
 	lv_img_set_src(ui_StartupScreenLogosImage, &ui_img_logos_png);

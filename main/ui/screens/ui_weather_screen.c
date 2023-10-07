@@ -32,7 +32,7 @@ void UI_WeatherScreen_Init(void){
 	UI_ScreenCreate(&ui_WeatherScreen);
 
 	UI_BackButtonCreate(&ui_WeatherScreen, &ui_WeatherScreenBackButton);
-	lv_obj_add_event_cb(ui_WeatherScreenBackButton, ui_weather_screen_evt_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui_WeatherScreenBackButton, ui_weather_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
     ui_WeatherScreenCityLabel = lv_label_create(ui_WeatherScreen);
     lv_obj_add_style(ui_WeatherScreenCityLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);

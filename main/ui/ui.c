@@ -7,6 +7,9 @@
 #define UI_BUTTON_WIDTH				80
 #define UI_BUTTON_HEIGHT			60
 
+#define POPUP_DEFAULT_WIDTH			200
+#define POPUP_DEFAULT_HEIGHT		150
+
 /**************************************************************
  *
  * Public function definitions
@@ -66,4 +69,29 @@ void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line){
 
 	*line = lv_obj_create(*screen);
 	lv_obj_add_style(*line, &UI_HorizontalLineStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+}
+
+void UI_PopupCreate(UI_PopupObj_t *popup){
+
+	if(0 == popup) return;
+
+	popup->background = lv_obj_create(lv_layer_top());
+	lv_obj_set_size(popup->background, LV_PCT(100), LV_PCT(100));
+	lv_obj_set_style_bg_color(popup->background, UI_CurrentTheme.background_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(popup->background, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(popup->background, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_clear_flag(popup->background, LV_OBJ_FLAG_SCROLLABLE);
+
+	popup->panel = lv_obj_create(popup->background);
+	lv_obj_set_size(popup->panel, POPUP_DEFAULT_WIDTH, POPUP_DEFAULT_HEIGHT);
+	lv_obj_set_align(popup->panel, LV_ALIGN_CENTER);
+	lv_obj_set_style_bg_color(popup->panel, UI_CurrentTheme.background_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(popup->panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_color(popup->panel, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_opa(popup->panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+	popup->label = lv_label_create(popup->panel);
+	lv_obj_add_style(popup->label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(popup->label, LV_ALIGN_TOP_MID);
+    lv_obj_set_style_text_align(popup->label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
 }

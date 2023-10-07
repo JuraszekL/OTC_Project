@@ -3,6 +3,8 @@
 
 #include "main.h"
 
+void UI_WifiPopup_MutexInit(void);
+void UI_WifiPopup_Delete(void);
 void UI_WifiPopup_Connecting(char *ssid);
 void UI_WifiPopup_Connected(char *ssid);
 void UI_WifiPopup_NotConnected(void);

@@ -39,6 +39,7 @@ static void ui_event_weather_scr_back_btn_clicked(void *arg);
 static void ui_event_startup_screen_ready(void *arg);
 static void ui_event_setup_scr_back_btn_clicked(void *arg);
 static void ui_event_main_scr_setup_btn_clicked(void *arg);
+static void ui_event_wifi_popup_delete_request(void *arg);
 
 static void ui_event_run_startup_screen(void *arg);
 /**************************************************************
@@ -68,6 +69,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_STARTUP_SCREEN_READY] = ui_event_startup_screen_ready,
 		[UI_EVT_SETUPSCR_BACK_BTN_CLICKED] = ui_event_setup_scr_back_btn_clicked,
 		[UI_EVT_MAINSCR_SETUP_BTN_CLICKED] = ui_event_main_scr_setup_btn_clicked,
+		[UI_EVT_WIFI_POPUP_DELETE_REQUEST] = ui_event_wifi_popup_delete_request,
 
 		[UI_EVT_RUN_STARTUP_SCREEN] = ui_event_run_startup_screen,
 };
@@ -171,7 +173,7 @@ static void ui_event_wifi_connected(void *arg){
 	UI_MainScreen_SetTopIcon(wifi_icon, ICON_WIFI);
 
 	// create popup with information that wifi is connected
-	UI_WifiScreen_Connected(data);
+	UI_WifiScreen_PopupConnected(data);
 
 	// set information about connected AP on wifi screen
 	UI_WifiScreen_SetApDetails(data);
@@ -196,7 +198,7 @@ static void ui_event_wifi_connecting(void *arg){
 	//TODO set animation to main screen wifi symbol
 
 	// create popup with information that wifi is trying to conenct
-	UI_WifiScreen_Connecting(creds);
+	UI_WifiScreen_PopupConnecting(creds);
 
 	// free resources
 	if(creds){
@@ -213,7 +215,7 @@ static void ui_event_wifi_connecting(void *arg){
 
 static void ui_event_wifi_connect_error(void *arg){
 
-	UI_WifiScreen_ConnectError();
+	UI_WifiScreen_PopupConnectError();
 
 	//TODO delete animation of wifi icon
 }
@@ -224,7 +226,7 @@ static void ui_event_wifi_get_pass(void *arg){
 
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
-	UI_WifiScreen_GetPass(creds);
+	UI_WifiScreen_PopupGetPass(creds);
 }
 
 // add single element to list of found wifi networks
@@ -234,7 +236,7 @@ static void ui_event_wifilist_add(void *arg){
 
 	UI_BasicAPData_t *data = (UI_BasicAPData_t *)arg;
 
-	UI_WifiScreen_AddToList(data);
+	UI_WifiScreen_WifiListAdd(data);
 
 	if(data){
 		if(heap_caps_get_allocated_size(data)) free(data);
@@ -243,7 +245,7 @@ static void ui_event_wifilist_add(void *arg){
 
 static void ui_event_wifilist_clear(void *arg){
 
-	UI_WifiScreen_ClearList();
+	UI_WifiScreen_WifiListClear();
 }
 
 static void ui_event_time_changed(void *arg){
@@ -349,4 +351,9 @@ static void ui_event_setup_scr_back_btn_clicked(void *arg){
 static void ui_event_main_scr_setup_btn_clicked(void *arg){
 
 	UI_SetupScreen_Load();
+}
+
+static void ui_event_wifi_popup_delete_request(void *arg){
+
+	UI_WifiScreen_PopupDelete();
 }

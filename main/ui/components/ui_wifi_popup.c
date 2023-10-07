@@ -6,7 +6,9 @@
  *	Defines
  *
  ***************************************************************/
-#define KEYBOARD_SHOW_HIDE_TIME_MS		300U
+#define WIFI_POPUP_MUTEX_TIMEOUT_MS			100U
+#define KEYBOARD_SHOW_HIDE_TIME_MS			300U
+#define OK_NOK_LINE_ANIMATION_TIME_MS		1200U
 
 /**************************************************************
  *
@@ -22,6 +24,7 @@ enum { show_keyboard, hide_keyboard };
  *
  ***************************************************************/
 static void wifi_popup_event_handler(lv_event_t * e);
+static void wifi_popup_delete(void);
 static void wifi_popup_create_panel(void);
 static void wifi_popup_create_line(uint8_t line_type);
 static void wifi_popup_create_spinner(void);
@@ -46,119 +49,130 @@ static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a);
 static const lv_point_t ok_line_points[] = {{25, 25}, {50, 50}, {100, 0}};	// those make a "check" sign
 static const lv_point_t nok_line_points[] = {{25, 0}, {75, 50}, {50, 25}, {75, 0}, {25, 50}};	// those make an "X" sign
 
-static lv_obj_t *top_background, *panel, *top_text, *spinner, *wifi_popup_line, *password_text,
+static SemaphoreHandle_t wifi_popup_mutex_handle;
+
+static lv_obj_t *spinner, *wifi_popup_line, *password_text,
 				*save_checkbox, *hide_checkbox, *back_button, *ok_button, *keyboard;
+
+static UI_PopupObj_t wifi_popup;
 
 /**************************************************************
  *
  * Public function definitions
  *
  ***************************************************************/
+void UI_WifiPopup_MutexInit(void){
+
+	wifi_popup_mutex_handle = xSemaphoreCreateMutex();
+	assert(wifi_popup_mutex_handle);
+}
+
+void UI_WifiPopup_Delete(void){
+
+	BaseType_t res;
+
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
+
+	wifi_popup_delete();
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
+}
 
 /* popup when wifi connection is in progress */
 void UI_WifiPopup_Connecting(char *ssid){
 
-	char buff[64] = {0};
+	BaseType_t res;
 
-	// check if popup base is valid
-	if(false == lv_obj_is_valid(top_background)){
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
 
-		wifi_popup_create_panel();
-	}
+	wifi_popup_delete();
 
-	// delete popup "sign" if exists
-	if(true == lv_obj_is_valid(wifi_popup_line)){
-
-		lv_obj_del(wifi_popup_line);
-	}
+	wifi_popup_create_panel();
 
 	if(0 != ssid){
 
 		// prepare text
-		sprintf(buff, "Connecting to:\n%s", ssid);
-	    lv_label_set_text(top_text, buff);
+	    lv_label_set_text_fmt(wifi_popup.label, "Connecting to:\n%s", ssid);
 	}
 	else{
 
-		lv_label_set_text(top_text, "Connecting...");
+		lv_label_set_text(wifi_popup.label, "Connecting...");
 	}
 
     wifi_popup_create_spinner();
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
 /* popup when wifi has been connected */
 void UI_WifiPopup_Connected(char *ssid){
 
-	char buff[64] = {0};
+	BaseType_t res;
 
-	// check if popup base is valid
-	if(false == lv_obj_is_valid(top_background)){
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
 
-		wifi_popup_create_panel();
-	}
+	wifi_popup_delete();
 
-	// delete popup spinner if exists
-	if(true == lv_obj_is_valid(spinner)){
-
-		lv_obj_del(spinner);
-	}
+	wifi_popup_create_panel();
 
 	// prepare text
 	if(0 == ssid){
 
-		lv_label_set_text(top_text, "Connected!");
+		lv_label_set_text(wifi_popup.label, "Connected!");
 	}
 	else{
 
-		sprintf(buff, "Connected to:\n%s", ssid);
-	    lv_label_set_text(top_text, buff);
+		lv_label_set_text_fmt(wifi_popup.label, "Connected to:\n%s", ssid);
 	}
 
 	wifi_popup_create_line(ok_line);
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
 /* popup when wifi has not been connected */
 void UI_WifiPopup_NotConnected(void){
 
-	// check if popup base is valid
-	if(false == lv_obj_is_valid(top_background)){
+	BaseType_t res;
 
-		wifi_popup_create_panel();
-	}
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
 
-	// delete popup spinner if exists
-	if(true == lv_obj_is_valid(spinner)){
+	wifi_popup_delete();
 
-		lv_obj_del(spinner);
-		spinner = 0;
-	}
+	wifi_popup_create_panel();
 
 	// prepare text
-	lv_label_set_text(top_text, "Connecting error!");
+	lv_label_set_text(wifi_popup.label, "Connecting error!");
 
 	wifi_popup_create_line(nok_line);
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
 /* popup where user can enter the password */
 void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 
-	// check if popup base is valid
-	if(false == lv_obj_is_valid(top_background)){
+	BaseType_t res;
 
-		wifi_popup_create_panel();
-	}
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
+
+	wifi_popup_delete();
+
+	wifi_popup_create_panel();
 
 	// set bigger size
-	lv_obj_set_size(panel, LV_PCT(100), LV_PCT(50));
+	lv_obj_set_size(wifi_popup.panel, LV_PCT(100), LV_PCT(50));
 
-	lv_label_set_text(top_text, "Password:");
-
-	// delete popup spinner if exists
-	if(true == lv_obj_is_valid(spinner)){
-
-		lv_obj_del(spinner);
-		spinner = 0;
-	}
+	lv_label_set_text(wifi_popup.label, "Password:");
 
     /*Create the rest of objects */
 	wifi_popup_create_password_text_area();
@@ -168,6 +182,8 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 	wifi_popup_create_buttons(creds);
 
 	wifi_popup_create_keyboard();
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
 /**************************************************************
@@ -179,13 +195,17 @@ static void wifi_popup_event_handler(lv_event_t * e){
 
 	lv_event_code_t code = lv_event_get_code(e);
 	lv_obj_t * obj = lv_event_get_target(e);
+	BaseType_t res;
+
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
 
 	// event occured at password text area
 	if(obj == password_text){
 
 		if(LV_EVENT_FOCUSED == code){
 
-			wifi_popup_show_hide_keyboard(show_keyboard);
+			wifi_popup_show_hide_keyboard(show_keyboard);	//1
 		}
 		else if(LV_EVENT_DEFOCUSED == code){
 
@@ -197,7 +217,7 @@ static void wifi_popup_event_handler(lv_event_t * e){
 
 		if(LV_STATE_CHECKED & lv_obj_get_state(obj)){
 
-			lv_textarea_set_password_mode(password_text, true);
+			lv_textarea_set_password_mode(password_text, true);		//2
 		}
 		else{
 
@@ -220,44 +240,47 @@ static void wifi_popup_event_handler(lv_event_t * e){
 		}
 
 		// delete popup
-		lv_obj_del_async(top_background);
+		wifi_popup_delete();
 	}
 
 	// ok button at wifi popup panel has been clicked
 	else if((obj == ok_button) && (LV_EVENT_RELEASED == code)){
 
 		wifi_popup_connect(lv_event_get_user_data(e));
-		lv_obj_del_async(top_background);
+		wifi_popup_delete();
 	}
 
-	else if((obj == top_background) && (LV_EVENT_DELETE == code)){
+	xSemaphoreGive(wifi_popup_mutex_handle);
+}
 
-		UI_WifiList_SetClickable();
+static void wifi_popup_delete(void){
+
+	if(true == lv_obj_is_valid(keyboard)) {
+
+		lv_anim_del(keyboard, NULL);
+		lv_obj_del(keyboard);
+	}
+
+	if(true == lv_obj_is_valid(wifi_popup_line)) {
+
+		lv_anim_del(wifi_popup_line, NULL);
+	}
+
+	if(true == lv_obj_is_valid(wifi_popup.panel)) {
+
+		lv_anim_del(wifi_popup.panel, NULL);
+	}
+
+	if(true == lv_obj_is_valid(wifi_popup.background)) {
+
+		lv_obj_del(wifi_popup.background);
 	}
 }
 
 /* create base of wifi popup object */
 static void wifi_popup_create_panel(void){
 
-	top_background = lv_obj_create(lv_layer_top());
-	lv_obj_add_style(top_background, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_size(top_background, LV_PCT(100), LV_PCT(100));
-	lv_obj_set_style_bg_opa(top_background, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_border_width(top_background, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_clear_flag(top_background, LV_OBJ_FLAG_SCROLLABLE);
-	lv_obj_add_event_cb(top_background, wifi_popup_event_handler, LV_EVENT_DELETE, NULL);
-
-	panel = lv_obj_create(top_background);
-	lv_obj_add_style(panel, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_size(panel, 200, 150);
-	lv_obj_set_align(panel, LV_ALIGN_CENTER);
-
-	top_text = lv_label_create(panel);
-	lv_obj_add_style(top_text, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_width(top_text, LV_SIZE_CONTENT);   /// 1
-    lv_obj_set_height(top_text, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_align(top_text, LV_ALIGN_TOP_MID);
-    lv_obj_set_style_text_align(top_text, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+	UI_PopupCreate(&wifi_popup);
 }
 
 /* create "sign" based on line object */
@@ -265,12 +288,16 @@ static void wifi_popup_create_line(uint8_t line_type){
 
 	lv_anim_t line_opa_anim;
 
+	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
+
 	// create an object
-	wifi_popup_line = lv_line_create(panel);
+	wifi_popup_line = lv_line_create(wifi_popup.panel);
 	lv_obj_set_align(wifi_popup_line, LV_ALIGN_BOTTOM_MID);
 	lv_obj_set_x(wifi_popup_line, -5);
-	lv_obj_add_style(wifi_popup_line, &UI_PopupPanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_line_opa(wifi_popup_line, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_line_color(wifi_popup_line, UI_CurrentTheme.contrast_color, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_line_width(wifi_popup_line, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_line_rounded(wifi_popup_line, true, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	if(ok_line == line_type){
 
@@ -285,9 +312,9 @@ static void wifi_popup_create_line(uint8_t line_type){
 	lv_anim_init(&line_opa_anim);
 	lv_anim_set_exec_cb(&line_opa_anim, set_line_opa);
 	lv_anim_set_var(&line_opa_anim, wifi_popup_line);
-	lv_anim_set_time(&line_opa_anim, 600);
+	lv_anim_set_time(&line_opa_anim, OK_NOK_LINE_ANIMATION_TIME_MS);
 	lv_anim_set_values(&line_opa_anim, 0, 255);
-	lv_anim_set_path_cb(&line_opa_anim, lv_anim_path_ease_in);
+	lv_anim_set_path_cb(&line_opa_anim, lv_anim_path_ease_out);
 	lv_anim_set_ready_cb(&line_opa_anim, wifi_popup_line_animation_ready);
 
 	lv_anim_start(&line_opa_anim);
@@ -296,7 +323,9 @@ static void wifi_popup_create_line(uint8_t line_type){
 /* create spinner */
 static void wifi_popup_create_spinner(void){
 
-	spinner = lv_spinner_create(panel, 1000, 60);
+	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
+
+	spinner = lv_spinner_create(wifi_popup.panel, 1000, 60);
 	lv_obj_set_size(spinner, 50, 50);
 	lv_obj_set_align(spinner, LV_ALIGN_BOTTOM_MID);
 	lv_obj_clear_flag(spinner, LV_OBJ_FLAG_CLICKABLE);      /// Flags
@@ -311,10 +340,12 @@ static void wifi_popup_create_password_text_area(void){
 	lv_style_value_t text_color;
 	lv_res_t res;
 
+	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
+
 	res = lv_style_get_prop(&UI_Text16Style, LV_STYLE_TEXT_COLOR, &text_color);
 	if(LV_RES_OK != res) return;
 
-	password_text = lv_textarea_create(panel);
+	password_text = lv_textarea_create(wifi_popup.panel);
 	lv_obj_add_style(password_text, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_color(password_text, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
 
@@ -328,43 +359,52 @@ static void wifi_popup_create_password_text_area(void){
     lv_obj_set_width(password_text, lv_pct(80));
     lv_obj_set_align(password_text, LV_ALIGN_TOP_MID);
     lv_obj_set_y(password_text, 30);
-    lv_obj_add_event_cb(password_text, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+
+	lv_obj_add_flag(password_text, (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE));
+    lv_obj_add_event_cb(password_text, wifi_popup_event_handler, LV_EVENT_FOCUSED, NULL);
+    lv_obj_add_event_cb(password_text, wifi_popup_event_handler, LV_EVENT_DEFOCUSED, NULL);
 }
 
 /* create two checkboxes to hide and save password */
 static void wifi_popup_create_checkboxes(void){
 
-	UI_CheckboxCreate(&panel, &save_checkbox, "Save");
+	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
+
+	UI_CheckboxCreate(&wifi_popup.panel, &save_checkbox, "Save");
 	lv_obj_set_align(save_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(save_checkbox, lv_pct(15));
     lv_obj_add_state(save_checkbox, LV_STATE_CHECKED);
 
-    UI_CheckboxCreate(&panel, &hide_checkbox, "Hide");
+    UI_CheckboxCreate(&wifi_popup.panel, &hide_checkbox, "Hide");
 	lv_obj_set_align(hide_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(hide_checkbox, lv_pct(60));
     lv_obj_add_state(hide_checkbox, LV_STATE_CHECKED);
-    lv_obj_add_event_cb(hide_checkbox, wifi_popup_event_handler, LV_EVENT_ALL, NULL);
+    lv_obj_add_event_cb(hide_checkbox, wifi_popup_event_handler, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
 /* create back and connect buttons */
 static void wifi_popup_create_buttons(void *arg){
 
-	UI_ButtonCreate(&panel, &back_button, ICON_LEFT_ARROW);
+	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
+
+	UI_ButtonCreate(&wifi_popup.panel, &back_button, ICON_LEFT_ARROW);
 	lv_obj_set_align(back_button, LV_ALIGN_BOTTOM_LEFT);
 	lv_obj_set_x(back_button, 10);
-	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
+	lv_obj_add_event_cb(back_button, wifi_popup_event_handler, LV_EVENT_RELEASED, arg);
 
-	UI_ButtonCreate(&panel, &ok_button, ICON_RIGHT_ARROW);
+	UI_ButtonCreate(&wifi_popup.panel, &ok_button, ICON_RIGHT_ARROW);
 	lv_obj_set_align(ok_button, LV_ALIGN_BOTTOM_RIGHT);
 	lv_obj_set_x(ok_button, -10);
-	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_ALL, arg);
+	lv_obj_add_event_cb(ok_button, wifi_popup_event_handler, LV_EVENT_RELEASED, arg);
 }
 
 /* create keyboard outside the screen */
 static void wifi_popup_create_keyboard(void){
 
+	if(false == lv_obj_is_valid(wifi_popup.background)) return;
+
 	/*Create a keyboard*/
-	keyboard = lv_keyboard_create(top_background);
+	keyboard = lv_keyboard_create(wifi_popup.background);
 	lv_obj_set_align(keyboard, LV_ALIGN_BOTTOM_MID);
 	lv_obj_set_y(keyboard, 240);
 	lv_obj_set_size(keyboard, LV_PCT(100), LV_PCT(50));
@@ -399,7 +439,7 @@ static void wifi_popup_show_hide_keyboard(uint8_t show_hide){
 	// create panel animation
 	lv_anim_init(&popup_move);
 	lv_anim_set_exec_cb(&popup_move, set_y);
-	lv_anim_set_var(&popup_move, panel);
+	lv_anim_set_var(&popup_move, wifi_popup.panel);
 	lv_anim_set_time(&popup_move, KEYBOARD_SHOW_HIDE_TIME_MS);
 	if(show_keyboard == show_hide){
 
@@ -497,13 +537,12 @@ static void set_y(void *obj, int32_t val){
 /* callback when animation of wifi popup "sign" is done */
 static void wifi_popup_line_animation_ready(struct _lv_anim_t *a){
 
-	lv_anim_del(wifi_popup_line, NULL);
-	lv_obj_del_delayed(top_background, 500);
+	UI_ReportEvt(UI_EVT_WIFI_POPUP_DELETE_REQUEST, 0);
 }
 
 /* callback when animation of sliding keyboard is done */
 static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a){
 
-	if(a->var == panel)lv_anim_del(panel, NULL);
+	if(a->var == wifi_popup.panel)lv_anim_del(wifi_popup.panel, NULL);
 	else if(a->var == keyboard)lv_anim_del(keyboard, NULL);
 }

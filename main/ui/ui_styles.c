@@ -6,9 +6,8 @@ ThemeColorsSet_t UI_CurrentTheme;
 lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 			UI_Icon24Style, UI_Icon16Style,
 			UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
-			UI_Varino12Style, UI_Varino18Style,
-			UI_ClockStyle,UI_ArcRSSIStyle, UI_StartupPanelStyle, UI_StartupPanelTextStyle,
-			UI_HorizontalLineStyle, UI_PopupPanelStyle;
+			UI_ClockStyle,UI_ArcRSSIStyle,
+			UI_HorizontalLineStyle;
 
 void UI_InitStyles(void){
 
@@ -91,44 +90,6 @@ void UI_InitStyles(void){
 	lv_style_set_height(&UI_HorizontalLineStyle, 2);
 	lv_style_set_bg_opa(&UI_HorizontalLineStyle, LV_OPA_COVER);
 	lv_style_set_bg_color(&UI_HorizontalLineStyle, UI_CurrentTheme.contrast_color);
-
-	lv_style_init(&UI_StartupPanelStyle);
-	lv_style_set_width(&UI_StartupPanelStyle, 280);
-	lv_style_set_height(&UI_StartupPanelStyle, 100);
-	lv_style_set_bg_opa(&UI_StartupPanelStyle, LV_OPA_TRANSP);
-	lv_style_set_bg_color(&UI_StartupPanelStyle, UI_CurrentTheme.main_color_base);
-	lv_style_set_border_width(&UI_StartupPanelStyle, 0);
-	lv_style_set_shadow_color(&UI_StartupPanelStyle, UI_CurrentTheme.main_color_base);
-	lv_style_set_shadow_opa(&UI_StartupPanelStyle, LV_OPA_TRANSP);
-	lv_style_set_shadow_width(&UI_StartupPanelStyle, 15);
-	lv_style_set_shadow_spread(&UI_StartupPanelStyle, 5);
-
-	lv_style_init(&UI_StartupPanelTextStyle);
-	lv_style_set_bg_opa(&UI_StartupPanelTextStyle, LV_OPA_TRANSP);
-	lv_style_set_text_color(&UI_StartupPanelTextStyle, UI_CurrentTheme.background_color_base);
-	lv_style_set_text_font(&UI_StartupPanelTextStyle, &ui_font_Varino30);
-	lv_style_set_text_opa(&UI_StartupPanelTextStyle, LV_OPA_COVER);
-
-	lv_style_init(&UI_Varino18Style);
-	lv_style_set_bg_opa(&UI_Varino18Style, LV_OPA_TRANSP);
-	lv_style_set_text_color(&UI_Varino18Style, UI_CurrentTheme.main_color_ext);
-	lv_style_set_text_font(&UI_Varino18Style, &ui_font_Varino18);
-	lv_style_set_text_opa(&UI_Varino18Style, LV_OPA_COVER);
-
-	lv_style_init(&UI_Varino12Style);
-	lv_style_set_bg_opa(&UI_Varino12Style, LV_OPA_TRANSP);
-	lv_style_set_text_color(&UI_Varino12Style, UI_CurrentTheme.contrast_color);
-	lv_style_set_text_font(&UI_Varino12Style, &ui_font_Varino12);
-	lv_style_set_text_opa(&UI_Varino12Style, LV_OPA_COVER);
-
-	lv_style_init(&UI_PopupPanelStyle);
-	lv_style_set_bg_color(&UI_PopupPanelStyle, UI_CurrentTheme.background_color_ext);
-	lv_style_set_bg_opa(&UI_PopupPanelStyle, LV_OPA_COVER);
-	lv_style_set_border_color(&UI_PopupPanelStyle, UI_CurrentTheme.main_color_base);
-	lv_style_set_border_opa(&UI_PopupPanelStyle, LV_OPA_COVER);
-	lv_style_set_line_color(&UI_PopupPanelStyle, UI_CurrentTheme.contrast_color);
-	lv_style_set_line_width(&UI_PopupPanelStyle, 8);
-	lv_style_set_line_rounded(&UI_PopupPanelStyle, true);
 
 	lv_style_init(&UI_CheckboxStyle);
 	lv_style_set_bg_opa(&UI_CheckboxStyle, LV_OPA_TRANSP);

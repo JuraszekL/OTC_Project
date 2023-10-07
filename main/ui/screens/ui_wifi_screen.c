@@ -33,7 +33,7 @@ void UI_WifiScreen_Init(void){
 	UI_ScreenCreate(&ui_WifiScreen);
 
 	UI_BackButtonCreate(&ui_WifiScreen, &ui_WifiScreenBackButton);
-	lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_ALL, NULL);
+	lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
     UI_HorizontalLineCreate(&ui_WifiScreen, &ui_WifiScreenHorLine);
 	lv_obj_set_x(ui_WifiScreenHorLine, 0);
@@ -90,59 +90,13 @@ void UI_WifiScreen_Init(void){
     lv_label_set_text(ui_WifiScreenAPDetailsLabel, "");
 
     UI_WifiListInit(ui_WifiScreen);
+    UI_WifiPopup_MutexInit();
 }
 
 /* load wifi screen */
 void UI_WifiScreen_Load(uint32_t delay){
 
 	lv_scr_load_anim(ui_WifiScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, delay, false);
-}
-
-/* run popup when wifi is connecting */
-void UI_WifiScreen_Connecting(WifiCreds_t *creds){
-
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_Connecting(creds->ssid);
-	}
-}
-
-/* run popup when wifi is connected */
-void UI_WifiScreen_Connected(UI_DetailedAPData_t *data){
-
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		if(0 != data){
-
-			UI_WifiPopup_Connected(data->ssid);
-		}
-		else{
-
-			UI_WifiPopup_Connected(0);
-		}
-	}
-}
-
-/* run popup when wifi could not be connected */
-void UI_WifiScreen_ConnectError(void){
-
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_NotConnected();
-	}
-}
-
-/* run popup when wifi password is required */
-void UI_WifiScreen_GetPass(WifiCreds_t *creds){
-
-	// if wifi screen is actual create popup
-	if(ui_WifiScreen == lv_scr_act()){
-
-		UI_WifiPopup_GetPass(creds);
-	}
 }
 
 /* set/clear details about connected AP on WifiScreen */
@@ -212,8 +166,61 @@ void UI_WifiScreen_SetApDetails(UI_DetailedAPData_t *data){
 	}
 }
 
+/* run popup when wifi is connecting */
+void UI_WifiScreen_PopupConnecting(WifiCreds_t *creds){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_Connecting(creds->ssid);
+	}
+}
+
+/* run popup when wifi is connected */
+void UI_WifiScreen_PopupConnected(UI_DetailedAPData_t *data){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		if(0 != data){
+
+			UI_WifiPopup_Connected(data->ssid);
+		}
+		else{
+
+			UI_WifiPopup_Connected(0);
+		}
+	}
+}
+
+/* run popup when wifi could not be connected */
+void UI_WifiScreen_PopupConnectError(void){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_NotConnected();
+	}
+}
+
+/* run popup when wifi password is required */
+void UI_WifiScreen_PopupGetPass(WifiCreds_t *creds){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_GetPass(creds);
+	}
+}
+
+/* delete wifi popup */
+void UI_WifiScreen_PopupDelete(void){
+
+	UI_WifiPopup_Delete();
+}
+
 /* add found AP to wifi list */
-void UI_WifiScreen_AddToList(UI_BasicAPData_t *data){
+void UI_WifiScreen_WifiListAdd(UI_BasicAPData_t *data){
 
 	if(ui_WifiScreen == lv_scr_act()){
 
@@ -222,7 +229,7 @@ void UI_WifiScreen_AddToList(UI_BasicAPData_t *data){
 }
 
 /* clear list with found AP's */
-void UI_WifiScreen_ClearList(void){
+void UI_WifiScreen_WifiListClear(void){
 
 	UI_WifiListClear();
 }
@@ -263,10 +270,7 @@ void UI_WifiScreen_WifiListClicked(lv_obj_t * obj){
 			}
 			if(heap_caps_get_allocated_size(creds)) free(creds);
 		}
-
-		UI_WifiList_SetClickable();
 }
-
 /**************************************************************
  *
  * Private function definitions
