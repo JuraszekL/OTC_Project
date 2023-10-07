@@ -6,8 +6,7 @@ ThemeColorsSet_t UI_CurrentTheme;
 lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 			UI_Icon24Style, UI_Icon16Style,
 			UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
-			UI_ClockStyle,UI_ArcRSSIStyle,
-			UI_HorizontalLineStyle;
+			UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle;
 
 void UI_InitStyles(void){
 
@@ -85,15 +84,16 @@ void UI_InitStyles(void){
 	lv_style_set_arc_opa(&UI_ArcRSSIStyle, LV_OPA_30);
 	lv_style_set_arc_width(&UI_ArcRSSIStyle, 5);
 
-	lv_style_init(&UI_HorizontalLineStyle);
-	lv_style_set_width(&UI_HorizontalLineStyle, 320);
-	lv_style_set_height(&UI_HorizontalLineStyle, 2);
-	lv_style_set_bg_opa(&UI_HorizontalLineStyle, LV_OPA_COVER);
-	lv_style_set_bg_color(&UI_HorizontalLineStyle, UI_CurrentTheme.contrast_color);
-
 	lv_style_init(&UI_CheckboxStyle);
 	lv_style_set_bg_opa(&UI_CheckboxStyle, LV_OPA_TRANSP);
 	lv_style_set_border_color(&UI_CheckboxStyle, UI_CurrentTheme.main_color_base);
 	lv_style_set_text_color(&UI_CheckboxStyle, UI_CurrentTheme.contrast_color);
 	lv_style_set_text_font(&UI_CheckboxStyle, &lv_font_montserrat_16);
+
+	lv_style_init(&UI_PanelStyle);
+	lv_style_set_bg_opa(&UI_PanelStyle, LV_OPA_COVER);
+	lv_style_set_bg_color(&UI_PanelStyle, UI_CurrentTheme.background_color_ext);
+	lv_style_set_border_color(&UI_PanelStyle, UI_CurrentTheme.background_color_ext);
+	lv_style_set_radius(&UI_PanelStyle, 8);
+	lv_style_set_pad_all(&UI_PanelStyle, 0);
 }

@@ -105,7 +105,11 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 	new_obj->obj = lv_list_add_btn(wifi_list, 0, name);
 	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_CLICKED, NULL);
 	lv_obj_add_style(new_obj->obj, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_border_width(new_obj->obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_width(new_obj->obj, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_border_color(new_obj->obj, UI_CurrentTheme.main_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(new_obj->obj, UI_CurrentTheme.background_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(new_obj->obj, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_radius(new_obj->obj, 5, LV_PART_MAIN | LV_STATE_DEFAULT);
 
 	// add right aligned label to the button
 	button_icon_right = lv_label_create(new_obj->obj);

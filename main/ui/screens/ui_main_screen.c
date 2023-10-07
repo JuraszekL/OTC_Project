@@ -13,7 +13,7 @@ static void ui_main_screen_evt_handler(lv_event_t * e);
  *
  ***************************************************************/
 static lv_obj_t *ui_MainScreen, *ui_MainScreenClockLabel, *ui_MainScreenDateLabel, *ui_MainScreenTopIconsLabel,
-			*ui_MainScreenHorLine, *ui_MainScreenWeatherIcon, *ui_MainScreenWeatherLabel, *ui_MainScreenWifiButton,
+			*ui_MainScreenTopPanel, *ui_MainScreenWeatherIcon, *ui_MainScreenWeatherLabel, *ui_MainScreenWifiButton,
 			*ui_MainScreenSetupButton;
 
 static struct {
@@ -39,14 +39,7 @@ extern const char *Eng_MonthName_3char[12];
 /* Initialize main screen */
 void UI_MainScreen_Init(void){
 
-//	lv_obj_t *but_label;
-
 	UI_ScreenCreate(&ui_MainScreen);
-
-    UI_HorizontalLineCreate(&ui_MainScreen, &ui_MainScreenHorLine);
-	lv_obj_set_x(ui_MainScreenHorLine, 0);
-	lv_obj_set_y(ui_MainScreenHorLine, 45);
-	lv_obj_set_align(ui_MainScreenHorLine, LV_ALIGN_TOP_MID);
 
     ui_MainScreenClockLabel = lv_label_create(ui_MainScreen);
     lv_obj_add_style(ui_MainScreenClockLabel, &UI_ClockStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -66,13 +59,20 @@ void UI_MainScreen_Init(void){
     lv_obj_set_align(ui_MainScreenDateLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_MainScreenDateLabel, "");
 
-    ui_MainScreenTopIconsLabel = lv_label_create(ui_MainScreen);
+	ui_MainScreenTopPanel = lv_obj_create(ui_MainScreen);
+	lv_obj_add_style(ui_MainScreenTopPanel, &UI_PanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(ui_MainScreenTopPanel, LV_ALIGN_TOP_MID);
+    lv_obj_set_width(ui_MainScreenTopPanel, 310);
+    lv_obj_set_height(ui_MainScreenTopPanel, 50);
+    lv_obj_set_y(ui_MainScreenTopPanel, 5);
+    lv_obj_clear_flag(ui_MainScreenTopPanel, LV_OBJ_FLAG_SCROLLABLE);
+
+    ui_MainScreenTopIconsLabel = lv_label_create(ui_MainScreenTopPanel);
     lv_obj_add_style(ui_MainScreenTopIconsLabel, &UI_Icon24Style, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_align(ui_MainScreenTopIconsLabel, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_align(ui_MainScreenTopIconsLabel, LV_ALIGN_LEFT_MID);
     lv_obj_set_width(ui_MainScreenTopIconsLabel, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_MainScreenTopIconsLabel, LV_SIZE_CONTENT);
     lv_obj_set_x(ui_MainScreenTopIconsLabel, 4);
-    lv_obj_set_y(ui_MainScreenTopIconsLabel, 4);
     lv_label_set_text(ui_MainScreenTopIconsLabel, "    ");
 
     ui_MainScreenWeatherIcon = lv_img_create(ui_MainScreen);

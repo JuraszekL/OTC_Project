@@ -49,7 +49,6 @@ LV_IMG_DECLARE(ui_img_logos_png);    // assets/Logos.png
 
 LV_FONT_DECLARE(ui_font_UIIconsNew16);
 LV_FONT_DECLARE(ui_font_UIIcons24);
-LV_FONT_DECLARE(ui_font_UIIconsNew36);
 LV_FONT_DECLARE(ui_font_Varino12);
 LV_FONT_DECLARE(ui_font_Varino18);
 LV_FONT_DECLARE(ui_font_Varino30);
@@ -62,7 +61,6 @@ void UI_ScreenCreate(lv_obj_t **screen);
 void UI_ButtonCreate(lv_obj_t **parent, lv_obj_t **button, char icon);
 void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button);
 void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label);
-void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line);
 void UI_PopupCreate(UI_PopupObj_t *popup);
 
 #endif

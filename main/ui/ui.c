@@ -65,12 +65,6 @@ void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label){
 	lv_label_set_text(checkbox_label, label);
 }
 
-void UI_HorizontalLineCreate(lv_obj_t **screen, lv_obj_t **line){
-
-	*line = lv_obj_create(*screen);
-	lv_obj_add_style(*line, &UI_HorizontalLineStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
-}
-
 void UI_PopupCreate(UI_PopupObj_t *popup){
 
 	if(0 == popup) return;

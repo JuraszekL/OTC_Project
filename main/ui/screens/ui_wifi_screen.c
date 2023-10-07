@@ -16,7 +16,7 @@ static void ui_wifi_screen_evt_handler(lv_event_t * e);
  *
  ***************************************************************/
 static lv_obj_t *ui_WifiScreen, *ui_WifiScreenBackButton, *ui_WifiScreenRSSIArc, *ui_WifiScreenRSSIValueLabel,
-			*ui_WifiScreenRSSIdBmLabel, *ui_WifiScreenSSIDLabel, *ui_WifiScreenAPDetailsLabel, *ui_WifiScreenHorLine;
+			*ui_WifiScreenRSSIdBmLabel, *ui_WifiScreenSSIDLabel, *ui_WifiScreenAPDetailsLabel, *ui_WifiScreenTopPanel;
 
 extern const char *Authentication_Modes[];
 
@@ -35,23 +35,25 @@ void UI_WifiScreen_Init(void){
 	UI_BackButtonCreate(&ui_WifiScreen, &ui_WifiScreenBackButton);
 	lv_obj_add_event_cb(ui_WifiScreenBackButton, ui_wifi_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
-    UI_HorizontalLineCreate(&ui_WifiScreen, &ui_WifiScreenHorLine);
-	lv_obj_set_x(ui_WifiScreenHorLine, 0);
-	lv_obj_set_y(ui_WifiScreenHorLine, 140);
-	lv_obj_set_align(ui_WifiScreenHorLine, LV_ALIGN_TOP_MID);
+	ui_WifiScreenTopPanel = lv_obj_create(ui_WifiScreen);
+	lv_obj_add_style(ui_WifiScreenTopPanel, &UI_PanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(ui_WifiScreenTopPanel, LV_ALIGN_TOP_MID);
+    lv_obj_set_width(ui_WifiScreenTopPanel, 310);
+    lv_obj_set_height(ui_WifiScreenTopPanel, 135);
+    lv_obj_set_y(ui_WifiScreenTopPanel, 5);
+    lv_obj_clear_flag(ui_WifiScreenTopPanel, LV_OBJ_FLAG_SCROLLABLE);
 
-    ui_WifiScreenRSSIArc = lv_arc_create(ui_WifiScreen);
+    ui_WifiScreenRSSIArc = lv_arc_create(ui_WifiScreenTopPanel);
     lv_obj_add_style(ui_WifiScreenRSSIArc, &UI_ArcRSSIStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_add_style(ui_WifiScreenRSSIArc, &UI_ArcRSSIStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_add_style(ui_WifiScreenRSSIArc, &UI_ArcRSSIStyle, LV_PART_KNOB | LV_STATE_DEFAULT);
-    lv_obj_set_x(ui_WifiScreenRSSIArc, -20);
-    lv_obj_set_y(ui_WifiScreenRSSIArc, 20);
-    lv_obj_set_align(ui_WifiScreenRSSIArc, LV_ALIGN_TOP_RIGHT);
-    lv_obj_clear_flag(ui_WifiScreenRSSIArc, LV_OBJ_FLAG_CLICKABLE);      /// Flags
+    lv_obj_set_align(ui_WifiScreenRSSIArc, LV_ALIGN_RIGHT_MID);
+    lv_obj_set_x(ui_WifiScreenRSSIArc, -10);
     lv_arc_set_range(ui_WifiScreenRSSIArc, -120, -30);
     lv_arc_set_value(ui_WifiScreenRSSIArc, -120);
     lv_arc_set_bg_angles(ui_WifiScreenRSSIArc, 0, 360);
     lv_arc_set_rotation(ui_WifiScreenRSSIArc, 270);
+    lv_obj_clear_flag(ui_WifiScreenRSSIArc, LV_OBJ_FLAG_CLICKABLE);      /// Flags
 
     ui_WifiScreenRSSIValueLabel = lv_label_create(ui_WifiScreenRSSIArc);
     lv_obj_add_style(ui_WifiScreenRSSIValueLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -71,22 +73,24 @@ void UI_WifiScreen_Init(void){
     lv_obj_set_align(ui_WifiScreenRSSIdBmLabel, LV_ALIGN_CENTER);
     lv_label_set_text(ui_WifiScreenRSSIdBmLabel, "dBm");
 
-    ui_WifiScreenSSIDLabel = lv_label_create(ui_WifiScreen);
+    ui_WifiScreenSSIDLabel = lv_label_create(ui_WifiScreenTopPanel);
     lv_obj_add_style(ui_WifiScreenSSIDLabel, &UI_Text16UnderlineStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(ui_WifiScreenSSIDLabel, LV_ALIGN_TOP_LEFT);
     lv_obj_set_width(ui_WifiScreenSSIDLabel, 170);
     lv_obj_set_height(ui_WifiScreenSSIDLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_WifiScreenSSIDLabel, 20);
-    lv_obj_set_y(ui_WifiScreenSSIDLabel, 30);
+    lv_obj_set_x(ui_WifiScreenSSIDLabel, 15);
+    lv_obj_set_y(ui_WifiScreenSSIDLabel, 25);
     lv_label_set_long_mode(ui_WifiScreenSSIDLabel, LV_LABEL_LONG_SCROLL);
     lv_obj_set_style_text_align(ui_WifiScreenSSIDLabel, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_text(ui_WifiScreenSSIDLabel, "");
 
-    ui_WifiScreenAPDetailsLabel = lv_label_create(ui_WifiScreen);
+    ui_WifiScreenAPDetailsLabel = lv_label_create(ui_WifiScreenTopPanel);
     lv_obj_add_style(ui_WifiScreenAPDetailsLabel, &UI_Text14Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(ui_WifiScreenAPDetailsLabel, LV_ALIGN_TOP_LEFT);
     lv_obj_set_width(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);   /// 1
     lv_obj_set_height(ui_WifiScreenAPDetailsLabel, LV_SIZE_CONTENT);    /// 1
-    lv_obj_set_x(ui_WifiScreenAPDetailsLabel, 20);
-    lv_obj_set_y(ui_WifiScreenAPDetailsLabel, 60);
+    lv_obj_set_x(ui_WifiScreenAPDetailsLabel, 15);
+    lv_obj_set_y(ui_WifiScreenAPDetailsLabel, 55);
     lv_label_set_text(ui_WifiScreenAPDetailsLabel, "");
 
     UI_WifiListInit(ui_WifiScreen);
@@ -216,7 +220,11 @@ void UI_WifiScreen_PopupGetPass(WifiCreds_t *creds){
 /* delete wifi popup */
 void UI_WifiScreen_PopupDelete(void){
 
-	UI_WifiPopup_Delete();
+	// if wifi screen is actual delete popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_Delete();
+	}
 }
 
 /* add found AP to wifi list */
