@@ -294,6 +294,7 @@ static void wifi_popup_create_line(uint8_t line_type){
 	wifi_popup_line = lv_line_create(wifi_popup.panel);
 	lv_obj_set_align(wifi_popup_line, LV_ALIGN_BOTTOM_MID);
 	lv_obj_set_x(wifi_popup_line, -5);
+	lv_obj_set_y(wifi_popup_line, -10);
 	lv_obj_set_style_line_opa(wifi_popup_line, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_line_color(wifi_popup_line, UI_CurrentTheme.contrast_color, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_line_width(wifi_popup_line, 8, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -328,6 +329,7 @@ static void wifi_popup_create_spinner(void){
 	spinner = lv_spinner_create(wifi_popup.panel, 1000, 60);
 	lv_obj_set_size(spinner, 50, 50);
 	lv_obj_set_align(spinner, LV_ALIGN_BOTTOM_MID);
+	lv_obj_set_y(spinner, -10);
 	lv_obj_clear_flag(spinner, LV_OBJ_FLAG_CLICKABLE);      /// Flags
 	lv_obj_set_style_arc_opa(spinner, LV_OPA_TRANSP, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_arc_color(spinner, UI_CurrentTheme.main_color_ext, LV_PART_INDICATOR | LV_STATE_DEFAULT);

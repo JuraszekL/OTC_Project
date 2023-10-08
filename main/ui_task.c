@@ -40,6 +40,7 @@ static void ui_event_startup_screen_ready(void *arg);
 static void ui_event_setup_scr_back_btn_clicked(void *arg);
 static void ui_event_main_scr_setup_btn_clicked(void *arg);
 static void ui_event_wifi_popup_delete_request(void *arg);
+static void ui_event_theme_change_request(void *arg);
 
 static void ui_event_run_startup_screen(void *arg);
 /**************************************************************
@@ -70,6 +71,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_SETUPSCR_BACK_BTN_CLICKED] = ui_event_setup_scr_back_btn_clicked,
 		[UI_EVT_MAINSCR_SETUP_BTN_CLICKED] = ui_event_main_scr_setup_btn_clicked,
 		[UI_EVT_WIFI_POPUP_DELETE_REQUEST] = ui_event_wifi_popup_delete_request,
+		[UI_EVT_THEME_CHANGE_REQUEST] = ui_event_theme_change_request,
 
 		[UI_EVT_RUN_STARTUP_SCREEN] = ui_event_run_startup_screen,
 };
@@ -356,4 +358,11 @@ static void ui_event_main_scr_setup_btn_clicked(void *arg){
 static void ui_event_wifi_popup_delete_request(void *arg){
 
 	UI_WifiScreen_PopupDelete();
+}
+
+static void ui_event_theme_change_request(void *arg){
+
+	char *theme_name = (char *)arg;
+
+	UI_ChangeTheme(theme_name);
 }

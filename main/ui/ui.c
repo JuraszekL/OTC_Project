@@ -71,7 +71,7 @@ void UI_PopupCreate(UI_PopupObj_t *popup){
 
 	popup->background = lv_obj_create(lv_layer_top());
 	lv_obj_set_size(popup->background, LV_PCT(100), LV_PCT(100));
-	lv_obj_set_style_bg_color(popup->background, UI_CurrentTheme.background_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_color(popup->background, UI_CurrentTheme.background_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_bg_opa(popup->background, 150, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(popup->background, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_clear_flag(popup->background, LV_OBJ_FLAG_SCROLLABLE);
