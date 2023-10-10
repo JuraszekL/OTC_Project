@@ -35,8 +35,6 @@ lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 			UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
 			UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle, UI_DropdownStyle;
 
-static const struct theme *current_theme;
-
 static const struct theme themes[] = {
 
 		{
@@ -186,14 +184,6 @@ const char ** UI_GetThemesList(uint8_t *themes_number){
 	return theme_list;
 }
 
-/* returns the name of current theme */
-void UI_GetCurrentThemeName(const char **name){
-
-	if(0 == name) return;
-
-	*name = current_theme->theme_name;
-}
-
 /* changes the theme of UI */
 void UI_ChangeTheme(char *theme_name){
 
@@ -214,8 +204,11 @@ void UI_ChangeTheme(char *theme_name){
 		a++;
 	}
 
-	// set this theme as current
-	current_theme = &themes[a];
+	// if wrong name has been passed ignore request
+	if(NULL == themes[a].theme_name) goto cleanup;
+
+	// set new theme to config
+	NVS_SetConfig(CONFIG_THEME, theme_name);
 
 	// refresh UI with new values
 	ui_set_current_theme_colors_to_styles();
@@ -230,7 +223,46 @@ void UI_ChangeTheme(char *theme_name){
  * this function is used when user changes the theme */
 static void ui_set_current_theme_colors_to_styles(void){
 
-	if(0 == current_theme) current_theme = &themes[0];
+	const struct theme *current_theme;
+	char *theme_name = 0;
+	uint8_t a = 0;
+	int res = 0, len = 0;
+
+	// get current theme name from config
+	NVS_GetConfig(CONFIG_THEME, &theme_name);
+	if(0 == theme_name){
+
+		ESP_LOGE("ui_styles.c", "theme_name = 0, trying to set %s as default theme", themes[0].theme_name);
+		theme_name = themes[0].theme_name;
+	}
+	else{
+
+		// get the length of theme name
+		len = strnlen(theme_name, 32);
+		if((0 == len) || (32 == len)) {
+
+			ESP_LOGE("ui_styles.c", "string length error, trying to set %s as default theme", themes[0].theme_name);
+			theme_name = themes[0].theme_name;
+		}
+	}
+
+	// find the index of theme with obtained "theme name"
+	while(NULL != themes[a].theme_name){
+
+		res = memcmp(themes[a].theme_name, theme_name, len);
+		if(0 == res) break;
+		a++;
+	}
+
+	if(NULL == themes[a].theme_name){		// should never happen!!
+
+		ESP_LOGE("ui_styles.c", "no theme found, trying to set %s as default theme", themes[0].theme_name);
+		theme_name = themes[0].theme_name;
+		a = 0;
+	}
+
+	// set pointer to the current theme
+	current_theme = &themes[a];
 
 	UI_CurrentTheme.background_color_base = lv_color_hex(current_theme->color_bckg_base_hex);
 	UI_CurrentTheme.background_color_ext = lv_color_hex(current_theme->color_bckg_ext_hex);

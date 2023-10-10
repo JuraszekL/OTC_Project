@@ -130,22 +130,23 @@ static void ui_setup_screen_get_themes_list(void){
 /* get the active theme name and set it as selected item in dropdown list */
 static void ui_setup_screen_set_active_theme(void){
 
-	const char  *current_theme;
+	const char  *current_theme = 0;
 	int32_t idx;
 
 	// get the name
-	UI_GetCurrentThemeName(&current_theme);
+	NVS_GetConfig(CONFIG_THEME, &current_theme);
+	if(0 == current_theme) goto error;
 
 	// get an index of this name within dropdown options
 	idx = lv_dropdown_get_option_index(UI_SetupScreenThemeDropdown, current_theme);
-	if(0 > idx){
-
-		lv_dropdown_set_options(UI_SetupScreenThemeDropdown, "error");
-		return;
-	}
+	if(0 > idx) goto error;
 
 	// set the option with this index as selected
 	lv_dropdown_set_selected(UI_SetupScreenThemeDropdown, idx);
+	return;
+
+	error:
+		lv_dropdown_set_options(UI_SetupScreenThemeDropdown, "error");
 }
 
 /* get the new name of selected item and send it to UI task */

@@ -6,6 +6,7 @@
 #include "mbedtls/aes.h"
 #include <string.h>
 #include "errno.h"
+#include "nvs.h"
 
 #include "cJSON.h"
 
@@ -17,6 +18,7 @@
  *
  ***************************************************************/
 #define WIFI_PASS_FILE_EXIST_BIT			(1U << 0)
+#define NVS_READY_BIT						(1U << 1)
 
 #define SPIFFS_MOUNT_PATH 					"/spiffs"
 #define SPIFFS_PART_LABEL 					"spiffs"
@@ -26,6 +28,12 @@
 #define JSON_IV_LABEL						"iv"
 #define JSON_PASS_LABEL						"pass"
 #define JSON_ORG_LEN_LABEL					"pass_len"
+
+#define NVS_CONFIG_NAMESPACE				"config"
+#define NVS_KEY_THEME_NAME					"theme"
+#define NVS_KEY_LANGUAGE_NAME				"lang"
+
+#define NVS_WRITE_OPERATION_TIMEOUT_MS		100U
 
 /**************************************************************
  *
@@ -37,49 +45,106 @@ typedef enum {
 	spiffs_check_wifi_pass_file = 0,
 	spiffs_get_pass,
 	spiffs_save_pass,
+	nvs_set_config,
 
-} spiffs_routine_t;
+} spiffs_nvs_spiffs_nvs_task_routine_t;
 
-typedef void(*spiffs_routine)(void *arg);
+typedef void(*spiffs_nvs_task_routine)(void *arg);
 
-struct spiffs_queue_data {
+struct spiffs_nvs_task_queue_data {
 
-	spiffs_routine_t type;
+	spiffs_nvs_spiffs_nvs_task_routine_t type;
 	void *arg;
 
 };
 
+// NVS
+typedef enum {
+
+	nvs_data_string = 0, nvs_data_u8t, nvs_data_u32t,
+
+} nvs_data_type_t;
+
+struct nvs_pair {
+
+	NVS_ConfigType_t config_type;
+	nvs_data_type_t data_type;
+
+	const char *key;
+
+	union {
+
+		char *str;
+		uint8_t u8t;
+		uint32_t u32t;
+
+	} value;
+};
 /**************************************************************
  *
  *	Function prototypes
  *
  ***************************************************************/
 static void spiffs_mount(void);
-static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool important);
+static void spiffs_nvs_task_routine_request(spiffs_nvs_spiffs_nvs_task_routine_t type, void *arg, bool important);
 
 static void spiffs_check_wifi_pass_file_routine(void *arg);
 static void spiffs_get_pass_routine(void *arg);
 static void spiffs_save_pass_routine(void *arg);
+
+static void nvs_config_load(void);
+static void nvs_set_config_routine(void *arg);
 
 static int spiffs_restore_wifi_pass_backup_file(void);
 static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **file_buff, cJSON **json);
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff);
 static int json_add_wifi_record_encrypted(cJSON **json, WifiCreds_t *data, char **output_string);
 static int json_get_wifi_pass_encrypted(cJSON *json, char **pass);
+static int nvs_get_default_string(struct nvs_pair *data);
+static int nvs_update_ram_config_string(struct nvs_pair *data);
 
 /**************************************************************
  *
  *	Global variables
  *
  ***************************************************************/
+static EventGroupHandle_t spiffs_nvs_evtgroup_handle;
+static QueueHandle_t spiffs_nvs_queue_handle;
+
 static char wifi_pass_file_path[32], wifi_pass_backup_file_path[32];
-static EventGroupHandle_t spiffs_files_status;
-static QueueHandle_t spiffs_queue_handle;
-const static spiffs_routine spiffs_routines_tab[] = {
+
+static struct nvs_pair *config;
+static uint8_t config_elements;
+
+static const spiffs_nvs_task_routine spiffs_nvs_task_routines_tab[] = {
 
 		[spiffs_check_wifi_pass_file] = spiffs_check_wifi_pass_file_routine,
 		[spiffs_get_pass] = spiffs_get_pass_routine,
 		[spiffs_save_pass] = spiffs_save_pass_routine,
+		[nvs_set_config] = nvs_set_config_routine,
+};
+
+static const struct nvs_pair default_config[] = {
+
+		[CONFIG_THEME] = {
+
+				.config_type = CONFIG_THEME,
+				.data_type = nvs_data_string,
+				.key = NVS_KEY_THEME_NAME,
+				.value.str = DEFAULT_THEME_NAME,
+		},
+
+		[CONFIG_LANGUAGE] = {
+
+				.config_type = CONFIG_LANGUAGE,
+				.data_type = nvs_data_string,
+				.key = NVS_KEY_LANGUAGE_NAME,
+				.value.str = DEFAULT_LANGUAGE,
+		},
+
+		{
+				.key = NULL,	// end of array
+		},
 };
 
 /******************************************************************************************************************
@@ -87,34 +152,35 @@ const static spiffs_routine spiffs_routines_tab[] = {
  * SPIFFS task
  *
  ******************************************************************************************************************/
-void SPIFFS_Task(void *arg){
+void SPIFFS_NVS_Task(void *arg){
 
 	BaseType_t ret;
-	struct spiffs_queue_data data;
+	struct spiffs_nvs_task_queue_data data;
 
-	spiffs_files_status = xEventGroupCreate();
-	assert(spiffs_files_status);
+	spiffs_nvs_evtgroup_handle = xEventGroupCreate();
+	assert(spiffs_nvs_evtgroup_handle);
 
 	// create spiffs routines queue
-	spiffs_queue_handle = xQueueCreate(3U, sizeof(struct spiffs_queue_data));
-	assert(spiffs_queue_handle);
+	spiffs_nvs_queue_handle = xQueueCreate(3U, sizeof(struct spiffs_nvs_task_queue_data));
+	assert(spiffs_nvs_queue_handle);
 
 	spiffs_mount();
 
-	// wait for synchronization
-	xEventGroupSync(AppStartSyncEvt, SPIFFS_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
+	nvs_config_load();
 
-	vTaskDelay(pdMS_TO_TICKS(1000));
-	spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, false);
+	// wait for synchronization
+	xEventGroupSync(AppStartSyncEvt, SPIFFS_NVS_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
+
+	spiffs_check_wifi_pass_file_routine(NULL);
 
 	while(1){
 
 		// recieve routine
-		ret = xQueueReceive(spiffs_queue_handle, &data, portMAX_DELAY);
+		ret = xQueueReceive(spiffs_nvs_queue_handle, &data, portMAX_DELAY);
 		if(pdTRUE == ret){
 
 			// perform routine
-			spiffs_routines_tab[data.type](data.arg);
+			spiffs_nvs_task_routines_tab[data.type](data.arg);
 		}
 	}
 }
@@ -128,13 +194,112 @@ void SPIFFS_Task(void *arg){
 void SPIFFS_GetPass(WifiCreds_t *creds){
 
 	if(0 == creds) return;
-	spiffs_routine_request(spiffs_get_pass, creds, false);
+	spiffs_nvs_task_routine_request(spiffs_get_pass, creds, false);
 }
 
 void SPIFFS_SavePass(WifiCreds_t *creds){
 
 	if(0 == creds) return;
-	spiffs_routine_request(spiffs_save_pass, creds, false);
+	spiffs_nvs_task_routine_request(spiffs_save_pass, creds, false);
+}
+
+void NVS_SetConfig(NVS_ConfigType_t type, void *arg){
+
+	if((0 == config) || (type >= config_elements)) return;
+
+	struct nvs_pair *data;
+	size_t len = 0;
+
+	// create return data
+	data = calloc(1, sizeof(struct nvs_pair));
+	if(0 == data) return;
+
+	// get data type from config
+	data->config_type = type;
+	data->data_type = config[type].data_type;
+	data->key = config[type].key;
+	switch(data->data_type){
+
+		// if string
+		case nvs_data_string:
+
+			// to set new string value, *arg must not be NULL, to set default string value
+			// *arg must be NULL
+			// because set config will be performed by SPIFFS task in undefined time, we should copy
+			// the value to the new buffer and free it when job is done, *arg will be freed by the taskk calling
+			// SPIFFS_SetConfig function
+
+			if(NULL != arg){
+
+				len = strlen((char *)arg);
+				if(0 == len) {
+
+					free(data);
+					return;
+				}
+
+				data->value.str = calloc((len + 1), sizeof(char));
+				if(0 == data->value.str) {
+
+					free(data);
+					return;
+				}
+
+				memcpy(data->value.str, (char *)arg, (len + 1));
+			}
+			else{
+
+				data->value.str = NULL;
+			}
+
+			xEventGroupClearBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT);
+			spiffs_nvs_task_routine_request(nvs_set_config, data, false);
+			break;
+
+		case nvs_data_u32t:
+
+			break;
+
+		case nvs_data_u8t:
+
+			break;
+
+		default:
+			break;
+	}
+}
+
+void NVS_GetConfig(NVS_ConfigType_t type, void *arg){
+
+	if((0 == config) || (type >= config_elements)) return;
+
+	EventBits_t bits;
+
+	// wait for nvs ready bit
+	bits = xEventGroupWaitBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT, pdFALSE, pdTRUE,
+			pdMS_TO_TICKS(NVS_WRITE_OPERATION_TIMEOUT_MS));
+	if(!(bits & NVS_READY_BIT)) return;
+
+	switch(config[type].data_type){
+
+		// if string
+		case nvs_data_string:
+
+			char **ptr = (char **)arg;
+			*ptr = config[type].value.str;
+			break;
+
+		case nvs_data_u32t:
+
+			break;
+
+		case nvs_data_u8t:
+
+			break;
+
+		default:
+			break;
+	}
 }
 
 /**************************************************************
@@ -174,9 +339,9 @@ static void spiffs_mount(void){
 }
 
 /* send request of routine to be performed */
-static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool important){
+static void spiffs_nvs_task_routine_request(spiffs_nvs_spiffs_nvs_task_routine_t type, void *arg, bool important){
 
-	struct spiffs_queue_data data;
+	struct spiffs_nvs_task_queue_data data;
 	BaseType_t res;
 
 	data.type = type;
@@ -185,11 +350,11 @@ static void spiffs_routine_request(spiffs_routine_t type, void *arg, bool import
 	// send recieved type and argument to SPIFFS_Task
 	if(true == important){
 
-		res = xQueueSendToFront(spiffs_queue_handle, &data, pdMS_TO_TICKS(50));
+		res = xQueueSendToFront(spiffs_nvs_queue_handle, &data, pdMS_TO_TICKS(50));
 	}
 	else{
 
-		res = xQueueSend(spiffs_queue_handle, &data, pdMS_TO_TICKS(50));
+		res = xQueueSend(spiffs_nvs_queue_handle, &data, pdMS_TO_TICKS(50));
 	}
 	if(pdPASS != res){
 
@@ -208,7 +373,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 	char *wifi_pass_json_raw = 0;
 	cJSON *wifi_pass_json = 0;
 
-	xEventGroupClearBits(spiffs_files_status, WIFI_PASS_FILE_EXIST_BIT);
+	xEventGroupClearBits(spiffs_nvs_evtgroup_handle, WIFI_PASS_FILE_EXIST_BIT);
 
 	// prepare file paths
 	sprintf(wifi_pass_file_path, "%s%s", SPIFFS_MOUNT_PATH, SPIFFS_WIFI_PASS_FILENAME);
@@ -237,7 +402,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 		}
 	}
 
-	xEventGroupSetBits(spiffs_files_status, WIFI_PASS_FILE_EXIST_BIT);
+	xEventGroupSetBits(spiffs_nvs_evtgroup_handle, WIFI_PASS_FILE_EXIST_BIT);
 
 	// read data from file and parse if file is not empty
 	if(0 != spiffs_perform_read(NULL, &f, &file_size, &wifi_pass_json_raw, &wifi_pass_json)) goto error;
@@ -263,7 +428,7 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 
 	// format partition if critical error occured
 	filesystem_error:
-		xEventGroupClearBits(spiffs_files_status, WIFI_PASS_FILE_EXIST_BIT);
+		xEventGroupClearBits(spiffs_nvs_evtgroup_handle, WIFI_PASS_FILE_EXIST_BIT);
 		ESP_LOGE("", "Critical filesystem error, %s file couldn't be opened, errno = %d", wifi_pass_file_path, errno);
 		ESP_LOGI("", "formating %s partition...", SPIFFS_PART_LABEL);
 		esp_spiffs_format(SPIFFS_PART_LABEL);
@@ -281,7 +446,7 @@ static void spiffs_get_pass_routine(void *arg){
 	WifiCreds_t *creds = (WifiCreds_t *)arg;
 
 	// break if file with saved password doesn't exist
-	bits = xEventGroupGetBits(spiffs_files_status);
+	bits = xEventGroupGetBits(spiffs_nvs_evtgroup_handle);
 	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
 
 	// read and parse file
@@ -335,7 +500,7 @@ static void spiffs_get_pass_routine(void *arg){
 			if(heap_caps_get_allocated_size(creds)) free(creds);
 		}
 		if(f) fclose(f);
-		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
+		spiffs_nvs_task_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
 /* save recieved password */
@@ -349,7 +514,7 @@ static void spiffs_save_pass_routine(void *arg){
 	EventBits_t bits;
 
 	// break if file doesn't exists
-	bits = xEventGroupGetBits(spiffs_files_status);
+	bits = xEventGroupGetBits(spiffs_nvs_evtgroup_handle);
 	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
 
 	// open, read, and parse wifi_pass file
@@ -410,10 +575,161 @@ static void spiffs_save_pass_routine(void *arg){
 			}
 			if(heap_caps_get_allocated_size(creds)) free(creds);
 		}
-		spiffs_routine_request(spiffs_check_wifi_pass_file, NULL, true);
+		spiffs_nvs_task_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
+/* load all configurations stored in NVS */
+static void nvs_config_load(void){
 
+	uint8_t a = 0;
+	size_t len = 0;
+	esp_err_t err;
+    nvs_handle_t nvs_handle;
+
+    // get number of stored configurations
+	while(NULL != default_config[a].key){
+
+		a++;
+	}
+
+	// allocate memory for config stored in NVS
+	config = calloc(a, sizeof(struct nvs_pair));
+	assert(config);
+
+	// open NVS
+	err = nvs_open(NVS_CONFIG_NAMESPACE, NVS_READWRITE, &nvs_handle);
+	ESP_ERROR_CHECK(err);
+
+	config_elements = a;
+
+	// load all configurations from NVS to RAM "config" structure
+	do{
+
+		a--;
+
+		// copy key name and data type from default config
+		config[a].key = default_config[a].key;
+		config[a].data_type = default_config[a].data_type;
+		config[a].config_type = default_config[a].config_type;
+
+		// copy the value in according to data type
+		switch(config[a].data_type){
+
+			// if string
+			case nvs_data_string:
+
+				// get length of the string
+				err = nvs_get_str(nvs_handle, config[a].key, NULL, &len);
+				if((ESP_FAIL == err) || (ESP_ERR_NVS_NOT_FOUND == err)){
+
+					// if not found or corrupted try to create new pair and
+					// load default value
+					config[a].value.str = default_config[a].value.str;
+					err = nvs_set_str(nvs_handle, config[a].key, default_config[a].value.str);
+					if(ESP_OK == err) nvs_commit(nvs_handle);
+				}
+				else if((ESP_OK == err) && (0 != len)){
+
+					// if string was found allocate memmory in RAM and copy
+					// the value
+					config[a].value.str = calloc(len, sizeof(char));
+					if(0 == config[a].value.str){
+
+						config[a].value.str = default_config[a].value.str;
+						break;
+					}
+					err = nvs_get_str(nvs_handle, config[a].key, config[a].value.str, &len);
+					if(ESP_OK != err){
+
+						if(heap_caps_get_allocated_size(config[a].value.str)) free(config[a].value.str);
+						config[a].value.str = default_config[a].value.str;
+					}
+				}
+				else{
+
+					ESP_LOGE("spiffs_task", "nvs_get_str error! err = %d", err);
+					config[a].value.str = default_config[a].value.str;
+				}
+
+				break;
+
+			case nvs_data_u32t:
+
+				break;
+
+			case nvs_data_u8t:
+
+				break;
+
+			default:
+				ESP_LOGE("spiffs_task", "nvs_config_load(), config[%d].data type out of range, reseting...", a);
+				abort();
+		}
+
+	} while(a);
+
+	nvs_commit(nvs_handle);
+	nvs_close(nvs_handle);
+
+	xEventGroupSetBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT);
+}
+
+/* set single value for obtained key */
+static void nvs_set_config_routine(void *arg){
+
+	struct nvs_pair *data = (struct nvs_pair *)arg;
+	nvs_handle_t nvs_handle = 0;
+	esp_err_t err;
+
+	// open NVS
+	err = nvs_open(NVS_CONFIG_NAMESPACE, NVS_READWRITE, &nvs_handle);
+	if(ESP_OK != err) goto cleanup;
+
+	switch(data->data_type){
+
+		// if string
+		case nvs_data_string:
+
+			// load default value if NULL
+			if(NULL == data->value.str){
+
+				if(0 != nvs_get_default_string(data)) goto cleanup;
+			}
+
+			// set value to NVS
+			err = nvs_set_str(nvs_handle, data->key, data->value.str);
+			if(ESP_OK != err) goto cleanup;
+
+			// set value to RAM config
+			 if(0 != nvs_update_ram_config_string(data)) goto cleanup;
+			break;
+
+		case nvs_data_u32t:
+
+			break;
+
+		case nvs_data_u8t:
+
+			break;
+
+		default:
+			break;
+	}
+
+	// confirm changes to NVS
+	nvs_commit(nvs_handle);
+
+	cleanup:
+		if(nvs_handle) nvs_close(nvs_handle);
+		if(data){
+			if(data->value.str){
+
+				if(heap_caps_get_allocated_size(data->value.str)) free(data->value.str);
+			}
+			if(heap_caps_get_allocated_size(data)) free(data);
+		}
+		xEventGroupSetBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT);
+}
 
 /*///////////////////////////////////////////////////
  *
@@ -717,4 +1033,41 @@ static int json_get_wifi_pass_encrypted(cJSON *json, char **pass){
 		}
 		mbedtls_aes_free(&aes_ctx);
 		return -1;
+}
+
+/* get default string value for obtained key */
+static int nvs_get_default_string(struct nvs_pair *data){
+
+	size_t len = 0;
+
+	// get length of string value from default config
+	len = strlen(default_config[data->config_type].value.str);
+	if(0 == len) return -1;
+
+	// allocate memory and copyt he string
+	data->value.str = calloc((len + 1), sizeof(char));
+	if(0 == data->value.str) return -1;
+
+	memcpy(data->value.str, default_config[data->config_type].value.str, (len + 1));
+	return 0;
+}
+
+/* update changed string value in RAM config */
+static int nvs_update_ram_config_string(struct nvs_pair *data){
+
+	size_t len = 0;
+
+	// get length of new string
+	len = strlen(data->value.str);
+	if(0 == len) return -1;
+
+	// free old data
+	if(heap_caps_get_allocated_size(config[data->config_type].value.str)) free(config[data->config_type].value.str);
+
+	// allocate and copy the new one
+	config[data->config_type].value.str = calloc((len + 1), sizeof(char));
+	if(0 == config[data->config_type].value.str) return -1;
+
+	memcpy(config[data->config_type].value.str, data->value.str, (len + 1));
+	return 0;
 }

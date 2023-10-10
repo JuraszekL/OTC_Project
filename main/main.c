@@ -46,7 +46,7 @@ void app_main(void){
 	xTaskCreatePinnedToCore(Wifi_Task, "WiFi_Task", 4096, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(Clock_Task, "Clock_Task", 4096, NULL, 1, NULL, 1);
 	xTaskCreatePinnedToCore(OnlineRequests_Task, "OnlineRequests_Task", 4096, NULL, 1, NULL, 1);
-	xTaskCreatePinnedToCore(SPIFFS_Task, "SPIFFS_Task", 8192, NULL, 1, NULL, 1);
+	xTaskCreatePinnedToCore(SPIFFS_NVS_Task, "SPIFFS_NVS_Task", 8192, NULL, 1, NULL, 1);
 
 	// create the tasks for core 0
 	xTaskCreatePinnedToCore(Display_Task, "Display_Task", 8192, NULL, 3, NULL, 0);

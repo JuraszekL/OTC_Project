@@ -68,7 +68,7 @@ typedef struct {
  ***************************************************************/
 #define VERSION_MAJOR		"0"
 #define VERSION_MINOR		"0"
-#define VERSION_PATCH		"8"
+#define VERSION_PATCH		"9"
 
 /**************************************************************
  * Bits for aplication startup synchro
@@ -81,17 +81,23 @@ typedef struct {
 #define CLOCK_TASK_BIT			(1 << 5)
 #define ONLINEREQS_TASK_BIT		(1 << 6)
 #define SDCARD_TASK_BIT			(1 << 7)
-#define SPIFFS_TASK_BIT			(1 << 8)
+#define SPIFFS_NVS_TASK_BIT		(1 << 8)
 
 #define ALL_TASKS_BITS		(MAIN_TASK_BIT | DISPLAY_TASK_BIT | TOUCHPAD_TASK_BIT | UI_TASK_BIT \
 							| WIFI_TASK_BIT |CLOCK_TASK_BIT | ONLINEREQS_TASK_BIT | SDCARD_TASK_BIT \
-							| SPIFFS_TASK_BIT)
+							| SPIFFS_NVS_TASK_BIT)
 
 /**************************************************************
  * General timeout in online operations
  ***************************************************************/
 #define TIMEOUT_MS				5000
 
+/**************************************************************
+ * Default config
+ ***************************************************************/
+#define DEFAULT_THEME_NAME		"Orange Dark"
+//#define DEFAULT_THEME_NAME		"Blue Dark"
+#define DEFAULT_LANGUAGE		"English"
 
 /**************************************************************
  * Public variables
