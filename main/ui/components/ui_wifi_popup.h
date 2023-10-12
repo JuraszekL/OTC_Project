@@ -3,6 +3,9 @@
 
 #include "main.h"
 
+/**************************************************************
+ * Public functions
+ ***************************************************************/
 void UI_WifiPopup_MutexInit(void);
 void UI_WifiPopup_Delete(void);
 void UI_WifiPopup_Connecting(char *ssid);

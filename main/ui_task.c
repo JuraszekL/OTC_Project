@@ -1,7 +1,13 @@
 #include "main.h"
 #include "ui.h"
 
+/**************************************************************
+ *
+ *	Definitions
+ *
+ ***************************************************************/
 #define UI_EVT_RUN_STARTUP_SCREEN		0xFF
+
 /**************************************************************
  *
  *	Typedefs
@@ -27,7 +33,6 @@ static void ui_event_wifi_connect_error(void *arg);
 static void ui_event_wifi_get_pass(void *arg);
 static void ui_event_wifilist_add(void *arg);
 static void ui_event_wifilist_clear(void *arg);
-static void ui_event_wifilist_clicked(void *arg);
 static void ui_event_password_deleted(void *arg);
 static void ui_event_password_not_deleted(void *arg);
 static void ui_event_time_changed(void *arg);
@@ -60,7 +65,6 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFI_GET_PASS] = ui_event_wifi_get_pass,
 		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
 		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
-		[UI_EVT_WIFI_LIST_CLICKED] = ui_event_wifilist_clicked,
 		[UI_EVT_WIFI_PASS_DELETED] = ui_event_password_deleted,
 		[UI_EVT_WIFI_PASS_NOT_DELETED] = ui_event_password_not_deleted,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
@@ -333,15 +337,6 @@ static void ui_event_startup_screen_ready(void *arg){
 
 	UI_StartupScreen_Cleanup();
 	UI_MainScreen_Load(2000);
-}
-
-static void ui_event_wifilist_clicked(void *arg){
-
-	if(0 == arg) return;
-
-	char *obj = (char *)arg;
-
-	UI_WifiScreen_WifiListClicked(obj);
 }
 
 static void ui_event_password_deleted(void *arg){

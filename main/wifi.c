@@ -1,5 +1,4 @@
 #include "main.h"
-//#include "driver/gptimer.h"
 #include "esp_wifi.h"
 #include <string.h>
 
@@ -142,42 +141,26 @@ void WIFI_StartScan(void){
 	wifi_routine_request(wifi_scan_start, NULL);
 }
 
-/* function called from UI when user requests to connect with "clicked" wifi  or
- * when user has put the password for requested wifi */
+/* function called from UI when when user has put the password for requested wifi */
 void Wifi_Connect(WifiCreds_t *creds){
 
-	if((0 == creds) || (0 == creds->ssid)) return;
+	if((0 == creds) || (0 == creds->ssid) || (0 == creds->pass)) goto error;
 
-	EventBits_t bits = xEventGroupGetBits(WifiEvents);
+	wifi_routine_request(wifi_connect, creds);
+	return;
 
-	// return if already trying to connect
-	if(bits & WIFI_CONNECTION_IN_PROGRESS_BIT) return;;
-
-	if(0 == creds->pass){
-
-		SPIFFS_GetPass(creds);
-	}
-	else{
-
-		wifi_routine_request(wifi_connect, creds);
-	}
+	error:
+		if(creds){
+			if(creds->ssid){
+				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
+			}
+			if(creds->pass){
+				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
+			}
+			if(heap_caps_get_allocated_size(creds)) free(creds);
+		}
 }
 
-/* function called by filesystem when searching for password has been finished
- * if no password found, creds->pass == 0, and function runs UI to obtain password from user */
-void Wifi_ReportPass(WifiCreds_t *creds){
-
-	if((0 == creds) || (0 == creds->ssid)) return;
-
-	if(0 == creds->pass){
-
-		UI_ReportEvt(UI_EVT_WIFI_GET_PASS, creds);
-	}
-	else{
-
-		wifi_routine_request(wifi_connect, creds);
-	}
-}
 /**************************************************************
  *
  * Private function definitions
@@ -480,10 +463,9 @@ static void wifi_connect_routine(void *arg){
 
 	// set config and connect
 	if(ESP_OK != esp_wifi_set_config(WIFI_IF_STA, &wifi_config)) goto cleanup;
-//	if(ESP_OK != esp_wifi_connect()) goto cleanup;
 
 	// set stataus bits
-	UI_ReportEvt(UI_EVT_WIFI_CONNECTING, arg);
+	UI_ReportEvt(UI_EVT_WIFI_CONNECTING, creds);
 	xEventGroupSetBits(WifiEvents, WIFI_CONNECTION_IN_PROGRESS_BIT);
 	if(true == creds->save){
 

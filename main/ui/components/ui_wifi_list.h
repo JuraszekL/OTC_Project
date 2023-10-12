@@ -3,6 +3,9 @@
 
 #include "lvgl.h"
 
+/**************************************************************
+ * Public functions
+ ***************************************************************/
 void UI_WifiListInit(lv_obj_t *screen);
 void UI_WifiListClear(void);
 void UI_WifiListAdd(bool is_protected, char *name, int rssi);

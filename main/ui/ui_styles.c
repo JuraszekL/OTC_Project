@@ -219,6 +219,12 @@ void UI_ChangeTheme(char *theme_name){
 	}
 }
 
+/**************************************************************
+ *
+ * Private function definitions
+ *
+ ***************************************************************/
+
 /* set colors for every style existing in UI
  * this function is used when user changes the theme */
 static void ui_set_current_theme_colors_to_styles(void){

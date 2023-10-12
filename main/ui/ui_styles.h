@@ -31,7 +31,6 @@ extern lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
  ***************************************************************/
 void UI_InitStyles(void);
 const char ** UI_GetThemesList(uint8_t *themes_number);
-//void UI_GetCurrentThemeName(const char **name);
 void UI_ChangeTheme(char *theme_name);
 
 #endif /* MAIN_UI_UI_STYLES_H_ */

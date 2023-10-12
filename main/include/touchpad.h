@@ -16,6 +16,7 @@ typedef struct {
  * Public functions
  ***************************************************************/
 void TouchPad_Task(void *arg);
+
 void TouchPad_PeriphInit(void);
 int TouchPad_GetData(TouchPad_Data_t *data);
 

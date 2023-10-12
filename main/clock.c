@@ -1,20 +1,22 @@
 #include "main.h"
 #include <sys/time.h>
-//#include "esp_sntp.h"
 
 /**************************************************************
  *
  *	Definitions
  *
  ***************************************************************/
+// the time when update request is sent
+#define BASIC_DATA_RESFRESH_MINUTE		37
+
 // max time to put new command to timer's queue
-#define XTIMER_QUEUE_DELAY_MS	100
+#define XTIMER_QUEUE_DELAY_MS			100
 
 // event bits
-#define TIME_SET_BIT			(1 << 0)
-#define TIME_SYNC_BIT			(1 << 1)
-#define TIMEZONE_SYNC_BIT		(1 << 2)
-#define BASIC_DATA_RESFRESH_BIT	(1 << 3)
+#define TIME_SET_BIT					(1 << 0)
+#define TIME_SYNC_BIT					(1 << 1)
+#define TIMEZONE_SYNC_BIT				(1 << 2)
+#define BASIC_DATA_RESFRESH_BIT			(1 << 3)
 
 /**************************************************************
  *
@@ -60,7 +62,7 @@ static void next_minute_timer_start(struct clock_data *clock);
  ***************************************************************/
 static const char *default_timezone = "GMT0";
 
-static struct clock_data main_clock;//TODO mutex!
+static struct clock_data main_clock;
 static TaskHandle_t clock_task_handle;
 static EventGroupHandle_t clock_bits_handle;
 

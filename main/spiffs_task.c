@@ -90,7 +90,7 @@ static void spiffs_mount(void);
 static void spiffs_nvs_task_routine_request(spiffs_nvs_spiffs_nvs_task_routine_t type, void *arg, bool important);
 
 static void spiffs_check_wifi_pass_file_routine(void *arg);
-static void spiffs_get_pass_routine(void *arg);
+static void spiffs_get_pass_and_connect_routine(void *arg);
 static void spiffs_save_pass_routine(void *arg);
 static void spiffs_delete_pass_routine(void *arg);
 
@@ -122,7 +122,7 @@ static uint8_t config_elements;
 static const spiffs_nvs_task_routine spiffs_nvs_task_routines_tab[] = {
 
 		[spiffs_check_wifi_pass_file] = spiffs_check_wifi_pass_file_routine,
-		[spiffs_get_pass] = spiffs_get_pass_routine,
+		[spiffs_get_pass] = spiffs_get_pass_and_connect_routine,
 		[spiffs_save_pass] = spiffs_save_pass_routine,
 		[spiffs_delete_pass] = spiffs_delete_pass_routine,
 		[nvs_set_config] = nvs_set_config_routine,
@@ -195,10 +195,10 @@ void SPIFFS_NVS_Task(void *arg){
  * Public function definitions
  *
  ***************************************************************/
-void SPIFFS_GetPass(WifiCreds_t *creds){
+void SPIFFS_GetPassAndConnect(char *ssid){
 
-	if(0 == creds) return;
-	spiffs_nvs_task_routine_request(spiffs_get_pass, creds, false);
+	if(0 == ssid) return;
+	spiffs_nvs_task_routine_request(spiffs_get_pass, ssid, false);
 }
 
 void SPIFFS_SavePass(WifiCreds_t *creds){
@@ -445,15 +445,16 @@ static void spiffs_check_wifi_pass_file_routine(void *arg){
 		return;
 }
 
-/* get password from file for recieved ssid */
-static void spiffs_get_pass_routine(void *arg){
+/* get password from file for recieved ssid and send to wifi task */
+static void spiffs_get_pass_and_connect_routine(void *arg){
 
 	FILE *f = 0;
-	int file_size;
+	int file_size, a = 0;
 	char *wifi_pass_json_raw = 0;
 	cJSON *wifi_pass_json = 0, *ssid_json = 0;
 	EventBits_t bits;
-	WifiCreds_t *creds = (WifiCreds_t *)arg;
+	char *ssid = (char *)arg;
+	WifiCreds_t *creds = 0;
 
 	// break if file with saved password doesn't exist
 	bits = xEventGroupGetBits(spiffs_nvs_evtgroup_handle);
@@ -463,11 +464,20 @@ static void spiffs_get_pass_routine(void *arg){
 	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
 			&wifi_pass_json)) goto error;
 
-	// if file is empty return 0 as password
+	// allocate return data
+	creds = calloc(1, sizeof(WifiCreds_t));
+	if(0 == creds) goto error;
+	a = strnlen(ssid, 33);
+	if(33 == a) goto error;
+	creds->ssid = malloc(a + 1);
+	if(0 == creds->ssid) goto error;
+	memcpy(creds->ssid, ssid, a + 1);
+
+	// if file is empty ask UI Task for pass
 	if(0 == file_size){
 
 		creds->pass = 0;
-		Wifi_ReportPass(creds);
+		UI_ReportEvt(UI_EVT_WIFI_GET_PASS, creds);
 		fclose(f);
 		return;
 	}
@@ -479,15 +489,15 @@ static void spiffs_get_pass_routine(void *arg){
 		if(0 == ssid_json) goto error;
 
 		if(0 != json_get_wifi_pass_encrypted(ssid_json, &creds->pass)) goto error;
+
+		Wifi_Connect(creds);
 	}
 	else {
 
-		// return 0 as password if no
+		// ask UI Task for pass
 		creds->pass = 0;
+		UI_ReportEvt(UI_EVT_WIFI_GET_PASS, creds);
 	}
-
-	// report password to wifi task
-	Wifi_ReportPass(creds);
 
 	// cleanup
 	cJSON_Delete(wifi_pass_json);
@@ -588,6 +598,7 @@ static void spiffs_save_pass_routine(void *arg){
 		spiffs_nvs_task_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
+/* delete record with given SSID from file */
 static void spiffs_delete_pass_routine(void *arg){
 
 	char *ssid = (char *)arg;
@@ -625,7 +636,7 @@ static void spiffs_delete_pass_routine(void *arg){
 
 	fclose(f);
 
-	//
+	// if file contains item with given SSID delete id and write file back
 	if(true == cJSON_HasObjectItem(wifi_pass_json, ssid)){
 
 		if(0 != json_delete_wifi_record(&wifi_pass_json, ssid, &wifi_pass_json_raw)) goto error;

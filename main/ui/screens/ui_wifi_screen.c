@@ -260,38 +260,6 @@ void UI_WifiScreen_WifiListClear(void){
 	UI_WifiListClear();
 }
 
-/* perform action when object on wifi list has been clicked */
-void UI_WifiScreen_WifiListClicked(char *ssid){
-
-	if(0 == ssid) return;
-
-	WifiCreds_t *creds = 0;
-	int a;
-
-	// prepare return data
-	creds = calloc(1, sizeof(WifiCreds_t));
-	if(0 == creds) goto error;
-	a = strnlen(ssid, 33);
-	if(33 == a) goto error;
-	creds->ssid = malloc(a + 1);
-	if(0 == creds->ssid) goto error;
-	memcpy(creds->ssid, ssid, a + 1);
-
-	ESP_LOGI("ui_wifi_list.c", "calling Wifi_Connect");
-	Wifi_Connect(creds);
-	return;
-
-    error:
-		if(creds){
-			if(creds->ssid){
-				if(heap_caps_get_allocated_size(creds->ssid)) free(creds->ssid);
-			}
-			if(creds->pass){
-				if(heap_caps_get_allocated_size(creds->pass)) free(creds->pass);
-			}
-			if(heap_caps_get_allocated_size(creds)) free(creds);
-		}
-}
 /**************************************************************
  *
  * Private function definitions

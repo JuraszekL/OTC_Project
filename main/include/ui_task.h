@@ -13,7 +13,6 @@ typedef enum {
 	UI_EVT_WIFI_GET_PASS,
 	UI_EVT_WIFI_LIST_ADD,
 	UI_EVT_WIFI_LIST_CLEAR,
-	UI_EVT_WIFI_LIST_CLICKED,
 	UI_EVT_WIFI_PASS_DELETED,
 	UI_EVT_WIFI_PASS_NOT_DELETED,
 	UI_EVT_TIME_CHANGED,
@@ -77,7 +76,8 @@ typedef struct {
 /**************************************************************
  * Public functions
  ***************************************************************/
-void UI_ReportEvt(UI_EventType_t Type, void *arg);
 void UI_Task(void *arg);
+
+void UI_ReportEvt(UI_EventType_t Type, void *arg);
 
 #endif /* MAIN_INCLUDE_UI_TASK_H_ */

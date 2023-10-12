@@ -16,7 +16,7 @@ typedef enum {
  ***************************************************************/
 void SPIFFS_NVS_Task(void *arg);
 
-void SPIFFS_GetPass(WifiCreds_t *creds);
+void SPIFFS_GetPassAndConnect(char *ssid);
 void SPIFFS_SavePass(WifiCreds_t *creds);
 void SPIFFS_DeletePass(char *ssid);
 

@@ -159,7 +159,7 @@ static void wifi_list_event_handler(lv_event_t * e){
 
     if(code == LV_EVENT_SHORT_CLICKED) {
 
-    	UI_ReportEvt(UI_EVT_WIFI_LIST_CLICKED, (char *)ssid);
+    	SPIFFS_GetPassAndConnect((char *)ssid);
     }
     else if(code == LV_EVENT_LONG_PRESSED) {
 

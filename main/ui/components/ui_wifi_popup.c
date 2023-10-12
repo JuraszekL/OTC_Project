@@ -3,7 +3,7 @@
 
 /**************************************************************
  *
- *	Defines
+ *	Definitions
  *
  ***************************************************************/
 #define WIFI_POPUP_MUTEX_TIMEOUT_MS			100U
@@ -186,6 +186,7 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
+/* popup when password for given SSID name has been found and deleted */
 void UI_WifiPopup_PassDeleted(char *ssid){
 
 	BaseType_t res;
@@ -213,6 +214,7 @@ void UI_WifiPopup_PassDeleted(char *ssid){
 	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
+/* popup when password for given SSID name has not been found */
 void UI_WifiPopup_PassNotDeleted(char *ssid){
 
 	BaseType_t res;
@@ -307,6 +309,7 @@ static void wifi_popup_event_handler(lv_event_t * e){
 	xSemaphoreGive(wifi_popup_mutex_handle);
 }
 
+/* remove all resources related to wifi popup */
 static void wifi_popup_delete(void){
 
 	if(true == lv_obj_is_valid(keyboard)) {
