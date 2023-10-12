@@ -31,7 +31,6 @@ typedef enum {
 	wifi_scan_start,
 	wifi_scan_done,
 	wifi_disconnected,
-	wifi_connected,
 	wifi_sta_got_ip,
 	wifi_connect,
 
@@ -58,7 +57,6 @@ static void wifi_start_routine(void *arg);
 static void wifi_scan_start_routine(void *arg);
 static void wifi_scan_done_routine(void *arg);
 static void wifi_disconnected_routine(void *arg);
-static void wifi_connected_routine(void *arg);
 static void wifi_sta_got_ip_routine(void *arg);
 static void wifi_connect_routine(void *arg);
 
@@ -78,7 +76,6 @@ static const wifi_routine wifi_routines_tab[] = {
 		[wifi_scan_start] = wifi_scan_start_routine,
 		[wifi_scan_done] = wifi_scan_done_routine,
 		[wifi_disconnected] = wifi_disconnected_routine,
-		[wifi_connected] = wifi_connected_routine,
 		[wifi_sta_got_ip] = wifi_sta_got_ip_routine,
 		[wifi_connect] = wifi_connect_routine,
 };
@@ -158,12 +155,10 @@ void Wifi_Connect(WifiCreds_t *creds){
 
 	if(0 == creds->pass){
 
-		ESP_LOGI("wifi.c", "no password in creds, get pass from SPIFFS");
 		SPIFFS_GetPass(creds);
 	}
 	else{
 
-		ESP_LOGI("wifi.c", "password: %s, connecting", creds->pass);
 		wifi_routine_request(wifi_connect, creds);
 	}
 }
@@ -320,8 +315,6 @@ static void wifi_scan_done_routine(void *arg){
 		goto cleanup;
 	}
 
-	ESP_LOGI("", "%d AP's found", ap_count);
-
 	// send results to UI
 	fill_wifi_list_with_found_aps();
 
@@ -355,11 +348,6 @@ static void wifi_disconnected_routine(void *arg){
 	xEventGroupClearBits(WifiEvents, WIFI_CONNECTED_BIT);
 	xEventGroupSetBits(WifiEvents, WIFI_DISCONNECTED_BIT);
 	UI_ReportEvt(UI_EVT_WIFI_DISCONNECTED, NULL);
-}
-
-static void wifi_connected_routine(void *arg){
-
-
 }
 
 /* function called when statios is connected and recieved IP from AP's DHCP */

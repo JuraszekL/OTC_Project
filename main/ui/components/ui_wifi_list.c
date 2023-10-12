@@ -103,7 +103,8 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
 
 	// add button with wifi name
 	new_obj->obj = lv_list_add_btn(wifi_list, 0, name);
-	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_CLICKED, NULL);
+	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_SHORT_CLICKED, NULL);
+	lv_obj_add_event_cb(new_obj->obj, wifi_list_event_handler, LV_EVENT_LONG_PRESSED, NULL);
 	lv_obj_add_style(new_obj->obj, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_width(new_obj->obj, 1, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_color(new_obj->obj, UI_CurrentTheme.main_color_ext, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -145,14 +146,6 @@ void UI_WifiListAdd(bool is_protected, char *name, int rssi){
     }
 }
 
-/* gei ssid of clicked object */
-void UI_WifiList_GetClickedSSID(lv_obj_t *obj, const char **ssid){
-
-	if((0 == obj) || (0 == ssid)) return;
-
-	*ssid = lv_list_get_btn_text(wifi_list, obj);
-}
-
 /**************************************************************
  *
  * Private function definitions
@@ -162,10 +155,15 @@ static void wifi_list_event_handler(lv_event_t * e){
 
     lv_event_code_t code = lv_event_get_code(e);
     lv_obj_t *obj = lv_event_get_target(e);
+    const char *ssid = lv_list_get_btn_text(wifi_list, obj);
 
-    if(code == LV_EVENT_CLICKED) {
+    if(code == LV_EVENT_SHORT_CLICKED) {
 
-    	UI_ReportEvt(UI_EVT_WIFI_LIST_CLICKED, obj);
+    	UI_ReportEvt(UI_EVT_WIFI_LIST_CLICKED, (char *)ssid);
+    }
+    else if(code == LV_EVENT_LONG_PRESSED) {
+
+    	SPIFFS_DeletePass((char *)ssid);
     }
 }
 

@@ -28,6 +28,8 @@ static void ui_event_wifi_get_pass(void *arg);
 static void ui_event_wifilist_add(void *arg);
 static void ui_event_wifilist_clear(void *arg);
 static void ui_event_wifilist_clicked(void *arg);
+static void ui_event_password_deleted(void *arg);
+static void ui_event_password_not_deleted(void *arg);
 static void ui_event_time_changed(void *arg);
 static void ui_event_clock_not_sync(void *arg);
 static void ui_event_clock_sync(void *arg);
@@ -59,6 +61,8 @@ const ui_event event_tab[] = {
 		[UI_EVT_WIFI_LIST_ADD] = ui_event_wifilist_add,
 		[UI_EVT_WIFI_LIST_CLEAR] = ui_event_wifilist_clear,
 		[UI_EVT_WIFI_LIST_CLICKED] = ui_event_wifilist_clicked,
+		[UI_EVT_WIFI_PASS_DELETED] = ui_event_password_deleted,
+		[UI_EVT_WIFI_PASS_NOT_DELETED] = ui_event_password_not_deleted,
 		[UI_EVT_TIME_CHANGED] = ui_event_time_changed,
 		[UI_EVT_CLOCK_NOT_SYNC] = ui_event_clock_not_sync,
 		[UI_EVT_CLOCK_SYNC] = ui_event_clock_sync,
@@ -335,9 +339,27 @@ static void ui_event_wifilist_clicked(void *arg){
 
 	if(0 == arg) return;
 
-	lv_obj_t *obj = (lv_obj_t *)arg;
+	char *obj = (char *)arg;
 
 	UI_WifiScreen_WifiListClicked(obj);
+}
+
+static void ui_event_password_deleted(void *arg){
+
+	if(0 == arg) return;
+
+	char *obj = (char *)arg;
+
+	UI_WifiScreen_PopupPassDeleted(obj);
+}
+
+static void ui_event_password_not_deleted(void *arg){
+
+	if(0 == arg) return;
+
+	char *obj = (char *)arg;
+
+	UI_WifiScreen_PopupPassNotDeleted(obj);
 }
 
 static void ui_event_run_startup_screen(void *arg){

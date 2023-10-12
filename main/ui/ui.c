@@ -83,9 +83,11 @@ void UI_PopupCreate(UI_PopupObj_t *popup){
 	lv_obj_set_style_bg_opa(popup->panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_color(popup->panel, UI_CurrentTheme.main_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
 	lv_obj_set_style_border_opa(popup->panel, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_clear_flag(popup->panel, LV_OBJ_FLAG_SCROLLABLE);
 
 	popup->label = lv_label_create(popup->panel);
 	lv_obj_add_style(popup->label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_align(popup->label, LV_ALIGN_TOP_MID);
     lv_obj_set_style_text_align(popup->label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_label_set_long_mode(popup->label, LV_LABEL_LONG_SCROLL);
 }

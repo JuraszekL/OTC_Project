@@ -199,6 +199,7 @@ static void lvgl_init(void){
     touch_driver.type = LV_INDEV_TYPE_POINTER;
     touch_driver.read_cb = lcd_get_touch_data;
     touch_driver.disp = disp;
+    touch_driver.long_press_time = LONG_PRESS_TIME_MS;
     touch = lv_indev_drv_register(&touch_driver);
 
     // register logging function

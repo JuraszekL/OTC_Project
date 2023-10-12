@@ -20,6 +20,7 @@
 #define LCD_CMD_BITS     		8U
 #define LCD_PARAM_BITS   		8U
 #define LVGL_TICK_MS			2U
+#define LONG_PRESS_TIME_MS		1000U
 
 	/* GPIO */
 #define LCD_BACKLIGHT_GPIO		GPIO_NUM_46

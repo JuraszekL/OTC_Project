@@ -14,10 +14,12 @@ void UI_WifiScreen_PopupConnecting(WifiCreds_t *creds);
 void UI_WifiScreen_PopupConnected(UI_DetailedAPData_t *data);
 void UI_WifiScreen_PopupConnectError(void);
 void UI_WifiScreen_PopupGetPass(WifiCreds_t *creds);
+void UI_WifiScreen_PopupPassDeleted(char *ssid);
+void UI_WifiScreen_PopupPassNotDeleted(char *ssid);
 void UI_WifiScreen_PopupDelete(void);
 
 void UI_WifiScreen_WifiListClear(void);
 void UI_WifiScreen_WifiListAdd(UI_BasicAPData_t *data);
-void UI_WifiScreen_WifiListClicked(lv_obj_t * obj);
+void UI_WifiScreen_WifiListClicked(char *ssid);
 
 #endif /* MAIN_UI_SCREENS_UI_WIFI_SCREEN_H_ */

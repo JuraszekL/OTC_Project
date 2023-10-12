@@ -8,7 +8,7 @@
  ***************************************************************/
 #define WIFI_POPUP_MUTEX_TIMEOUT_MS			100U
 #define KEYBOARD_SHOW_HIDE_TIME_MS			300U
-#define OK_NOK_LINE_ANIMATION_TIME_MS		1200U
+#define OK_NOK_LINE_ANIMATION_TIME_MS		2000U
 
 /**************************************************************
  *
@@ -182,6 +182,60 @@ void UI_WifiPopup_GetPass(WifiCreds_t *creds){
 	wifi_popup_create_buttons(creds);
 
 	wifi_popup_create_keyboard();
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
+}
+
+void UI_WifiPopup_PassDeleted(char *ssid){
+
+	BaseType_t res;
+
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
+
+	wifi_popup_delete();
+
+	wifi_popup_create_panel();
+
+	// prepare text
+	if(0 == ssid){
+
+		lv_label_set_text(wifi_popup.label, "Password deleted!");
+	}
+	else{
+
+		lv_label_set_text_fmt(wifi_popup.label, "Deleted password for \n%s", ssid);
+	}
+
+	wifi_popup_create_line(ok_line);
+
+	xSemaphoreGive(wifi_popup_mutex_handle);
+}
+
+void UI_WifiPopup_PassNotDeleted(char *ssid){
+
+	BaseType_t res;
+
+	// mutex for wifi popup
+	res = xSemaphoreTake(wifi_popup_mutex_handle, pdMS_TO_TICKS(WIFI_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
+
+	wifi_popup_delete();
+
+	wifi_popup_create_panel();
+
+	// prepare text
+	if(0 == ssid){
+
+		lv_label_set_text(wifi_popup.label, "Password not stored!");
+	}
+	else{
+
+		lv_label_set_text_fmt(wifi_popup.label, "No password for \n%s!", ssid);
+	}
+
+	wifi_popup_create_line(nok_line);
 
 	xSemaphoreGive(wifi_popup_mutex_handle);
 }

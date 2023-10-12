@@ -45,6 +45,7 @@ typedef enum {
 	spiffs_check_wifi_pass_file = 0,
 	spiffs_get_pass,
 	spiffs_save_pass,
+	spiffs_delete_pass,
 	nvs_set_config,
 
 } spiffs_nvs_spiffs_nvs_task_routine_t;
@@ -91,6 +92,7 @@ static void spiffs_nvs_task_routine_request(spiffs_nvs_spiffs_nvs_task_routine_t
 static void spiffs_check_wifi_pass_file_routine(void *arg);
 static void spiffs_get_pass_routine(void *arg);
 static void spiffs_save_pass_routine(void *arg);
+static void spiffs_delete_pass_routine(void *arg);
 
 static void nvs_config_load(void);
 static void nvs_set_config_routine(void *arg);
@@ -100,6 +102,7 @@ static int spiffs_perform_read(char *filename, FILE **f, int *file_size, char **
 static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *file_buff);
 static int json_add_wifi_record_encrypted(cJSON **json, WifiCreds_t *data, char **output_string);
 static int json_get_wifi_pass_encrypted(cJSON *json, char **pass);
+static int json_delete_wifi_record(cJSON **json, char *ssid, char **output_string);
 static int nvs_get_default_string(struct nvs_pair *data);
 static int nvs_update_ram_config_string(struct nvs_pair *data);
 
@@ -121,6 +124,7 @@ static const spiffs_nvs_task_routine spiffs_nvs_task_routines_tab[] = {
 		[spiffs_check_wifi_pass_file] = spiffs_check_wifi_pass_file_routine,
 		[spiffs_get_pass] = spiffs_get_pass_routine,
 		[spiffs_save_pass] = spiffs_save_pass_routine,
+		[spiffs_delete_pass] = spiffs_delete_pass_routine,
 		[nvs_set_config] = nvs_set_config_routine,
 };
 
@@ -201,6 +205,12 @@ void SPIFFS_SavePass(WifiCreds_t *creds){
 
 	if(0 == creds) return;
 	spiffs_nvs_task_routine_request(spiffs_save_pass, creds, false);
+}
+
+void SPIFFS_DeletePass(char *ssid){
+
+	if(0 == ssid) return;
+	spiffs_nvs_task_routine_request(spiffs_delete_pass, ssid, false);
 }
 
 void NVS_SetConfig(NVS_ConfigType_t type, void *arg){
@@ -575,6 +585,78 @@ static void spiffs_save_pass_routine(void *arg){
 			}
 			if(heap_caps_get_allocated_size(creds)) free(creds);
 		}
+		spiffs_nvs_task_routine_request(spiffs_check_wifi_pass_file, NULL, true);
+}
+
+static void spiffs_delete_pass_routine(void *arg){
+
+	char *ssid = (char *)arg;
+	FILE *f = 0;
+	int file_size, a;
+	char *wifi_pass_json_raw = 0;
+	cJSON *wifi_pass_json = 0;
+	EventBits_t bits;
+
+	// break if file with saved password doesn't exist
+	bits = xEventGroupGetBits(spiffs_nvs_evtgroup_handle);
+	if(!(bits & WIFI_PASS_FILE_EXIST_BIT)) goto error;
+
+	// read and parse file
+	if(0 != spiffs_perform_read(wifi_pass_file_path, &f, &file_size, &wifi_pass_json_raw,
+			&wifi_pass_json)) goto error;
+
+	// if file is empty inform UI and return
+	if(0 == file_size){
+
+		UI_ReportEvt(UI_EVT_WIFI_PASS_NOT_DELETED, ssid);
+		fclose(f);
+		return;
+	}
+	else{
+
+		fclose(f);
+
+		// write backup to wifi-pass_backup file
+		if(0 != spiffs_perform_write(wifi_pass_backup_file_path, &f, file_size, wifi_pass_json_raw)) goto error;
+
+		free(wifi_pass_json_raw);
+		wifi_pass_json_raw = 0;
+	}
+
+	fclose(f);
+
+	//
+	if(true == cJSON_HasObjectItem(wifi_pass_json, ssid)){
+
+		if(0 != json_delete_wifi_record(&wifi_pass_json, ssid, &wifi_pass_json_raw)) goto error;
+
+		// write the modified content to a file
+		a = strlen(wifi_pass_json_raw);
+		if(0 != spiffs_perform_write(wifi_pass_file_path, &f, (a + 1), wifi_pass_json_raw)) goto error;
+
+		fclose(f);
+		free(wifi_pass_json_raw);
+
+		UI_ReportEvt(UI_EVT_WIFI_PASS_DELETED, ssid);
+	}
+	else{
+
+		UI_ReportEvt(UI_EVT_WIFI_PASS_NOT_DELETED, ssid);
+	}
+
+	// cleanup
+	cJSON_Delete(wifi_pass_json);
+	return;
+
+	error:
+		if(wifi_pass_json) cJSON_Delete(wifi_pass_json);
+		if(wifi_pass_json_raw){
+			if(heap_caps_get_allocated_size(wifi_pass_json_raw)) free(wifi_pass_json_raw);
+		}
+		if(ssid){
+			if(heap_caps_get_allocated_size(ssid)) free(ssid);
+		}
+		if(f) fclose(f);
 		spiffs_nvs_task_routine_request(spiffs_check_wifi_pass_file, NULL, true);
 }
 
@@ -1033,6 +1115,17 @@ static int json_get_wifi_pass_encrypted(cJSON *json, char **pass){
 		}
 		mbedtls_aes_free(&aes_ctx);
 		return -1;
+}
+
+static int json_delete_wifi_record(cJSON **json, char *ssid, char **output_string){
+
+	cJSON_DeleteItemFromObjectCaseSensitive(*json, ssid);
+
+	// convert created json to string
+	*output_string = cJSON_PrintUnformatted(*json);
+	if(0 == *output_string) return -1;
+
+	return 0;
 }
 
 /* get default string value for obtained key */

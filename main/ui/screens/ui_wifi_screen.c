@@ -217,6 +217,24 @@ void UI_WifiScreen_PopupGetPass(WifiCreds_t *creds){
 	}
 }
 
+void UI_WifiScreen_PopupPassDeleted(char *ssid){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_PassDeleted(ssid);
+	}
+}
+
+void UI_WifiScreen_PopupPassNotDeleted(char *ssid){
+
+	// if wifi screen is actual create popup
+	if(ui_WifiScreen == lv_scr_act()){
+
+		UI_WifiPopup_PassNotDeleted(ssid);
+	}
+}
+
 /* delete wifi popup */
 void UI_WifiScreen_PopupDelete(void){
 
@@ -243,17 +261,12 @@ void UI_WifiScreen_WifiListClear(void){
 }
 
 /* perform action when object on wifi list has been clicked */
-void UI_WifiScreen_WifiListClicked(lv_obj_t * obj){
+void UI_WifiScreen_WifiListClicked(char *ssid){
 
-	if(0 == obj) return;
+	if(0 == ssid) return;
 
-	const char *ssid = 0;
 	WifiCreds_t *creds = 0;
 	int a;
-
-	// get ssid of clicked object
-	UI_WifiList_GetClickedSSID(obj, &ssid);
-	if(0 == ssid) return;
 
 	// prepare return data
 	creds = calloc(1, sizeof(WifiCreds_t));
