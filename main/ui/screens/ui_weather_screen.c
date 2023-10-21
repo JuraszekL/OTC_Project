@@ -38,6 +38,8 @@ void UI_WeatherScreen_Init(void){
     lv_obj_add_style(ui_WeatherScreenCityLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_obj_set_x(ui_WeatherScreenCityLabel, 30);
     lv_obj_set_y(ui_WeatherScreenCityLabel, 30);
+    lv_obj_set_width(ui_WeatherScreenCityLabel, 190);
+    lv_label_set_long_mode(ui_WeatherScreenCityLabel, LV_LABEL_LONG_SCROLL);
 
     ui_WeatherScreenCountryLabel = lv_label_create(ui_WeatherScreen);
     lv_obj_add_style(ui_WeatherScreenCountryLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -48,7 +50,7 @@ void UI_WeatherScreen_Init(void){
     ui_WeatherScreenIcon = lv_img_create(ui_WeatherScreen);
     lv_obj_set_width(ui_WeatherScreenIcon, LV_SIZE_CONTENT);
     lv_obj_set_height(ui_WeatherScreenIcon, LV_SIZE_CONTENT);
-    lv_obj_set_x(ui_WeatherScreenIcon, -40);
+    lv_obj_set_x(ui_WeatherScreenIcon, -30);
     lv_obj_set_y(ui_WeatherScreenIcon, 30);
     lv_obj_set_align(ui_WeatherScreenIcon, LV_ALIGN_TOP_RIGHT);
     lv_obj_clear_flag(ui_WeatherScreenIcon, LV_OBJ_FLAG_SCROLLABLE);
