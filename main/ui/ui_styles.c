@@ -33,7 +33,8 @@ ThemeColorsSet_t UI_CurrentTheme;
 lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 			UI_Icon24Style, UI_Icon16Style,
 			UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
-			UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle, UI_DropdownStyle;
+			UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle, UI_DropdownStyle,
+			UI_SliderMainStyle, UI_SliderIndicatorStyle, UI_SliderKnobStyle;
 
 static const struct theme themes[] = {
 
@@ -148,6 +149,15 @@ void UI_InitStyles(void){
 	lv_style_init(&UI_DropdownStyle);
 	lv_style_set_bg_opa(&UI_DropdownStyle, LV_OPA_COVER);
 	lv_style_set_text_font(&UI_DropdownStyle, &lv_font_montserrat_16);
+
+	lv_style_init(&UI_SliderMainStyle);
+	lv_style_set_bg_opa(&UI_SliderMainStyle, LV_OPA_30);
+
+	lv_style_init(&UI_SliderIndicatorStyle);
+	lv_style_set_bg_opa(&UI_SliderIndicatorStyle, LV_OPA_COVER);
+
+	lv_style_init(&UI_SliderKnobStyle);
+	lv_style_set_bg_opa(&UI_SliderKnobStyle, LV_OPA_COVER);
 
 	ui_set_current_theme_colors_to_styles();
 }
@@ -317,4 +327,13 @@ static void ui_set_current_theme_colors_to_styles(void){
 	lv_style_set_border_color(&UI_DropdownStyle, UI_CurrentTheme.main_color_base);
 	lv_style_set_text_color(&UI_DropdownStyle, UI_CurrentTheme.main_color_ext);
 	lv_obj_report_style_change(&UI_DropdownStyle);
+
+	lv_style_set_bg_color(&UI_SliderMainStyle, UI_CurrentTheme.main_color_base);
+	lv_obj_report_style_change(&UI_SliderMainStyle);
+
+	lv_style_set_bg_color(&UI_SliderIndicatorStyle, UI_CurrentTheme.main_color_base);
+	lv_obj_report_style_change(&UI_SliderIndicatorStyle);
+
+	lv_style_set_bg_color(&UI_SliderKnobStyle, UI_CurrentTheme.contrast_color);
+	lv_obj_report_style_change(&UI_SliderKnobStyle);
 }

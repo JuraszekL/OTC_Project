@@ -15,8 +15,9 @@ static void ui_setup_screen_report_selected_theme(void);
  *	Global variables
  *
  ***************************************************************/
-static lv_obj_t *ui_SetupScreen, *ui_SetupScreenBackButton, *UI_SetupScreenThemePanel, *UI_SetupScreenThemeLabel,
-				*UI_SetupScreenThemeDropdown;
+static lv_obj_t *ui_SetupScreen, *ui_SetupScreenBackButton,
+				*UI_SetupScreenThemePanel, *UI_SetupScreenThemeLabel, *UI_SetupScreenThemeDropdown,
+				*UI_SetupScreenBacklightPanel, *UI_SetupScreenBacklightLabel, *UI_SetupScreenBacklightSlider;
 
 /**************************************************************
  *
@@ -64,6 +65,29 @@ void UI_SetupScreen_Init(void){
 
     ui_setup_screen_get_themes_list();
     ui_setup_screen_set_active_theme();
+
+    UI_SetupScreenBacklightPanel = lv_obj_create(ui_SetupScreen);
+	lv_obj_add_style(UI_SetupScreenBacklightPanel, &UI_PanelStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(UI_SetupScreenBacklightPanel, LV_ALIGN_TOP_MID);
+    lv_obj_set_width(UI_SetupScreenBacklightPanel, 310);
+    lv_obj_set_height(UI_SetupScreenBacklightPanel, 60);
+    lv_obj_set_y(UI_SetupScreenBacklightPanel, 70);
+    lv_obj_clear_flag(UI_SetupScreenBacklightPanel, LV_OBJ_FLAG_SCROLLABLE);
+
+    UI_SetupScreenBacklightLabel = lv_label_create(UI_SetupScreenBacklightPanel);
+	lv_obj_add_style(UI_SetupScreenBacklightLabel, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_align(UI_SetupScreenBacklightLabel, LV_ALIGN_LEFT_MID);
+    lv_obj_set_x(UI_SetupScreenBacklightLabel, 15);
+    lv_label_set_text(UI_SetupScreenBacklightLabel, "Backlight");
+
+    UI_SetupScreenBacklightSlider = lv_slider_create(UI_SetupScreenBacklightPanel);
+    lv_obj_add_style(UI_SetupScreenBacklightSlider, &UI_SliderMainStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(UI_SetupScreenBacklightSlider, &UI_SliderIndicatorStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_add_style(UI_SetupScreenBacklightSlider, &UI_SliderKnobStyle, LV_PART_KNOB | LV_STATE_DEFAULT);
+    lv_obj_set_align(UI_SetupScreenBacklightSlider, LV_ALIGN_RIGHT_MID);
+    lv_obj_set_x(UI_SetupScreenBacklightSlider, -10);
+    lv_obj_set_width(UI_SetupScreenBacklightSlider, 160);
+    lv_obj_set_height(UI_SetupScreenBacklightSlider, 5);
 }
 
 /* load setup screen */
