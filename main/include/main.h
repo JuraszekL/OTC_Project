@@ -57,6 +57,7 @@ typedef struct {
 #include "sdcard.h"
 #include "spiffs_task.h"
 #include "wifi.h"
+#include "pwm.h"
 
 /**************************************************************
  * Use lv_conf.h instead of kconfig

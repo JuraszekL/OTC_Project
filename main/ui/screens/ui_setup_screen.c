@@ -213,7 +213,7 @@ static void ui_setup_screen_change_backlight(void){
 	backlight_value = lv_slider_get_value(UI_SetupScreenBacklightSlider);
 
 	// set backlight PWM value
-	Disp_SetBacklight(backlight_value);
+	PWM_SetBacklight(backlight_value);
 
 	// store new value to NVS config
 	NVS_SetConfig(CONFIG_BACKLIGHT, &backlight_value);
