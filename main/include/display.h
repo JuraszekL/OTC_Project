@@ -19,5 +19,6 @@ extern SemaphoreHandle_t LVGL_MutexHandle;
 void Display_Task(void *arg);
 
 void Disp_PeriphInit(void);
+void Disp_SetBacklight(uint8_t backlight_percent);
 
 #endif /* MAIN_INCLUDE_DISPLAY_H_ */

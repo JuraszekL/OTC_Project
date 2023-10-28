@@ -4,6 +4,7 @@
 #include "esp_lcd_panel_ops.h"
 #include "esp_timer.h"
 #include "driver/gpio.h"
+#include "driver/ledc.h"
 
 #include "lvgl.h"
 #include "esp_lcd_ili9488.h"
@@ -127,19 +128,14 @@ void Display_Task(void *arg){
 /* Initialize display peripherials */
 void Disp_PeriphInit(void){
 
-	gpio_config_t lcd_backlight_pin_config, lcd_rd_pin_config;
+	gpio_config_t lcd_rd_pin_config, lcd_backlight_pin_config;
+	ledc_timer_config_t lcd_backlight_pwm_timer_config;
+	ledc_channel_config_t lcd_backlight_pwm_channel_config;
 	esp_lcd_i80_bus_config_t lcd_bus_config;
 	esp_lcd_panel_io_i80_config_t lcd_panel_io_config;
 	esp_lcd_panel_dev_config_t lcd_panel_config;
 
 	// config GPIO
-	lcd_backlight_pin_config.pin_bit_mask = (1ULL << LCD_BACKLIGHT_GPIO);
-	lcd_backlight_pin_config.mode = GPIO_MODE_OUTPUT;
-	lcd_backlight_pin_config.pull_up_en = GPIO_PULLUP_DISABLE;
-	lcd_backlight_pin_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
-	lcd_backlight_pin_config.intr_type = GPIO_INTR_DISABLE;
-	ESP_ERROR_CHECK(gpio_config(&lcd_backlight_pin_config));
-
 	lcd_rd_pin_config.pin_bit_mask = (1ULL << LCD_RD_GPIO);
 	lcd_rd_pin_config.mode = GPIO_MODE_OUTPUT;
 	lcd_rd_pin_config.pull_up_en = GPIO_PULLUP_DISABLE;
@@ -147,6 +143,31 @@ void Disp_PeriphInit(void){
 	lcd_rd_pin_config.intr_type = GPIO_INTR_DISABLE;
 	ESP_ERROR_CHECK(gpio_config(&lcd_rd_pin_config));
 	gpio_set_level(LCD_RD_GPIO, 1U);
+
+	lcd_backlight_pin_config.pin_bit_mask = (1ULL << LCD_BACKLIGHT_GPIO);
+	lcd_backlight_pin_config.mode = GPIO_MODE_OUTPUT;
+	lcd_backlight_pin_config.pull_up_en = GPIO_PULLUP_DISABLE;
+	lcd_backlight_pin_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+	lcd_backlight_pin_config.intr_type = GPIO_INTR_DISABLE;
+	ESP_ERROR_CHECK(gpio_config(&lcd_backlight_pin_config));
+
+	// config LCD timer and PWM
+	lcd_backlight_pwm_timer_config.speed_mode = LEDC_LOW_SPEED_MODE;
+	lcd_backlight_pwm_timer_config.duty_resolution = LEDC_TIMER_10_BIT;
+	lcd_backlight_pwm_timer_config.timer_num = LEDC_TIMER_0;
+	lcd_backlight_pwm_timer_config.freq_hz = 1000U;
+	lcd_backlight_pwm_timer_config.clk_cfg =LEDC_AUTO_CLK;
+	ESP_ERROR_CHECK(ledc_timer_config(&lcd_backlight_pwm_timer_config));
+
+	lcd_backlight_pwm_channel_config.gpio_num = LCD_BACKLIGHT_GPIO;
+	lcd_backlight_pwm_channel_config.speed_mode = LEDC_LOW_SPEED_MODE;
+	lcd_backlight_pwm_channel_config.channel = LEDC_CHANNEL_0;
+	lcd_backlight_pwm_channel_config.intr_type = LEDC_INTR_DISABLE;
+	lcd_backlight_pwm_channel_config.timer_sel = LEDC_TIMER_0;
+	lcd_backlight_pwm_channel_config.duty = 0;
+	lcd_backlight_pwm_channel_config.hpoint = 0;
+	lcd_backlight_pwm_channel_config.flags.output_invert = 0;
+	ESP_ERROR_CHECK(ledc_channel_config(&lcd_backlight_pwm_channel_config));
 
 	// config lcd I/O and I8080 bus
 	lcd_bus_config.dc_gpio_num = LCD_DC_GPIO;
@@ -198,11 +219,24 @@ void Disp_PeriphInit(void){
 	// reset and initialize display
     esp_lcd_panel_reset(lcd_panel_handle);
     esp_lcd_panel_init(lcd_panel_handle);
-
-    // backlight ON
-	gpio_set_level(LCD_BACKLIGHT_GPIO, 1U);
 }
 
+/* Set value of display backlight (0% - 100%) */
+void Disp_SetBacklight(uint8_t backlight_percent){
+
+	uint8_t a;
+	uint32_t duty;
+
+	if(100 < backlight_percent) a = 100;
+	else a = backlight_percent;
+
+	// PWM resolution is set to 10-bit, so value changes between 0 - 1023
+	// this line converts percent value (0 - 100) to PWM value (0 - 1023)
+	duty = (((uint32_t)1023 * (uint32_t)a) / (uint32_t)100U);
+
+	ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0, duty);
+	ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_0);
+}
 /**************************************************************
  *
  * Private function definitions
