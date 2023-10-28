@@ -228,6 +228,7 @@ void Disp_SetBacklight(uint8_t backlight_percent){
 	uint32_t duty;
 
 	if(100 < backlight_percent) a = 100;
+	else if(5 > backlight_percent) a = 5;
 	else a = backlight_percent;
 
 	// PWM resolution is set to 10-bit, so value changes between 0 - 1023

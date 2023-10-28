@@ -9,6 +9,7 @@ static void ui_setup_screen_evt_handler(lv_event_t * e);
 static void ui_setup_screen_get_themes_list(void);
 static void ui_setup_screen_set_active_theme(void);
 static void ui_setup_screen_report_selected_theme(void);
+static void ui_setup_screen_change_backlight(void);
 
 /**************************************************************
  *
@@ -88,6 +89,8 @@ void UI_SetupScreen_Init(void){
     lv_obj_set_x(UI_SetupScreenBacklightSlider, -10);
     lv_obj_set_width(UI_SetupScreenBacklightSlider, 160);
     lv_obj_set_height(UI_SetupScreenBacklightSlider, 5);
+    lv_slider_set_value(UI_SetupScreenBacklightSlider, 50U, LV_ANIM_OFF);
+    lv_obj_add_event_cb(UI_SetupScreenBacklightSlider, ui_setup_screen_evt_handler, LV_EVENT_VALUE_CHANGED, NULL);
 }
 
 /* load setup screen */
@@ -115,6 +118,10 @@ static void ui_setup_screen_evt_handler(lv_event_t * e){
     else if((event_code == LV_EVENT_VALUE_CHANGED) && (target == UI_SetupScreenThemeDropdown)) {
 
     	ui_setup_screen_report_selected_theme();
+    }
+    else if((event_code == LV_EVENT_VALUE_CHANGED) && (target == UI_SetupScreenBacklightSlider)) {
+
+    	ui_setup_screen_change_backlight();
     }
 }
 
@@ -193,4 +200,14 @@ static void ui_setup_screen_report_selected_theme(void){
 
 	// report the name to UI task
 	UI_ReportEvt(UI_EVT_THEME_CHANGE_REQUEST, return_ptr);
+}
+
+/* set the new value of backlight PWM */
+static void ui_setup_screen_change_backlight(void){
+
+	uint32_t backlight_value;
+
+	backlight_value = lv_slider_get_value(UI_SetupScreenBacklightSlider);
+
+	Disp_SetBacklight(backlight_value);
 }
