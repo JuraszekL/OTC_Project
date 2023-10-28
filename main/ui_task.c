@@ -50,12 +50,12 @@ static void ui_event_wifi_popup_delete_request(void *arg);
 static void ui_event_theme_change_request(void *arg);
 
 static void ui_event_run_startup_screen(void *arg);
+
 /**************************************************************
  *
  *	Global variables
  *
  ***************************************************************/
-
 const ui_event event_tab[] = {
 
 		[UI_EVT_WIFI_CONNECTED] = ui_event_wifi_connected,

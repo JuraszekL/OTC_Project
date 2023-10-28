@@ -64,6 +64,7 @@ void app_main(void){
 	xTaskCreatePinnedToCore(TouchPad_Task, "TouchPad_Task", 4096, NULL, 1, NULL, 0);
 	xTaskCreatePinnedToCore(UI_Task, "UI_Task", 8192, NULL, 2, NULL, 0);
 	xTaskCreatePinnedToCore(SDCard_Task, "SDCard_Task", 8192, NULL, 1, NULL, 0);
+	xTaskCreatePinnedToCore(PWM_Task, "PWM_Task", 2048, NULL, 1, NULL, 0);
 
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, MAIN_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
