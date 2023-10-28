@@ -359,9 +359,13 @@ static void ui_event_password_not_deleted(void *arg){
 
 static void ui_event_run_startup_screen(void *arg){
 
+	uint8_t backlight;
+
+	NVS_GetConfig(CONFIG_BACKLIGHT, &backlight);
+
 	UI_StarttupScreen_Load();
 
-	Disp_SetBacklight(50);
+	Disp_SetBacklight(backlight);
 }
 
 static void ui_event_setup_scr_back_btn_clicked(void *arg){

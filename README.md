@@ -45,12 +45,13 @@ In this version OTC is able to:
 - get current time, timezone and basic weather data for current location
 - get detailed weather data for current location
 - change color theme without reseting the device
-- store theme settings in Non-Volatile Storage memory and load it during startup
+- change backlight brightness from UI
+- store various settings in Non-Volatile Storage memory and load it during startup
 
 # Milestones
 
 The project is still under development. Next milestones are:
-- add backlight and buzzer management
+- add buzzer management
 - add alarm function
 - add RTC and low-power support
 - add Li-Ion battery management
@@ -105,7 +106,7 @@ The folowing tasks are created in this project:
   - read and set default values from FLASH if needed
   - set new config value to NVS and then update it in RAM structure
 
-  In this version user can change the color theme only, so this is the only one setting stored within NVS. There will be much more stored settings in future.
+  In this version user can change the color theme and backlight value only, so just these two keys are stored within NVS. There will be much more stored settings in future.
 
 - **OnlineRequests_Task**
 

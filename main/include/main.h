@@ -96,7 +96,7 @@ typedef struct {
  * Default config
  ***************************************************************/
 #define DEFAULT_THEME_NAME		"Orange Dark"
-#define DEFAULT_LANGUAGE		"English"
+#define DEFAULT_BACKLIGHT		50U
 
 /**************************************************************
  * Public variables

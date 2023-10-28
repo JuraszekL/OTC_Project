@@ -7,7 +7,7 @@
 typedef enum {
 
 	CONFIG_THEME = 0,
-	CONFIG_LANGUAGE,
+	CONFIG_BACKLIGHT,
 
 } NVS_ConfigType_t;
 

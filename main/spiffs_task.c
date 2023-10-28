@@ -31,7 +31,7 @@
 
 #define NVS_CONFIG_NAMESPACE				"config"
 #define NVS_KEY_THEME_NAME					"theme"
-#define NVS_KEY_LANGUAGE_NAME				"lang"
+#define NVS_KEY_BACKLIGHT_NAME				"bckl"
 
 #define NVS_WRITE_OPERATION_TIMEOUT_MS		100U
 
@@ -138,12 +138,12 @@ static const struct nvs_pair default_config[] = {
 				.value.str = DEFAULT_THEME_NAME,
 		},
 
-		[CONFIG_LANGUAGE] = {
+		[CONFIG_BACKLIGHT] = {
 
-				.config_type = CONFIG_LANGUAGE,
-				.data_type = nvs_data_string,
-				.key = NVS_KEY_LANGUAGE_NAME,
-				.value.str = DEFAULT_LANGUAGE,
+				.config_type = CONFIG_BACKLIGHT,
+				.data_type = nvs_data_u8t,
+				.key = NVS_KEY_BACKLIGHT_NAME,
+				.value.u8t = DEFAULT_BACKLIGHT,
 		},
 
 		{
@@ -233,8 +233,8 @@ void NVS_SetConfig(NVS_ConfigType_t type, void *arg){
 		// if string
 		case nvs_data_string:
 
-			// to set new string value, *arg must not be NULL, to set default string value
-			// *arg must be NULL
+			// to set new string value, *arg must not be NULL,
+			// to set default string value, *arg must be NULL
 			// because set config will be performed by SPIFFS task in undefined time, we should copy
 			// the value to the new buffer and free it when job is done, *arg will be freed by the taskk calling
 			// SPIFFS_SetConfig function
@@ -272,6 +272,11 @@ void NVS_SetConfig(NVS_ConfigType_t type, void *arg){
 
 		case nvs_data_u8t:
 
+			// just copy the value from obtained pointer
+			// and send request
+			data->value.u8t = *(uint8_t *)arg;
+			xEventGroupClearBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT);
+			spiffs_nvs_task_routine_request(nvs_set_config, data, false);
 			break;
 
 		default:
@@ -281,7 +286,7 @@ void NVS_SetConfig(NVS_ConfigType_t type, void *arg){
 
 void NVS_GetConfig(NVS_ConfigType_t type, void *arg){
 
-	if((0 == config) || (type >= config_elements)) return;
+	if((0 == config) || (type >= config_elements) || (0 == arg)) return;
 
 	EventBits_t bits;
 
@@ -295,16 +300,19 @@ void NVS_GetConfig(NVS_ConfigType_t type, void *arg){
 		// if string
 		case nvs_data_string:
 
-			char **ptr = (char **)arg;
-			*ptr = config[type].value.str;
+			char **char_ptr = (char **)arg;
+			*char_ptr = config[type].value.str;
 			break;
 
 		case nvs_data_u32t:
 
 			break;
 
+		// if uint8_t
 		case nvs_data_u8t:
 
+			uint8_t *u8t_ptr = (uint8_t *)arg;
+			*u8t_ptr = config[type].value.u8t;
 			break;
 
 		default:
@@ -750,7 +758,24 @@ static void nvs_config_load(void){
 
 				break;
 
+				// if uint8_t
 			case nvs_data_u8t:
+
+				// get stored value to RAM config
+				err = nvs_get_u8(nvs_handle, config[a].key, &config[a].value.u8t);
+				if((ESP_FAIL == err) || (ESP_ERR_NVS_NOT_FOUND == err)){
+
+					// if key not found or cell corupted, try to create new one
+					// with default value
+					config[a].value.u8t = default_config[a].value.u8t;
+					err = nvs_set_u8(nvs_handle, config[a].key, config[a].value.u8t);
+					if(ESP_OK == err) nvs_commit(nvs_handle);
+				}
+				else if(ESP_OK != err){
+
+					ESP_LOGE("spiffs_task", "nvs_get_u8t error! err = %d", err);
+					config[a].value.u8t = default_config[a].value.u8t;
+				}
 
 				break;
 
@@ -761,9 +786,7 @@ static void nvs_config_load(void){
 
 	} while(a);
 
-	nvs_commit(nvs_handle);
 	nvs_close(nvs_handle);
-
 	xEventGroupSetBits(spiffs_nvs_evtgroup_handle, NVS_READY_BIT);
 }
 
@@ -801,8 +824,15 @@ static void nvs_set_config_routine(void *arg){
 
 			break;
 
+		// if uint8_t
 		case nvs_data_u8t:
 
+			// set value to NVS
+			err = nvs_set_u8(nvs_handle, data->key, data->value.u8t);
+			if(ESP_OK != err) goto cleanup;
+
+			// change RAM config
+			config[data->config_type].value.u8t = data->value.u8t;
 			break;
 
 		default:
@@ -815,9 +845,12 @@ static void nvs_set_config_routine(void *arg){
 	cleanup:
 		if(nvs_handle) nvs_close(nvs_handle);
 		if(data){
-			if(data->value.str){
+			if(nvs_data_string == data->data_type){
 
-				if(heap_caps_get_allocated_size(data->value.str)) free(data->value.str);
+				if(data->value.str){
+
+					if(heap_caps_get_allocated_size(data->value.str)) free(data->value.str);
+				}
 			}
 			if(heap_caps_get_allocated_size(data)) free(data);
 		}
