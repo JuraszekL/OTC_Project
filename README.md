@@ -67,7 +67,7 @@ Although The ESP32 Terminal module is ready to use dev board, one modification h
 ## Configuration
 
 Internal flash memory is configured as Quad-SPI, and works with 80MHz. Internal RAM memory is configured as Octal-SPI and works with 80MHz as well. The .bss and Wifi/LwIP resources can be placed into external RAM. Instruction cache is set to 32kB, data cache to 64kB.
-Internal Wifi task is pinned to core 1.
+Internal Wifi task is pinned to core 1. The Timer task priority is set to 5.
 
 ## Tasks
 

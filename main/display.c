@@ -268,7 +268,12 @@ static void lcd_flush(struct _lv_disp_drv_t * disp_drv, const lv_area_t * area, 
 /* Tell LVGL how many milliseconds has elapsed */
 static void lcd_LVGL_tick(void *arg){
 
-    lv_tick_inc(LVGL_TICK_MS);
+	BaseType_t res = xSemaphoreTake(LVGL_MutexHandle, pdMS_TO_TICKS(100));
+	if(pdTRUE == res){
+
+	    lv_tick_inc(LVGL_TICK_MS);
+    	xSemaphoreGive(LVGL_MutexHandle);
+	}
 }
 
 /* check the queue for new data from touchpad */
