@@ -1,4 +1,4 @@
-# OTC Project
+# The OTC Project
 
 ![OTC_LOGO](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_Logo.png)
 
@@ -12,7 +12,6 @@ OTC or just Online Table Clock is, as it says, my concept of table clock that is
 5. [**Detailed description**](#detailed-description)
    * [**Hardware**](#hardware)
    * [**Configuration**](#configuration)
-   * [**Code structure**](#code-structure)
    * [**Tasks**](#tasks)
    * [**Most important functions**](#most-important-functions)
 
@@ -28,8 +27,7 @@ OTC project is based on	[ESP32 Terminal](https://www.elecrow.com/esp-terminal-wi
 
 To obtain weather and location data, is uses free [Weather API](https://www.weatherapi.com/), and [cJSON](https://github.com/DaveGamble/cJSON) library to parse the data. Encryption and decryption of stored wifi passwords are done with Espressif's port of [Mbed-TLS](https://github.com/Mbed-TLS/mbedtls) library. 
 
-![OTC Main Screen](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_MainScreenPhoto.png) ![OTC Weather Screen](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_WeatherScreenPhoto.png)
-![OTC Wifi Screen](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_WifiScreenPhoto.png)
+![OTC Main Screen](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_MainScreen.png)
 
 # Motivation
 
@@ -37,27 +35,28 @@ This project is for learning purposes only. Feel free to use it.
 
 # Functionality
 
-Current version - v0.0.8 (pre-release)
+Current version - v1.0.0
 
 In this version OTC is able to:
 - search for available wifi access points and represent the results on the screen. Each one AP within the list shows SSID name, signal strength and informs that AP is protected or not.
 - connect with chosen AP, show details about connected AP
 - ask user to enter AP password, save encrypted password, search and decrypt saved password if exists
+- delete saved password for chosen AP
 - get current time, timezone and basic weather data for current location
 - get detailed weather data for current location
+- change color theme without reseting the device
+- store theme settings in Non-Volatile Storage memory and load it during startup
 
 # Milestones
 
 The project is still under development. Next milestones are:
-- add setup screen
-- add theme change
-- add stored passwords management
-- v1.0.0 - first release
 - add backlight and buzzer management
 - add alarm function
 - add RTC and low-power support
-- add Li-Ion batter management
+- add Li-Ion battery management
 - add OTA firmware update
+- add statistics screen
+- add logfile
 
 # Detailed description
 
@@ -70,86 +69,112 @@ Although The ESP32 Terminal module is ready to use dev board, one modification h
 Internal flash memory is configured as Quad-SPI, and works with 80MHz. Internal RAM memory is configured as Octal-SPI and works with 80MHz as well. The .bss and Wifi/LwIP resources can be placed into external RAM. Instruction cache is set to 32kB, data cache to 64kB.
 Internal Wifi task is pinned to core 1.
 
-## Code structure
-
-Main code structure:
-![CODE_MAIN](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_main.png)
-
-UI code structure:
-![CODE_UI](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_UI.png)
-
-Legend:
-![CODE_UI](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_Legend.png)
-
 ## Tasks
 
 The folowing tasks are created in this project:
 
 - **app_main**
 
-    The default task created by FreeRTOS. Here everything starts. It is used to initialize hardware, cJSON, and create all other tasks, then is deleted by itself.
+  The default task created by FreeRTOS. Here everything starts. It is used to initialize peripherals, cJSON library, and create all other tasks. The *app_main* task creates also synchronization point for the firmware - all the other tasks will be started in the same moment only if all initializations are done. If *app_main* reaches this point it deletes itself.
 
 - **Wifi_Task**
 
+  This task is used to perform any Wifi related operations like:
+
   - initialize Wifi and NetIF resources
-  - manage WiFi events
-  - run scan and connect to access points
-  - report events to UI
+  - start scan for available access points and report the results to UI
+  - perform connect and reconnect routine with obtained access point data
+  - manage WiFi events and report them to UI
 
 - **SPIFFS_Task**
 
+  This task is used to store any data for future use. It perform read/write operations within internal filesystem partition (SPIFFS) and internal Non-Volatile Storage partition (NVS).
+
+  The SPIFFS partition is used to store Wifi credentials encrypted with AES CBC method. For that, the *SPIFFS_Task* is able to do the following:
+  
   - mount a filesystem to a partition within internal memory
   - create, restore, make backup  and check correctness of wifi password files
   - read AES 256-bit key stored in eFuse
-  - encrypt/decrypt recieved password with AES CBC method
+  - encrypt/decrypt received password with AES CBC method
   - store encrypted password with all data needed do decrypt (as JSON object)
+  - delete the password and all related data if needed
+
+  The NVS partition is used to store OTC config. For that, the *SPIFFS_Task* is able to do the following:
+
+  - create config structure in RAM and then copy stored values from NVS to the config
+  - read and set default values from FLASH if needed
+  - set new config value to NVS and then update it in RAM structure
+
+  In this version user can change the color theme only, so this is the only one setting stored within NVS. There will be much more stored settings in future.
 
 - **OnlineRequests_Task**
 
+  The task is used to perform any network request of data. It includes:
+
   - get current time from SNTP server
-  - get timezone, current and forecast weather for current IP from HTTP
-  - parse recieved data from HTTP (as JSON)
-  - send the data to UI
+  - get timezone and current weather based on current IP address (HTTP)
+  - get detailed forecast weather for today based on current IP address (HTTP)
+
+  *OnlineRequests_Task* is also able to parse received data (as JSON) and report them to UI and *Clock_Task* if needed
 
 - **Clock_Task**
 
-  - update time to UI every one minute
-  - monitor clock synchronisation status and report to UI
-  - manage synchornisation requests
+  The task is used to perform any Clock-related operations like:
+
+  - update time displayed by UI every minute
+  - monitor clock synchronization status and report it to UI
+  - send synchronization requests
 
 - **UI_Task**
 
-  - initialize all elements within User Interface
-  - manage UI events
-  - manage UI elements in runtime
+  The task is used to create and manage every element within User Interface. This is the only one task that is allowed to use LVGL library API (except *Display_Task* that is responsible for redrawing the display content). Because of that, the *UI_Task* is able to do the following:
+
+  - read last used theme, initialize all styles within the app in according to the theme
+  - initialize all screens and all objects in according to the styles
+  - manage UI events and UI objects in runtime
+  - restyle all objects when style changes
 
 - **Display_Task**
 
-  - initialize LCD driver and LVGL library
-  - perform draw operations if required
+  The task is used to initialize LCD driver and perform any operation within the LCD. It also initializes the LVGL library, and integrates it with LCD driver and Touchpad driver. When LVGL is ready to use, the *Display_Task* calls only one function that is LVGL handler to perform redraw operation. Because the *UI_Task* simultaneously calls LVGL API, it was necessary to use Mutex protection before every call of any LVGL function. The *LVGL_MutexHandle* is shared between these two tasks to avoid data corruption.
 
 - **TouchPad_Task**
 
-  - initialize touchpad driver
-  - read last touchpad data if interrupt occured
+  The task is used to initialize Touchpad driver and configure an interrupt routine if display is touched. When interrupt occurs, the *TouchPad_Task* reads the data from touchpad controller, and store it to the queue. The LVGL library can then read the last stored value.
 
 - **SDCard_Task**
 
-  - initialize SDCARD peripherials and delete itself when it's done
+  The task is used to initialize SD Card peripherals and mount file system within the card. When it's done, the task deletes itself. The SD Card is used to store images for weather icons.
 
 ## Most important functions
 
 **Clock set/synchronize**
 
-When the system date is before 2020 that means, the clock is not set properly. In this case, the time on the main screen is set to "--:--", and no other information are showed. *Clock_Task* sends *ONLINEREQ_TIME_UPDATE* request every minute. When wifi is connected, request is processed by *OnlineRequests_Task* - it starts then SNTP service. If the time was updated, *Clock_Task* is informed, then it sets clock status as "not_sync" and sends *ONLINEREQ_BASIC_UPDATE* request. Only if status of the clock differs from "not set", it sends it's value to the main screen. Now, even if the clock is still not synchronized, the time is displayed on the main screen. The missing part of "synchronization" is the timezone. If no any timezone has been set yet, the default GMT0 value is used. The proper timezone is obtained from HTTP service, together with current weather data. When HTTP request is processed, then parsed, the *Clock_Task* receives the new timezone. Now the clock has "sync" status, *Clock_Task* informs UI about time/date change, and about it's new status. The clock status is represented by the sync icon at the top left corner of main screen (two rounded arrows). There are two ways to set the clock status to "not sync" now - wifi is disconnected or no response from HTTP was obtained. Synchronization of the clock is performed once every hour, on time defined by *BASIC_DATA_RESFRESH_MINUTE* macro (together with update of timezone/current weather).
+System clock may be in one of 4 states:
 
-The video below shows the situations mentioned above. When OTC starts, the clock is not set. After connecting with access point "ABCD", the clock is set by SNTP service, then finally synchronized with timezone received from HTTP.
+  - *clock_not_set*  \
+  If the system date is before 2020, it means that clock was not set properly. In this case, on the main screen, the time is represented by "--:--" value, and nothing else is displayed. The *Clock_Task* sends *ONLINEREQ_TIME_UPDATE* request every minute until the date is valid.
 
-[![Video link](https://img.youtube.com/vi/nlv_j90KZcM/0.jpg)](https://www.youtube.com/watch?v=nlv_j90KZcM "Click to viev")
+  - *clock_not_sync*  \
+  If the system date is after 2020, it may be possible that clock was set properly, but synchronization is required. In this case, the *Clock_Task* sends requests to update time from SNTP service, and timezone from HTTP API. Next to it, the clock changes its state to *clock_sync_pending*
+
+  - *clock_sync_pending*  \
+  The *Clock_Task* waits for synchronization of time and timezone. If any of them was not completed before waiting time expires, the clock goes back to *clock_not_sync* state. If both of them were completed, that means the clock changes its state to *clock_sync*.
+
+  - *clock_sync*  \
+  The *Clock_Task* checks every minute if the time for synchornization has come (synchronization is performed once per hour). If yes, it sends synchroniztion requests, and changes the clock state to *clock_sync_pending*.
+
+To perform any action every minute, the *Clock_Task* calculates time in seconds to next full minute, and sets the timer to notify it exactly when the minute changes to the next.
+  
+The video below shows the situations: when OTC starts, the clock is not set. After connecting with access point "Test_AP", the clock is set by SNTP service, then finally synchronized with timezone received from HTTP.
+
+[![Video link](https://img.youtube.com/vi/X9yLclQLcq4/0.jpg)](https://www.youtube.com/watch?v=X9yLclQLcq4 "Click to viev")
 
 **Display current/forecast weather**
 
-The current weather data are displayed on the main screen, below current time and date. This area contains numeric values on the right side, like temperature, pressure and humidity, and big icon on the left side that represents current weather in general. Data are obtained from HTTP together with timezone, and are updated once every hour. Location is based on OTC IP - function provided by weatherapi.com API. To see forecast weather data (only current day is supported now) user needs to click the weather icon on the main screen. UI then sends *ONLINEREQ_DETAILED_UPDATE* request, and waits for the event. The request is processed by *OnlineRequests_Task*, it recieves JSON 0from HTTP, parse it, and reports event to UI. Finally, UI sets all values and swipes the weather screen on top. User can swipe back the screen with back button. Every time when use clicks the main screen weather icon, new HTTP request is sent, and weather data are updated.
+The current weather data are displayed on the main screen, below current time and date. This area contains numeric values on the right side, like temperature, pressure and humidity, and big icon on the left side that represents current weather in general. Data are obtained from HTTP together with timezone, and are updated once every hour. Location is based on OTC IP - function provided by weatherapi.com API.
+
+To see forecast weather data for today, user should click the weather icon on the main screen. The *UI_Task* receives an event, and sends *ONLINEREQ_DETAILED_UPDATE* request. The request is processed by *OnlineRequests_Task* - it receives JSON from HTTP, parse it, and reports event back to UI. Finally, *UI_Task* sets all values on the weather screen, and swipes it on top. Every time when use clicks the main screen weather icon, new HTTP request is sent, and weather data are updated.
 
 The weather screen contains:
 - current location, city and country name are displayed at the top left corner
@@ -160,54 +185,88 @@ The weather screen contains:
 
 The video below shows the situation when user wants to see forecast weather for today.
 
-[![Video link](https://img.youtube.com/vi/8ntkoaaQR5k/0.jpg)](https://www.youtube.com/watch?v=8ntkoaaQR5k "Click to viev")
+[![Video link](https://img.youtube.com/vi/BujElTB3X3U/0.jpg)](https://www.youtube.com/watch?v=BujElTB3X3U "Click to viev")
 
 **Search and list for available Wifi networks**
 
-Regardless of wifi connection status, user is able to scan and display avalible wifi access points. To perform the scan, user needs to click the wifi button on the main screen. When UI recieves this event, it deletes all elements within the list (if any were add before), then swipes the wifi screen on top, and sends "StartScan" request to *Wifi_Task*. When scan is done, internal IDF API calls *WIFI_EVENT_SCAN_DONE* event which is processed by *Wifi_Task* as well. All access points that were found, are sent one by one to *UI_Task* wit information about SSID (Wifi network name), RSSI (signal strength, in dBm) and either is the network protected or no. The *UI_Task* creates new element within the list, sets signal strength icon, and protection icon in according to received data.
+Regardless of wifi connection status, user is able to scan and display available wifi access points. To perform the scan, user should click the wifi button on the main screen. The *UI_Task* receives an event, deletes all elements within the list, then swipes the wifi screen on top, and sends "StartScan" request to the *Wifi_Task*. When scan is done, the *Wifi_Task* sends results back to *UI_Task*. Information provided as results contain:
+  - SSID of access point
+  - signal strength
+  - is AP protected or no
 
-The list is located on the wifi screen, below access point details. The list is scrollable when number of AP's exceeds the maximum number that fits to the screen. When AP name doesn't fit to the screen because it is too long, it will be scrolled horizontally from one side to the other.
+All found AP's are then listed on the wifi screen. The list is located below access point details. The list is scrollable when number of AP's exceeds the maximum number that fits to the screen. When AP name doesn't fit to the screen because it is too long, it will be scrolled horizontally from one side to the other.
 
-The video below shows user request to scan for available wifi network.
+The video below shows multiple user request to scan for available wifi network.
 
-[![Video link](https://img.youtube.com/vi/uG8Tw_aezV8/0.jpg)](https://www.youtube.com/watch?v=uG8Tw_aezV8 "Click to viev")
+[![Video link](https://img.youtube.com/vi/x_LaQOQ0qg0/0.jpg)](https://www.youtube.com/watch?v=x_LaQOQ0qg0 "Click to viev")
 
-**Connect to selected Wifi network with stored password**
+**Connect to selected Wifi network**
 
-After one of available networks was clicked, the UI task sends *SPIFFS_GetPass* request to obtain the password that was saved before. The SPIFFS task reads an internal file where all passwords are saved, then uses cJSON library to parse the file.
+When one of available AP's has been clicked, the *UI_Task* sends *get_pass_and_connect* request to the *SPIFFS_Task*. The *SPIFFS_Task* checks if a password for selected AP was stored before.
 
-If the file contains an object with the name of selected Wifi network's SSID, the task reads all data fields from the object like:
+If a password was not stored, the *SPIFFS_Task* sends request back to the *UI_Task* to obtain the password from user. The *UI_Task* creates a popup with keyboard where user can enter the password for selected Wifi network. Entered password is then sent to *Wifi_Task* to perform connection attempt. If the *Wifi_Task* is not able to connect with use provided password, it sends information back to the *UI_Task* that connection has failed. If requested AP was connected, the *Wifi_Task* sends this information to the *UI_Task* together with details of connected AP. In the same time, the *Wifi_Task* checks if user chose to store the password, and sends request to the *SPIFFS_Task* if yes.
+
+If a password was stored, the *SPIFFS_Task* reads and decrypts the password from internal file, then provides it to the *Wifi_Task* to perform connection attempt. Then everything works the same like above.
+
+The *Wifi_Connected* state means in details, that OTC has obtained an IP address from AP's DHCP.
+
+The video below shows connecting to different networks.
+
+[![Video link](https://img.youtube.com/vi/OWhGb_rlnPc/0.jpg)](https://www.youtube.com/watch?v=OWhGb_rlnPc "Click to viev")
+
+**Encrypt/decrypt password**
+
+Encryption and decryption of wifi password uses AES CBC method and *Mbed-TLS* library. The AES 256-bit key is burned out in *EFUSE_BLK_KEY0* with *espefuse.py* tool.
+
+To perform password encryption, the *SPIFFS_Task* generates new JSON object that keeps all the data needed to decryption. Its structure looks like follows:
+```
+{
+  "Example_SSID": {
+    "iv": "8Oeh9fMZkP/LpalS",
+    "pass": "UnPUFhV9CRKadbCizISmzTAxjVpr0J2IH",
+    "pass_len": 18
+  }
+}
+```
+- *Example_SSID* - the name of Wifi network, stored as string
 - *iv*,  input vector, 16-byte random value that is used to encrypt/decrypt a password, stored as string
-- *pass*, encrypted password, it will be decrypted and used to connect with selected network, stored as string
-- *pass_len*, length of decrypted password, stored as integer. This value is required if password's length differs from multiplications of number 16 - in this case original password needs to be padded with '0' characters. After decryption is done, the value is used to cut off those characters.
+- *pass*, encrypted password, stored as string
+- *pass_len*, length of decrypted password, stored as integer.
 
-The encryption/decryption key is stored in *EFUSE_BLK_KEY0*, the eFuse was burned out manually with *espefuse.py* tool. The task reads the value of KEY0 efuse and uses *Mbed-TLS* library to decrypt the password. The encrypted password, together with SSID is then used to send *Wifi_ReportPass* request. This request, finally, leads to the connect attempt performed by Wifi Task.
+The AES CBC encryption/decryption method can be used only if length of data to be encrypted is a multiplication of number 16. Because of that, if password's length differs from 16/32/48/64, it need to be padded with '0' character to meet the requirements. The *pass_len* value is used to cut off unnecessary characters when password is decrypted.
 
-The video below shows connection to the *ABCD* Wifi, the password for this AP was saved before:
+The *SPIFFS_Task* generates random input vector value, and reads AES key value from eFuse. With all the data needed, it performs encryption, and stores encrypted password together with the rest of values to the JSON created before. At the end, the task writes created JSON to the file with wifi passwords.
 
-[![Video link](https://img.youtube.com/vi/1o4b9FymgRU/0.jpg)](https://www.youtube.com/watch?v=1o4b9FymgRU "Click to viev")
+To decrypt a password, in general, all the steps are performed in reverse order. At first, the task reads the JSON from file and AES key from eFuse, then uses all values to decrypt the password, and removes useless '0' characters. Ready to use password is then provided to other tasks.
 
-**Connect to selected Wifi network with unknown password**
+**Get/set NVS config value**
 
-As mentioned above, the SPIFFS task search for saved password in the internal file. If the file doesn't contain the password, SPIFFS Task sends *UI_EVT_WIFI_GET_PASS* request to the UI Task.
+The device stores current configuration in two different memory areas:
 
-This is the moment when user need to input the password for selected Wifi network. To make it possible, UI Task creates *wifi_popup* - the panel displayed at the top layer of the Wifi Screen. The panel contains:
-- text area where user password is written
-- two checkboxes and two buttons
-- a keyboard, sliding up and down
+- RAM config
+- NVS config
 
-To show the keyboard user needs to click on the password area, thereby, to hide the keyboard, user needs to click everywhere else. Checkbox *Hide* allows to replace the password with '*' characters, checkbox *Save* allows to save the password for the future use.
+RAM config is allocated during the startup, then every single value is copied from NVS storage. If the value was not set in NVS (or NVS cell is corrupted), a default value from flash is loaded. Since it is done, every request of config value is performed withing the RAM config.
 
-After clicking the right button (OK), UI task sends *Wifi_Connect* request, then Wifi Task performs connect attempt. If requested wifi was connected, and user allowed to save the password, the Wifi Task sends *SPIFFS_SavePass* request. This request is again processed by SPIFFS task. The internal file is opened, then parsed with cJSON library, then new JSON object is created. The name of the object is an SSID of connected network, and three data fields are created within the object:
-- *iv*,  input vector, 16-byte random value that is used to encrypt/decrypt a password, stored as string
-- *pass*, the encrypted password will be there, stored as string
-- *pass_len*, length of decrypted password, stored as integer. This value is required if password's length differs from multiplications of number 16 - in this case original password needs to be padded with '0' characters. After decryption is done, the value is used to cut off those characters.
+To change current value, the NVS config has to ba modified first. The new value is sent to the *SPIFFS_Task*. If the value was changed within NVS storage, it is then updated within the RAM config.
 
-The task generates random value for input vector, reads KEY0 efuse (check details above) and performs password encryption with *Mbed-TLS* library. After that, stores all values to the JSON object, and saves modified file. Now the new password can be decrypted when user requests connect to this Wifi again.
+**Theme change**
 
-The video below shows connection to the "ABCDE" Wifi. The password was never stored before, so user have to put it manually.
+All graphic components represented on LCD are created with style/theme use. It allows to simplify implementation of change color theme.
 
-[![Video link](https://img.youtube.com/vi/nqn2JDltF1c/0.jpg)](https://www.youtube.com/watch?v=nqn2JDltF1c "Click to viev")
+Every theme uses 5 colors set:
+
+- background base color, used in most components as a background
+- background extra color, used as background for important information
+- main base color, the leading color of a theme, used as border color in most components
+- main extra color, additional color that fits to the theme, used mostly as fonts color
+- contrast color, as it says, looks good as icons color
+
+To change the theme, the *UI_Task* loads those colors from flash (as hex numbers), then converts them to *lv_color_t* structures and stores to the *UI_CurrentTheme* structure. As the last step, the task refreshes all the styles within the aplication.
+
+The video below shows multiple theme change and loading the last used theme from NVS config.
+
+[![Video link](https://img.youtube.com/vi/PGkwEqosur4/0.jpg)](https://www.youtube.com/watch?v=PGkwEqosur4 "Click to viev")
 
 **Connecting status and AP info**
 
@@ -238,5 +297,5 @@ Besides the components mentioned above, the OTC project was developed with use:
 - [**Wifi Icons by Callum Smith**](https://www.vecteezy.com/vector-art/18881979-set-of-erorr-secure-and-no-wifi-signs)
 - [**Varino font by Arterfak Project**](https://www.dafont.com/varino.font)
 - [**Digital-7 font by Style-7**](https://www.1001fonts.com/digital-7-font.html)
-
+- [**atanisoft/esp_lcd_ili9488**](https://github.com/atanisoft/esp_lcd_ili9488/tree/8ab9308ba07a5783ae8ad271a4a846327a12d7a0)
 
