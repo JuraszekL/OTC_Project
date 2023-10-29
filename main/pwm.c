@@ -8,17 +8,20 @@
  ***************************************************************/
 #define PWM_SPEED_MODE				LEDC_LOW_SPEED_MODE
 
+// backlight
 #define LCD_BACKLIGHT_GPIO			GPIO_NUM_46
 #define LCD_BACKLIGHT_TIMER_NR		LEDC_TIMER_0
 #define LCD_BACKLIGHT_PWM_FREQ		1000U
 #define LCD_BACKLIGHT_CHANNEL_NR	LEDC_CHANNEL_0
 
+// buzzer
 #define BUZZER_GPIO					GPIO_NUM_20
 #define BUZZER_TIMER_NR				LEDC_TIMER_1
 #define BUZZER_PWM_ON				127U
 #define BUZZER_PWM_OFF				0U
 #define BUZZER_CHANNEL_NR			LEDC_CHANNEL_1
 
+// basic notes frequencies
 #define C_NOTE_FREQ					262U
 #define D_NOTE_FREQ					294U
 #define E_NOTE_FREQ					330U
@@ -26,6 +29,7 @@
 #define G_NOTE_FREQ					392U
 #define A_NOTE_FREQ					440U
 #define B_NOTE_FREQ					494U
+
 /**************************************************************
  *
  *	Typedefs
@@ -33,8 +37,7 @@
  ***************************************************************/
 typedef enum {
 
-	buzzer_stop_beep = 0,
-	buzzer_beep_1,
+	buzzer_beep_1 = 0,
 	buzzer_beep_2,
 
 } pwm_routine_type_t;
@@ -47,20 +50,27 @@ struct pwm_queue_data {
 	void *arg;
 };
 
+struct buzzer_sequence_data {
+
+	uint16_t freq;
+	uint16_t time_ms;
+	uint8_t buzzer_duty;
+};
+
 /**************************************************************
  *
  *	Function prototypes
  *
  ***************************************************************/
-static void wifi_routine_request(pwm_routine_type_t type, void *arg);
+static void pwm_routine_request(pwm_routine_type_t type, void *arg);
 
-static void pwm_stop_beep_routine(void *arg);
 static void pwm_beep1_routine(void *arg);
 static void pwm_beep2_routine(void *arg);
 
-static void buzzer_on(void);
-static void buzzer_off(void);
+static void buzzer_stop(void);
+static void buzzer_play_sequence(const struct buzzer_sequence_data *sequence);
 static void buzzer_set_freq(uint16_t freq);
+static void buzzer_set_duty(uint8_t duty);
 
 /**************************************************************
  *
@@ -68,12 +78,36 @@ static void buzzer_set_freq(uint16_t freq);
  *
  ***************************************************************/
 static QueueHandle_t pwm_queue_handle;
+static TaskHandle_t pwm_task_handle;
 
 static const pwm_routine pwm_routines_tab[] = {
 
-		[buzzer_stop_beep] = pwm_stop_beep_routine,
 		[buzzer_beep_1] = pwm_beep1_routine,
 		[buzzer_beep_2] = pwm_beep2_routine,
+};
+
+// example sound played by buzzer
+static const struct buzzer_sequence_data ok_sound[] = {
+
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 200,
+				.buzzer_duty = BUZZER_PWM_ON,
+		},
+		{
+				.freq = E_NOTE_FREQ,
+				.time_ms = 200,
+				.buzzer_duty = BUZZER_PWM_ON,
+		},
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 200,
+				.buzzer_duty = BUZZER_PWM_ON,
+		},
+		{
+
+				.freq = 0,
+		}
 };
 
 /******************************************************************************************************************
@@ -88,6 +122,8 @@ void PWM_Task(void *arg){
 
 	pwm_queue_handle = xQueueCreate(1U, sizeof(struct pwm_queue_data));
 	assert(pwm_queue_handle);
+
+	pwm_task_handle = xTaskGetCurrentTaskHandle();
 
 	xEventGroupSync(AppStartSyncEvt, PWM_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
@@ -186,7 +222,8 @@ void PWM_SetBacklight(uint8_t backlight_percent){
 /* example of buzzer sound */
 void Buzzer_Beep1(void){
 
-	wifi_routine_request(buzzer_beep_1, NULL);
+	buzzer_stop();
+	pwm_routine_request(buzzer_beep_1, NULL);
 }
 
 /**************************************************************
@@ -196,38 +233,20 @@ void Buzzer_Beep1(void){
  ***************************************************************/
 
 /* send routine to be performed */
-static void wifi_routine_request(pwm_routine_type_t type, void *arg){
+static void pwm_routine_request(pwm_routine_type_t type, void *arg){
 
 	struct pwm_queue_data data;
 
 	data.type = type;
 	data.arg = arg;
 
-	xQueueSend(pwm_queue_handle, &data, pdMS_TO_TICKS(500));
+	xQueueOverwrite(pwm_queue_handle, &data);
 }
 
-
-static void pwm_stop_beep_routine(void *arg){
-
-
-}
-
+/* example sound */
 static void pwm_beep1_routine(void *arg){
 
-	buzzer_set_freq(C_NOTE_FREQ);
-	buzzer_on();
-	vTaskDelay(pdMS_TO_TICKS(500));
-	buzzer_off();
-	vTaskDelay(pdMS_TO_TICKS(500));
-	buzzer_set_freq(F_NOTE_FREQ);
-	buzzer_on();
-	vTaskDelay(pdMS_TO_TICKS(500));
-	buzzer_off();
-	vTaskDelay(pdMS_TO_TICKS(500));
-	buzzer_set_freq(C_NOTE_FREQ);
-	buzzer_on();
-	vTaskDelay(pdMS_TO_TICKS(500));
-	buzzer_off();
+	buzzer_play_sequence(ok_sound);
 }
 
 static void pwm_beep2_routine(void *arg){
@@ -241,19 +260,47 @@ static void pwm_beep2_routine(void *arg){
  * Helpers
  *
  * */////////////////////////////////////////////////
-static void buzzer_on(void){
 
-	ledc_set_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR, BUZZER_PWM_ON);
-	ledc_update_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR);
+/* send notification to pwm task to stop playing current sequence */
+static void buzzer_stop(void){
+
+	xTaskNotifyGive(pwm_task_handle);
 }
 
-static void buzzer_off(void){
+/* play the sequence */
+static void buzzer_play_sequence(const struct buzzer_sequence_data *seq){
 
-	ledc_set_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR, BUZZER_PWM_OFF);
-	ledc_update_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR);
+	uint8_t a;
+	uint32_t notification_value;
+
+	// clear any pending notification
+	ulTaskNotifyTake(pdTRUE, 0);
+
+	// set every value to buzzer step by step
+	for(a = 0; (0 != seq[a].freq); a++){
+
+		buzzer_set_freq(seq[a].freq);
+		buzzer_set_duty(seq[a].buzzer_duty);
+		notification_value = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(seq[a].time_ms));	// wait untill time ends
+		if(0 != notification_value){													// or notification comes
+
+			buzzer_set_duty(BUZZER_PWM_OFF);
+			return;
+		}
+	}
+
+	buzzer_set_duty(BUZZER_PWM_OFF);
 }
 
+/* set frequency */
 static void buzzer_set_freq(uint16_t freq){
 
 	ledc_set_freq(PWM_SPEED_MODE, BUZZER_TIMER_NR, freq);
+}
+
+/* set duty cycle (0 = buzzer off, 127 = buzzer on) */
+static void buzzer_set_duty(uint8_t duty){
+
+	ledc_set_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR, duty);
+	ledc_update_duty(PWM_SPEED_MODE, BUZZER_CHANNEL_NR);
 }
