@@ -21,6 +21,7 @@
 // bits
 #define NVS_READY_BIT								(1U << 0)
 #define WIFI_PASS_FILE_EXIST_BIT					(1U << 1)
+#define ALARMS_FILE_EXIST_BIT						(1U << 2)
 
 // NVS
 #define NVS_CONFIG_NAMESPACE						"config"
@@ -42,6 +43,12 @@
 #define WIFI_PASS_JSON_IV_LABEL						"iv"
 #define WIFI_PASS_JSON_PASS_LABEL					"pass"
 #define WIFI_PASS_JSON_ORG_LEN_LABEL				"pass_len"
+
+// Alarms file
+#define ALARMS_FILENAME								"/alarms"
+#define ALARMS_BCKUP_FILENAME						"/alarms_backup"
+#define ALARMS_FILE_MOUNT_PATH						(SPIFFS_MOUNT_PATH "" ALARMS_FILENAME)
+#define ALARMS_BACKUP_FILE_MOUNT_PATH				(SPIFFS_MOUNT_PATH "" ALARMS_BCKUP_FILENAME)
 
 /**************************************************************
  *
@@ -178,7 +185,12 @@ static const struct spiffs_file_data wifi_pass_file = {
 	.file_bit = WIFI_PASS_FILE_EXIST_BIT,
 };
 
-//static char wifi_pass_file_path[32], wifi_pass_backup_file_path[32];
+static const struct spiffs_file_data alarms_file = {
+
+	.filename = ALARMS_FILE_MOUNT_PATH,
+	.backup_filename = ALARMS_BACKUP_FILE_MOUNT_PATH,
+	.file_bit = ALARMS_FILE_EXIST_BIT,
+};
 
 /******************************************************************************************************************
  *
@@ -205,6 +217,7 @@ void SPIFFS_NVS_Task(void *arg){
 	xEventGroupSync(AppStartSyncEvt, SPIFFS_NVS_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 
 	spiffs_check_file_routine((void *)&wifi_pass_file);
+	spiffs_check_file_routine((void *)&alarms_file);
 
 	while(1){
 
