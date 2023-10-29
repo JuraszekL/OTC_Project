@@ -47,11 +47,11 @@ In this version OTC is able to:
 - change color theme without reseting the device
 - change backlight brightness from UI
 - store various settings in Non-Volatile Storage memory and load it during startup
+- play simple sounds with buzzer
 
 # Milestones
 
 The project is still under development. Next milestones are:
-- add buzzer management
 - add alarm function
 - add RTC and low-power support
 - add Li-Ion battery management
@@ -146,6 +146,10 @@ The folowing tasks are created in this project:
 - **SDCard_Task**
 
   The task is used to initialize SD Card peripherals and mount file system within the card. When it's done, the task deletes itself. The SD Card is used to store images for weather icons.
+
+- **PWM_Task**
+
+  The task is used to perform any operation related to buzzer. It recieves requests to play simple sound, then executes the sequence stored in flash. 
 
 ## Most important functions
 
