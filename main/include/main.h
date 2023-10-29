@@ -45,6 +45,19 @@ typedef struct {
 
 } UI_DetailedAPData_t;
 
+/**************************************************************
+ * Structure with single alarm data
+ ***************************************************************/
+typedef struct {
+
+	uint8_t hour;
+	uint8_t minute;
+	uint8_t flags;
+	bool status;
+	char *text;
+
+} AlarmData_t;
+
 
 /**************************************************************
  * All project - related headers
