@@ -50,6 +50,17 @@
 #define ALARMS_FILE_MOUNT_PATH						(SPIFFS_MOUNT_PATH "" ALARMS_FILENAME)
 #define ALARMS_BACKUP_FILE_MOUNT_PATH				(SPIFFS_MOUNT_PATH "" ALARMS_BCKUP_FILENAME)
 
+#define ALARM_0_LABEL								"alarm0"
+#define ALARM_1_LABEL								"alarm1"
+#define ALARM_2_LABEL								"alarm2"
+#define ALARM_3_LABEL								"alarm3"
+
+#define ALARM_HOUR_VALUE_LABEL						"hour"
+#define ALARM_MINUTE_VALUE_LABEL					"min"
+#define ALARM_FLAGS_VALUE_LABEL						"flags"
+#define ALARM_STATUS_VALUE_LABEL					"status"
+#define ALARM_TEXT_VALUE_LABEL						"text"
+
 /**************************************************************
  *
  *	Typedefs
@@ -118,6 +129,7 @@ static void spiffs_check_file_routine(void *arg);
 static void spiffs_get_pass_and_connect_routine(void *arg);
 static void spiffs_save_pass_routine(void *arg);
 static void spiffs_delete_pass_routine(void *arg);
+static void spiffs_load_alarms_routine(void *arg);
 
 static void nvs_config_load(void);
 static void nvs_set_config_routine(void *arg);
@@ -128,6 +140,8 @@ static int spiffs_perform_write(char *filename, FILE **f, int data_size, char *f
 static int json_add_wifi_record_encrypted(cJSON **json, WifiCreds_t *data, char **output_string);
 static int json_get_wifi_pass_encrypted(cJSON *json, char **pass);
 static int json_delete_wifi_record(cJSON **json, char *ssid, char **output_string);
+static int json_create_default_alarms_file(cJSON **json, char **output_string);
+static int json_restore_alarms(cJSON *json);
 static int nvs_get_default_string(struct nvs_pair *data);
 static int nvs_update_ram_config_string(struct nvs_pair *data);
 
@@ -192,6 +206,14 @@ static const struct spiffs_file_data alarms_file = {
 	.file_bit = ALARMS_FILE_EXIST_BIT,
 };
 
+static const char *alarm_labels[ALARMS_NUMBER] = {
+
+		ALARM_0_LABEL,
+		ALARM_1_LABEL,
+		ALARM_2_LABEL,
+		ALARM_3_LABEL,
+};
+
 /******************************************************************************************************************
  *
  * SPIFFS task
@@ -218,6 +240,7 @@ void SPIFFS_NVS_Task(void *arg){
 
 	spiffs_check_file_routine((void *)&wifi_pass_file);
 	spiffs_check_file_routine((void *)&alarms_file);
+	spiffs_load_alarms_routine(NULL);
 
 	while(1){
 
@@ -718,6 +741,53 @@ static void spiffs_delete_pass_routine(void *arg){
 		spiffs_nvs_task_routine_request(spiffs_check_file, (void *)&wifi_pass_file, true);
 }
 
+/* load stored alarms from SPIFFS to RAM */
+static void spiffs_load_alarms_routine(void *arg){
+
+	FILE *f = 0;
+	int file_size, a;
+	char *alarms_file_raw = 0;
+	cJSON *json_alarms = 0;
+	EventBits_t bits;
+
+	// break if file with alarms doesn't exist
+	bits = xEventGroupGetBits(spiffs_nvs_evtgroup_handle);
+	if(!(bits & alarms_file.file_bit)) goto error;
+
+	// read and parse file
+	if(0 != spiffs_perform_read(alarms_file.filename, &f, &file_size, &alarms_file_raw,
+			&json_alarms)) goto error;
+
+	// create file with default values if is empty
+	if(0 == file_size){
+
+		fclose(f);
+
+		 if(0 != json_create_default_alarms_file(&json_alarms, &alarms_file_raw)) goto error;
+
+		a = strlen(alarms_file_raw);
+		if(0 != spiffs_perform_write(alarms_file.filename, &f, (a + 1), alarms_file_raw)) goto error;
+	}
+
+	fclose(f);
+	free(alarms_file_raw);
+
+	// load the data to RAM
+	 if(0 != json_restore_alarms(json_alarms)) goto error;
+
+	// cleanup
+	cJSON_Delete(json_alarms);
+	return;
+
+	error:
+		if(json_alarms) cJSON_Delete(json_alarms);
+		if(alarms_file_raw){
+			if(heap_caps_get_allocated_size(alarms_file_raw)) free(alarms_file_raw);
+		}
+		if(f) fclose(f);
+		spiffs_nvs_task_routine_request(spiffs_check_file, (void *)&alarms_file, true);
+}
+
 /* load all configurations stored in NVS */
 static void nvs_config_load(void){
 
@@ -1209,6 +1279,137 @@ static int json_delete_wifi_record(cJSON **json, char *ssid, char **output_strin
 	if(0 == *output_string) return -1;
 
 	return 0;
+}
+
+/* create new JSON object with default values for each one alarm */
+static int json_create_default_alarms_file(cJSON **json, char **output_string){
+
+	uint8_t a;
+	const AlarmData_t *alarms = 0;
+	cJSON *json_alarm_label = 0, *json_alarm_hour = 0, *json_alarm_minute = 0, *json_alarm_flags = 0,
+	*json_alarm_status = 0, *json_alarm_text = 0;
+
+	// load default values
+	alarms = Alarm_GetDefaultValues();
+	if(0 == alarms) goto error;
+
+	// create new JSON object
+	*json = cJSON_CreateObject();
+	if(0 == *json) goto error;
+
+	// create 4 alarm objects with default values
+	// every object should look like this:
+	/*
+		"alarm0":{
+			"hour":		0,
+			"min": 		0,
+			"flags": 	0,
+			"status": 	false,
+			"text": 	"-- not-set --"
+    	}
+    */
+	for(a = 0; a < ALARMS_NUMBER; a++){
+
+		json_alarm_label = cJSON_CreateObject();
+		if(0 == json_alarm_label) goto error;
+		cJSON_AddItemToObject(*json, alarm_labels[a], json_alarm_label);
+
+		json_alarm_hour = cJSON_CreateNumber(alarms->hour);
+		if(0 == json_alarm_hour) goto error;
+		cJSON_AddItemToObject(json_alarm_label, ALARM_HOUR_VALUE_LABEL, json_alarm_hour);
+
+		json_alarm_minute = cJSON_CreateNumber(alarms->minute);
+		if(0 == json_alarm_minute) goto error;
+		cJSON_AddItemToObject(json_alarm_label, ALARM_MINUTE_VALUE_LABEL, json_alarm_minute);
+
+		json_alarm_flags = cJSON_CreateNumber(alarms->flags);
+		if(0 == json_alarm_flags) goto error;
+		cJSON_AddItemToObject(json_alarm_label, ALARM_FLAGS_VALUE_LABEL, json_alarm_flags);
+
+		json_alarm_status = cJSON_CreateBool(alarms->status);
+		if(0 == json_alarm_status) goto error;
+		cJSON_AddItemToObject(json_alarm_label, ALARM_STATUS_VALUE_LABEL, json_alarm_status);
+
+		json_alarm_text = cJSON_CreateString(alarms->text);
+		if(0 == json_alarm_text) goto error;
+		cJSON_AddItemToObject(json_alarm_label, ALARM_TEXT_VALUE_LABEL, json_alarm_text);
+	}
+
+	// convert created json to string
+	*output_string = cJSON_PrintUnformatted(*json);
+	if(0 == *output_string) goto error;
+
+	return 0;
+
+	error:
+		return -1;
+}
+
+/* restore all alarms from parsed JSON to RAM */
+static int json_restore_alarms(cJSON *json){
+
+	uint8_t a;
+	int len;
+	AlarmData_t *alarm = 0;
+	cJSON *json_alarm_label = 0, *json_alarm_hour = 0, *json_alarm_minute = 0, *json_alarm_flags = 0,
+		*json_alarm_status = 0, *json_alarm_text = 0;
+
+	// for each one alarm allocate the momory and fill with
+	// data obtained from JSON
+	// next fill the RAM buffer with this data -> alarm.c file
+	for(a = 0; a < ALARMS_NUMBER; a++){
+
+		alarm = calloc(1, sizeof(AlarmData_t));
+		if(0 == alarm) goto error;
+
+		json_alarm_label = cJSON_GetObjectItemCaseSensitive(json, alarm_labels[a]);
+		if(0 == json_alarm_label) goto error;
+
+		json_alarm_hour = cJSON_GetObjectItemCaseSensitive(json_alarm_label, ALARM_HOUR_VALUE_LABEL);
+		if(0 == json_alarm_hour) goto error;
+		if(0 == cJSON_IsNumber(json_alarm_hour)) goto error;
+		alarm->hour = json_alarm_hour->valueint;
+
+		json_alarm_minute = cJSON_GetObjectItemCaseSensitive(json_alarm_label, ALARM_MINUTE_VALUE_LABEL);
+		if(0 == json_alarm_minute) goto error;
+		if(0 == cJSON_IsNumber(json_alarm_minute)) goto error;
+		alarm->minute = json_alarm_minute->valueint;
+
+		json_alarm_flags = cJSON_GetObjectItemCaseSensitive(json_alarm_label, ALARM_FLAGS_VALUE_LABEL);
+		if(0 == json_alarm_flags) goto error;
+		if(0 == cJSON_IsNumber(json_alarm_flags)) goto error;
+		alarm->flags = json_alarm_flags->valueint;
+
+		json_alarm_status = cJSON_GetObjectItemCaseSensitive(json_alarm_label, ALARM_STATUS_VALUE_LABEL);
+		if(0 == json_alarm_status) goto error;
+		if(0 == cJSON_IsBool(json_alarm_status)) goto error;
+		alarm->status = cJSON_IsTrue(json_alarm_status);
+
+		json_alarm_text = cJSON_GetObjectItemCaseSensitive(json_alarm_label, ALARM_TEXT_VALUE_LABEL);
+		if(0 == json_alarm_text) goto error;
+		if (0 == cJSON_IsString(json_alarm_text) || (json_alarm_text->valuestring == 0)) goto error;
+
+		len = strlen(json_alarm_text->valuestring);
+		if(0 == len) goto error;
+
+		alarm->text = malloc(len + 1);
+		if(0 == alarm->text) goto error;
+
+		memcpy(alarm->text, json_alarm_text->valuestring, (len + 1));
+
+		Alarm_RestoreFromSPIFFS(alarm, a);
+	}
+
+	return 0;
+
+	error:
+		if(alarm){
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
+		return -1;
 }
 
 /* get default string value for obtained key */

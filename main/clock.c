@@ -123,6 +123,8 @@ void Clock_Task(void *arg){
 
 	main_clock.status = clock_not_set;
 
+	Alarm_InitResources();
+
 	// wait for synchronization
 	xEventGroupSync(AppStartSyncEvt, CLOCK_TASK_BIT, ALL_TASKS_BITS, portMAX_DELAY);
 

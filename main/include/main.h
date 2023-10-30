@@ -71,6 +71,7 @@ typedef struct {
 #include "spiffs_task.h"
 #include "wifi.h"
 #include "pwm.h"
+#include "alarm.h"
 
 /**************************************************************
  * Use lv_conf.h instead of kconfig
