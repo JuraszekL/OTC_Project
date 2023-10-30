@@ -8,6 +8,7 @@
 #include "screens/ui_weather_screen.h"
 #include "screens/ui_startup_screen.h"
 #include "screens/ui_setup_screen.h"
+#include "screens/ui_alarms_screen.h"
 
 /**************************************************************
  * Font icon characters

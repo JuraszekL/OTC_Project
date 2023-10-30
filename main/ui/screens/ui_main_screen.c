@@ -49,6 +49,8 @@ void UI_MainScreen_Init(void){
     lv_obj_set_y(ui_MainScreenClockLabel, 60);
     lv_obj_set_align(ui_MainScreenClockLabel, LV_ALIGN_TOP_MID);
     lv_label_set_text(ui_MainScreenClockLabel, "--:--");
+    lv_obj_add_flag(ui_MainScreenClockLabel, LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_ADV_HITTEST);
+    lv_obj_add_event_cb(ui_MainScreenClockLabel, ui_main_screen_evt_handler, LV_EVENT_RELEASED, NULL);
 
     ui_MainScreenDateLabel = lv_label_create(ui_MainScreen);
     lv_obj_add_style(ui_MainScreenDateLabel, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -261,5 +263,9 @@ static void ui_main_screen_evt_handler(lv_event_t * e){
     else if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenSetupButton)) {
 
     	UI_ReportEvt(UI_EVT_MAINSCR_SETUP_BTN_CLICKED, 0);
+    }
+    else if((event_code == LV_EVENT_RELEASED) && (target == ui_MainScreenClockLabel)) {
+
+    	UI_ReportEvt(UI_EVT_MAINSCR_CLOCK_CLICKED, 0);
     }
 }
