@@ -25,7 +25,8 @@ extern lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 					UI_Icon24Style, UI_Icon16Style,
 					UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
 					UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle, UI_DropdownStyle,
-					UI_SliderMainStyle, UI_SliderIndicatorStyle, UI_SliderKnobStyle;
+					UI_SliderMainStyle, UI_SliderIndicatorStyle, UI_SliderKnobStyle,
+					UI_SwitchMainStyle, UI_SwitchIndicatorDefaultStyle, UI_SwitchIndicatorCheckedStyle, UI_SwitchKnobStyle;
 
 /**************************************************************
  * Public functions

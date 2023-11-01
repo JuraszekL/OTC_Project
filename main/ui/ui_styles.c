@@ -34,7 +34,8 @@ lv_style_t 	UI_ScreenStyle, UI_ButtonStyle, UI_CheckboxStyle,
 			UI_Icon24Style, UI_Icon16Style,
 			UI_Text30Style, UI_Text16UnderlineStyle, UI_Text16Style, UI_Text14Style,
 			UI_ClockStyle, UI_ArcRSSIStyle, UI_PanelStyle, UI_DropdownStyle,
-			UI_SliderMainStyle, UI_SliderIndicatorStyle, UI_SliderKnobStyle;
+			UI_SliderMainStyle, UI_SliderIndicatorStyle, UI_SliderKnobStyle,
+			UI_SwitchMainStyle, UI_SwitchIndicatorDefaultStyle, UI_SwitchIndicatorCheckedStyle, UI_SwitchKnobStyle;
 
 static const struct theme themes[] = {
 
@@ -158,6 +159,22 @@ void UI_InitStyles(void){
 
 	lv_style_init(&UI_SliderKnobStyle);
 	lv_style_set_bg_opa(&UI_SliderKnobStyle, LV_OPA_COVER);
+
+	lv_style_init(&UI_SwitchMainStyle);
+	lv_style_set_bg_opa(&UI_SwitchMainStyle, LV_OPA_TRANSP);
+
+	lv_style_init(&UI_SwitchIndicatorDefaultStyle);
+	lv_style_set_bg_opa(&UI_SwitchIndicatorDefaultStyle, LV_OPA_TRANSP);
+	lv_style_set_border_opa(&UI_SwitchIndicatorDefaultStyle, LV_OPA_COVER);
+	lv_style_set_border_width(&UI_SwitchIndicatorDefaultStyle, 2);
+
+	lv_style_init(&UI_SwitchIndicatorCheckedStyle);
+	lv_style_set_bg_opa(&UI_SwitchIndicatorCheckedStyle, LV_OPA_80);
+	lv_style_set_border_opa(&UI_SwitchIndicatorCheckedStyle, LV_OPA_COVER);
+	lv_style_set_border_width(&UI_SwitchIndicatorCheckedStyle, 2);
+
+	lv_style_init(&UI_SwitchKnobStyle);
+	lv_style_set_bg_opa(&UI_SwitchKnobStyle, LV_OPA_COVER);
 
 	ui_set_current_theme_colors_to_styles();
 }
@@ -336,4 +353,14 @@ static void ui_set_current_theme_colors_to_styles(void){
 
 	lv_style_set_bg_color(&UI_SliderKnobStyle, UI_CurrentTheme.contrast_color);
 	lv_obj_report_style_change(&UI_SliderKnobStyle);
+
+	lv_style_set_border_color(&UI_SwitchIndicatorDefaultStyle, UI_CurrentTheme.main_color_base);
+	lv_obj_report_style_change(&UI_SwitchIndicatorDefaultStyle);
+
+	lv_style_set_bg_color(&UI_SwitchIndicatorCheckedStyle, UI_CurrentTheme.main_color_base);
+	lv_style_set_border_color(&UI_SwitchIndicatorCheckedStyle, UI_CurrentTheme.main_color_base);
+	lv_obj_report_style_change(&UI_SwitchIndicatorCheckedStyle);
+
+	lv_style_set_bg_color(&UI_SwitchKnobStyle, UI_CurrentTheme.contrast_color);
+	lv_obj_report_style_change(&UI_SwitchKnobStyle);
 }

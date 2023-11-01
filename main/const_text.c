@@ -12,6 +12,17 @@ const char *Eng_DayName[7] = {
 		"Saturday",
 };
 
+const char *Eng_DayName_Short[7] = {
+
+		"Sun.",
+		"Mon.",
+		"Tues.",
+		"Wed.",
+		"Thurs.",
+		"Fri.",
+		"Sat.",
+};
+
 const char *Eng_MonthName_3char[12] = {
 
 		"Jan",
