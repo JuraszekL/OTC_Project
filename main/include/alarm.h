@@ -21,5 +21,6 @@ void Alarm_InitResources(void);
 const AlarmData_t* Alarm_GetDefaultValues(void);
 AlarmData_t* Alarm_GetCurrentValues(uint8_t idx);
 void Alarm_RestoreFromSPIFFS(AlarmData_t *alarm, uint8_t idx);
+void Alarm_SetStatus(uint8_t idx, bool status);
 
 #endif /* MAIN_INCLUDE_ALARM_H_ */

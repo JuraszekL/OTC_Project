@@ -2,7 +2,7 @@
 
 /**************************************************************
  *
- *	Function prototypes
+ *	Definitions
  *
  ***************************************************************/
 struct ui_alarm_object {
@@ -100,7 +100,6 @@ void UI_AlarmsScreen_Load(void){
 	lv_scr_load_anim(ui_AlarmsScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
 }
 
-
 /**************************************************************
  *
  * Private function definitions
@@ -125,7 +124,7 @@ static void ui_alarms_screen_evt_handler(lv_event_t * e){
 
     	if(target == ui_Alarms[user_data].ui_AlarmScreenSwitch){
 
-    		//UI_ReportEvt(UI_EVT_ALARM_SWICH_CHANGED, (void *)user_data);
+    		Alarm_SetStatus(user_data, lv_obj_has_state(ui_Alarms[user_data].ui_AlarmScreenSwitch, LV_STATE_CHECKED));
     	}
     }
     else if(event_code == LV_EVENT_RELEASED) {
