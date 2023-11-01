@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "components/ui_alarms_popup.h"
 
 /**************************************************************
  *
@@ -93,11 +94,21 @@ void UI_AlarmsScreen_Init(void){
 	    lv_obj_add_event_cb(ui_Alarms[a].ui_AlarmScreenPanel, ui_alarms_screen_evt_handler, LV_EVENT_RELEASED, (void *)a);
 	    lv_obj_add_event_cb(ui_Alarms[a].ui_AlarmScreenSwitch, ui_alarms_screen_evt_handler, LV_EVENT_VALUE_CHANGED, (void *)a);
 	}
+
+	UI_AlarmsPopup_MutexInit();
 }
 
 void UI_AlarmsScreen_Load(void){
 
 	lv_scr_load_anim(ui_AlarmsScreen, LV_SCR_LOAD_ANIM_MOVE_LEFT, 300, 0, false);
+}
+
+void UI_AlarmsScreen_EditAlarm(uint8_t idx){
+
+	if(ui_AlarmsScreen == lv_scr_act()){
+
+		UI_AlarmsPopup_EditAlarm(idx);
+	}
 }
 
 /**************************************************************
@@ -134,7 +145,7 @@ static void ui_alarms_screen_evt_handler(lv_event_t * e){
 
     	if(target == ui_Alarms[user_data].ui_AlarmScreenPanel){
 
-    		//UI_ReportEvt(UI_EVT_ALARM_PANEL_CLICKED, (void *)user_data);
+    		UI_ReportEvt(UI_EVT_ALARM_PANEL_CLICKED, (void *)user_data);
     	}
     }
 }

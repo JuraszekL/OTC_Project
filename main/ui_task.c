@@ -409,5 +409,7 @@ static void ui_event_main_scr_clock_clicked(void *arg){
 
 static void ui_event_alarm_panel_clicked(void *arg){
 
+	uint32_t idx = (uint32_t)arg;
 
+	UI_AlarmsScreen_EditAlarm(idx);
 }

@@ -92,3 +92,32 @@ void UI_PopupCreate(UI_PopupObj_t *popup){
     lv_obj_set_style_text_align(popup->label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
     lv_label_set_long_mode(popup->label, LV_LABEL_LONG_SCROLL);
 }
+
+void UI_KeyboardCreate(lv_obj_t **parent, lv_obj_t **keyboard){
+
+	*keyboard = lv_keyboard_create(*parent);
+	lv_obj_set_align(*keyboard, LV_ALIGN_BOTTOM_MID);
+	lv_obj_set_y(*keyboard, 240);
+	lv_obj_set_size(*keyboard, LV_PCT(100), LV_PCT(50));
+
+	// keyboard background
+	lv_obj_set_style_bg_color(*keyboard, UI_CurrentTheme.background_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(*keyboard, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
+
+	// background for normal keys
+	lv_obj_set_style_bg_color(*keyboard, UI_CurrentTheme.background_color_ext, LV_PART_ITEMS | LV_STATE_DEFAULT);
+	lv_obj_set_style_bg_opa(*keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_DEFAULT);
+
+	// background for checked keys
+	lv_obj_set_style_bg_color(*keyboard, UI_CurrentTheme.background_color_base, LV_PART_ITEMS | LV_STATE_CHECKED);
+	lv_obj_set_style_bg_opa(*keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_CHECKED);
+
+	// border for all keys
+	lv_obj_set_style_border_width(*keyboard, 1, LV_PART_ITEMS);
+	lv_obj_set_style_border_color(*keyboard, UI_CurrentTheme.main_color_base, LV_PART_ITEMS);
+	lv_obj_set_style_border_opa(*keyboard, LV_OPA_60, LV_PART_ITEMS);
+
+	// text color for all keys
+	lv_obj_set_style_text_color(*keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS);
+	lv_obj_set_style_text_color(*keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS | LV_STATE_CHECKED);
+}

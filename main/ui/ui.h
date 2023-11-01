@@ -33,6 +33,12 @@
 #define ICON_SETUP			'R'
 
 /**************************************************************
+ * Animation time
+ ***************************************************************/
+#define KEYBOARD_SHOW_HIDE_TIME_MS			300U
+#define OK_NOK_LINE_ANIMATION_TIME_MS		2000U
+
+/**************************************************************
  * Structure with basic pointers to popup component
  ***************************************************************/
 typedef struct {
@@ -63,5 +69,6 @@ void UI_ButtonCreate(lv_obj_t **parent, lv_obj_t **button, char icon);
 void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button);
 void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label);
 void UI_PopupCreate(UI_PopupObj_t *popup);
+void UI_KeyboardCreate(lv_obj_t **parent, lv_obj_t **keyboard);
 
 #endif

@@ -7,8 +7,6 @@
  *
  ***************************************************************/
 #define WIFI_POPUP_MUTEX_TIMEOUT_MS			100U
-#define KEYBOARD_SHOW_HIDE_TIME_MS			300U
-#define OK_NOK_LINE_ANIMATION_TIME_MS		2000U
 
 /**************************************************************
  *
@@ -463,31 +461,7 @@ static void wifi_popup_create_keyboard(void){
 	if(false == lv_obj_is_valid(wifi_popup.background)) return;
 
 	/*Create a keyboard*/
-	keyboard = lv_keyboard_create(wifi_popup.background);
-	lv_obj_set_align(keyboard, LV_ALIGN_BOTTOM_MID);
-	lv_obj_set_y(keyboard, 240);
-	lv_obj_set_size(keyboard, LV_PCT(100), LV_PCT(50));
-
-	// keyboard background
-	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_base, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-	// background for normal keys
-	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_ext, LV_PART_ITEMS | LV_STATE_DEFAULT);
-	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_DEFAULT);
-
-	// background for checked keys
-	lv_obj_set_style_bg_color(keyboard, UI_CurrentTheme.background_color_base, LV_PART_ITEMS | LV_STATE_CHECKED);
-	lv_obj_set_style_bg_opa(keyboard, LV_OPA_COVER, LV_PART_ITEMS | LV_STATE_CHECKED);
-
-	// border for all keys
-	lv_obj_set_style_border_width(keyboard, 1, LV_PART_ITEMS);
-	lv_obj_set_style_border_color(keyboard, UI_CurrentTheme.main_color_base, LV_PART_ITEMS);
-	lv_obj_set_style_border_opa(keyboard, LV_OPA_60, LV_PART_ITEMS);
-
-	// text color for all keys
-	lv_obj_set_style_text_color(keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS);
-	lv_obj_set_style_text_color(keyboard, UI_CurrentTheme.main_color_ext, LV_PART_ITEMS | LV_STATE_CHECKED);
+	UI_KeyboardCreate(&wifi_popup.background, &keyboard);
 }
 
 /* show or hide keyboard on screen */
