@@ -19,6 +19,7 @@ struct ui_alarm_object {
  *
  ***************************************************************/
 static void ui_alarms_screen_evt_handler(lv_event_t * e);
+static void ui_alarm_refresh_panel(uint8_t idx);
 
 /**************************************************************
  *
@@ -30,10 +31,16 @@ extern const char *Eng_DayName_Short[7];
 static lv_obj_t *ui_AlarmsScreen, *ui_AlarmsScreenBackButton;
 static struct ui_alarm_object ui_Alarms[ALARMS_NUMBER];
 
+/**************************************************************
+ *
+ * Public function definitions
+ *
+ ***************************************************************/
 
+/* Initialize alarm screen */
 void UI_AlarmsScreen_Init(void){
 
-	uint8_t a;
+	uint32_t a;
 
 	UI_ScreenCreate(&ui_AlarmsScreen);
 
@@ -80,6 +87,11 @@ void UI_AlarmsScreen_Init(void){
 	    lv_obj_set_x(ui_Alarms[a].ui_AlarmScreenSwitch, -15);
 	    lv_obj_set_y(ui_Alarms[a].ui_AlarmScreenSwitch, 15);
 	    lv_obj_set_align(ui_Alarms[a].ui_AlarmScreenSwitch, LV_ALIGN_TOP_RIGHT);
+
+	    ui_alarm_refresh_panel(a);
+
+	    lv_obj_add_event_cb(ui_Alarms[a].ui_AlarmScreenPanel, ui_alarms_screen_evt_handler, LV_EVENT_RELEASED, (void *)a);
+	    lv_obj_add_event_cb(ui_Alarms[a].ui_AlarmScreenSwitch, ui_alarms_screen_evt_handler, LV_EVENT_VALUE_CHANGED, (void *)a);
 	}
 }
 
@@ -100,17 +112,81 @@ static void ui_alarms_screen_evt_handler(lv_event_t * e){
 
     lv_event_code_t event_code = lv_event_get_code(e);
     lv_obj_t * target = lv_event_get_target(e);
+    uint32_t user_data;
 
     if((event_code == LV_EVENT_RELEASED) && (target == ui_AlarmsScreenBackButton)) {
 
     	UI_ReportEvt(UI_EVT_SETUPSCR_BACK_BTN_CLICKED, 0);
     }
-//    else if((event_code == LV_EVENT_VALUE_CHANGED) && (target == UI_SetupScreenThemeDropdown)) {
-//
-//    	ui_setup_screen_report_selected_theme();
-//    }
-//    else if((event_code == LV_EVENT_VALUE_CHANGED) && (target == UI_SetupScreenBacklightSlider)) {
-//
-//    	ui_setup_screen_change_backlight();
-//    }
+    else if(event_code == LV_EVENT_VALUE_CHANGED) {
+
+    	user_data = (uint32_t)lv_event_get_user_data(e);
+    	if(user_data >= ALARMS_NUMBER) return;
+
+    	if(target == ui_Alarms[user_data].ui_AlarmScreenSwitch){
+
+    		//UI_ReportEvt(UI_EVT_ALARM_SWICH_CHANGED, (void *)user_data);
+    	}
+    }
+    else if(event_code == LV_EVENT_RELEASED) {
+
+    	user_data = (uint32_t)lv_event_get_user_data(e);
+    	if(user_data >= ALARMS_NUMBER) return;
+
+    	if(target == ui_Alarms[user_data].ui_AlarmScreenPanel){
+
+    		//UI_ReportEvt(UI_EVT_ALARM_PANEL_CLICKED, (void *)user_data);
+    	}
+    }
+}
+
+/* refresh values displayed on alarm's panel */
+static void ui_alarm_refresh_panel(uint8_t idx){
+
+	AlarmData_t *alarm;
+	char buff[64] = {0};
+	uint8_t a;
+
+	// get current values from RAM array
+	alarm = Alarm_GetCurrentValues(idx);
+	if(0 == alarm) goto error;
+
+	// set the time of alarm
+	lv_label_set_text_fmt(ui_Alarms[idx].ui_AlarmScreenHourLabel, "%02d:%02d", alarm->hour, alarm->minute);
+
+	// check the flags for every single day in a week
+	// bits are organised in the same way that POSIX "struct tm"
+	// if bit is set then add the name of the day to the label buffer (separated by a space character)
+	for(a = 0; a < 7; a++){
+
+		if(alarm->flags & (1 << a)){
+
+			strcat(buff, Eng_DayName_Short[a]);
+			strcat(buff, " ");
+		}
+	}
+
+	lv_label_set_text(ui_Alarms[idx].ui_AlarmScreenDaysLabel, buff);
+
+	// set the switch state
+	if(true == alarm->status) lv_obj_add_state(ui_Alarms[idx].ui_AlarmScreenSwitch, LV_STATE_CHECKED);
+	else lv_obj_clear_state(ui_Alarms[idx].ui_AlarmScreenSwitch, LV_STATE_CHECKED);
+
+	if(alarm->text){
+		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+	}
+	free(alarm);
+	return;
+
+	error:
+		lv_label_set_text(ui_Alarms[idx].ui_AlarmScreenDaysLabel, "");
+		lv_label_set_text(ui_Alarms[idx].ui_AlarmScreenHourLabel, "");
+		lv_obj_add_state(ui_Alarms[idx].ui_AlarmScreenSwitch, LV_STATE_DISABLED);
+		lv_obj_add_flag(ui_Alarms[idx].ui_AlarmScreenSwitch, LV_OBJ_FLAG_HIDDEN);
+		if(alarm){
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
 }

@@ -1,4 +1,5 @@
 #include "main.h"
+#include <string.h>
 #include <sys/time.h>
 
 /**************************************************************
@@ -36,6 +37,46 @@ void Alarm_InitResources(void){
 const AlarmData_t* Alarm_GetDefaultValues(void){
 
 	return &default_alarm;
+}
+
+/* return a copy of selected alarm's structure */
+AlarmData_t* Alarm_GetCurrentValues(uint8_t idx){
+
+	if((idx >= ALARMS_NUMBER)) return 0;
+	if((0 == alarms[idx])) return 0;
+
+	AlarmData_t *alarm;
+	BaseType_t res;
+	int a;
+
+	alarm = calloc(1U, sizeof(AlarmData_t));
+	if(0 == alarm) goto error;
+
+	res = xSemaphoreTake(alarm_mutex_handle, pdMS_TO_TICKS(50));
+	if(pdTRUE != res) goto error;
+
+	alarm->hour = alarms[idx]->hour;
+	alarm->minute = alarms[idx]->minute;
+	alarm->flags = alarms[idx]->flags;
+	alarm->status = alarms[idx]->status;
+
+	a = strlen(alarms[idx]->text);
+	alarm->text = malloc(a + 1);
+	if(0 == alarm->text) goto error;
+	memcpy(alarm->text, alarms[idx]->text, (a + 1));
+
+	xSemaphoreGive(alarm_mutex_handle);
+	return alarm;
+
+	error:
+		xSemaphoreGive(alarm_mutex_handle);
+		if(alarm){
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
+		return 0;
 }
 
 /* restores alarm from SPIFFS (at startup) */
