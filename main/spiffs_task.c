@@ -1369,7 +1369,10 @@ static int json_get_wifi_pass_encrypted(cJSON *json, char **pass){
 
 static int json_delete_wifi_record(cJSON **json, char *ssid, char **output_string){
 
-	cJSON_DeleteItemFromObjectCaseSensitive(*json, ssid);
+	cJSON *deleted_record = cJSON_DetachItemFromObjectCaseSensitive(*json, ssid);
+	if(0 == deleted_record) return -1;
+
+	cJSON_Delete(deleted_record);
 
 	// convert created json to string
 	*output_string = cJSON_PrintUnformatted(*json);
