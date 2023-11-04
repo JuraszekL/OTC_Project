@@ -22,10 +22,10 @@ static void alarms_popup_event_handler(lv_event_t * e);
 static void alarms_popup_delete(void);
 static void alarms_popup_create_panel(void);
 static void alarms_popup_create_buttons(uint32_t idx);
-static void alarms_popup_create_text_area(void);
+static void alarms_popup_create_text_area(char *text);
 static void alarms_popup_create_labels(void);
-static void alarms_popup_create_dropdowns(void);
-static void alarms_popup_create_weekday_checkboxes(void);
+static void alarms_popup_create_dropdowns(uint8_t hour, uint8_t minute);
+static void alarms_popup_create_weekday_checkboxes(uint8_t flags);
 static void alarms_popup_delete_weekday_checkboxes(void);
 static void alarms_popup_show_hide_weekday_checkboxes(uint8_t show_hide);
 static void alarms_popup_create_keyboard(void);
@@ -66,6 +66,10 @@ void UI_AlarmsPopup_MutexInit(void){
 void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 
 	BaseType_t res;
+	AlarmData_t *alarm;
+
+	alarm = Alarm_GetCurrentValues(idx);
+	if(0 == alarm) return;
 
 	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
 	if(pdFALSE == res) return;
@@ -88,17 +92,22 @@ void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 	// two buttons
 	alarms_popup_create_buttons(idx);
 	// text area
-	alarms_popup_create_text_area();
+	alarms_popup_create_text_area(alarm->text);
 	// two labels on the left side ("Text: Hour:")
 	alarms_popup_create_labels();
 	// two dropdowns with hours and minutes chocie
-	alarms_popup_create_dropdowns();
+	alarms_popup_create_dropdowns(alarm->hour, alarm->minute);
 	// seven checkboxes with weekday's selection
-	alarms_popup_create_weekday_checkboxes();
+	alarms_popup_create_weekday_checkboxes(alarm->flags);
 	// keyboard
 	alarms_popup_create_keyboard();
 
 	xSemaphoreGive(alarms_popup_mutex_handle);
+
+	if(alarm->text){
+		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+	}
+	free(alarm);
 }
 
 
@@ -187,7 +196,7 @@ static void alarms_popup_create_buttons(uint32_t idx){
 }
 
 /* create text area where user can enter text to be displayed */
-static void alarms_popup_create_text_area(void){
+static void alarms_popup_create_text_area(char *text){
 
 	lv_style_value_t text_color;
 	lv_res_t res;
@@ -205,7 +214,14 @@ static void alarms_popup_create_text_area(void){
 	lv_obj_set_style_bg_color(alarm_text, text_color.color, LV_PART_CURSOR | LV_STATE_FOCUSED);
 	lv_obj_set_style_bg_opa(alarm_text, LV_OPA_COVER, LV_PART_CURSOR | LV_STATE_FOCUSED);
 
-    lv_textarea_set_text(alarm_text, "");
+    if(0 == text){
+
+    	lv_textarea_set_text(alarm_text, "error");
+    }
+    else{
+
+    	lv_textarea_set_text(alarm_text, text);
+    }
     lv_textarea_set_password_mode(alarm_text, false);
     lv_textarea_set_one_line(alarm_text, true);
     lv_obj_set_width(alarm_text, lv_pct(80));
@@ -236,7 +252,7 @@ static void alarms_popup_create_labels(void){
 }
 
 /* two dropdowns where user can choose the time of an alarm */
-static void alarms_popup_create_dropdowns(void){
+static void alarms_popup_create_dropdowns(uint8_t hour, uint8_t minute){
 
 	lv_obj_t *dropdown_list;
 	char buff[256] = {0};
@@ -260,6 +276,8 @@ static void alarms_popup_create_dropdowns(void){
     fill_buffer_for_dropdown_options(buff, 24);
     lv_dropdown_set_options(hours_dropdown, buff);
 
+    lv_dropdown_set_selected(hours_dropdown, hour);
+
     memset(buff, 0, 256);
 
     minutes_dropdown = lv_dropdown_create(alarms_popup.panel);
@@ -278,10 +296,12 @@ static void alarms_popup_create_dropdowns(void){
 
     fill_buffer_for_dropdown_options(buff, 60);
     lv_dropdown_set_options(minutes_dropdown, buff);
+
+    lv_dropdown_set_selected(minutes_dropdown, minute);
 }
 
 /* seven checkboxes which are used to select a weekdays when alarm will be repeated */
-static void alarms_popup_create_weekday_checkboxes(void){
+static void alarms_popup_create_weekday_checkboxes(uint8_t flags){
 
 	uint8_t a;
 	char buff[3];
@@ -303,6 +323,11 @@ static void alarms_popup_create_weekday_checkboxes(void){
 		lv_obj_set_align(weekday_checkboxes_array[a], LV_ALIGN_TOP_LEFT);
 		lv_obj_set_x(weekday_checkboxes_array[a], ((a * 40U) + 15U));
 		lv_obj_set_y(weekday_checkboxes_array[a], 120);
+
+		if(flags & (1 << a)){
+
+			lv_obj_add_state(weekday_checkboxes_array[a], LV_STATE_CHECKED);
+		}
 	}
 }
 
@@ -472,7 +497,7 @@ static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a){
  * the format for LVGL dropdown is:
  * "option1\noption2\noption3\n"
  * the function prepares the list of cnt numbers, f.e. if cnt == 3 the lists is:
- * "0\n1\n2\n3\n"
+ * "0\n1\n2\n"
  *
  * */
 static void fill_buffer_for_dropdown_options(char *buff, uint8_t cnt){
