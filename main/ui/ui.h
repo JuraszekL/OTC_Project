@@ -67,7 +67,7 @@ LV_FONT_DECLARE(ui_font_digital144);
 void UI_ScreenCreate(lv_obj_t **screen);
 void UI_ButtonCreate(lv_obj_t **parent, lv_obj_t **button, char icon);
 void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button);
-void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label);
+void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label, lv_align_t label_align);
 void UI_PopupCreate(UI_PopupObj_t *popup);
 void UI_KeyboardCreate(lv_obj_t **parent, lv_obj_t **keyboard);
 

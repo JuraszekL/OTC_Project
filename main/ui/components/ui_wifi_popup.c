@@ -427,12 +427,12 @@ static void wifi_popup_create_checkboxes(void){
 
 	if(false == lv_obj_is_valid(wifi_popup.panel)) return;
 
-	UI_CheckboxCreate(&wifi_popup.panel, &save_checkbox, "Save");
+	UI_CheckboxCreate(&wifi_popup.panel, &save_checkbox, "Save",LV_ALIGN_OUT_RIGHT_MID);
 	lv_obj_set_align(save_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(save_checkbox, lv_pct(15));
     lv_obj_add_state(save_checkbox, LV_STATE_CHECKED);
 
-    UI_CheckboxCreate(&wifi_popup.panel, &hide_checkbox, "Hide");
+    UI_CheckboxCreate(&wifi_popup.panel, &hide_checkbox, "Hide", LV_ALIGN_OUT_RIGHT_MID);
 	lv_obj_set_align(hide_checkbox, LV_ALIGN_LEFT_MID);
 	lv_obj_set_x(hide_checkbox, lv_pct(60));
     lv_obj_add_state(hide_checkbox, LV_STATE_CHECKED);

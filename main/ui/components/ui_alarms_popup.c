@@ -5,9 +5,13 @@
  *	Definitions
  *
  ***************************************************************/
+#define ALARMS_POPUP_HEIGH_FULL					280
+#define ALARMS_POPUP_HEIGH_FOLDED				240
+
 #define ALARMS_POPUP_MUTEX_TIMEOUT_MS			100U
 
 enum { show_keyboard, hide_keyboard };
+enum { show_checkboxes, hide_checkboxes };
 
 /**************************************************************
  *
@@ -19,35 +23,46 @@ static void alarms_popup_delete(void);
 static void alarms_popup_create_panel(void);
 static void alarms_popup_create_buttons(uint32_t idx);
 static void alarms_popup_create_text_area(void);
+static void alarms_popup_create_labels(void);
+static void alarms_popup_create_dropdowns(void);
+static void alarms_popup_create_weekday_checkboxes(void);
+static void alarms_popup_delete_weekday_checkboxes(void);
+static void alarms_popup_show_hide_weekday_checkboxes(uint8_t show_hide);
 static void alarms_popup_create_keyboard(void);
 static void alarms_popup_show_hide_keyboard(uint8_t show_hide);
 
 static void set_y(void *obj, int32_t val);
 static void set_height(void *obj, int32_t val);
 static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a);
+static void fill_buffer_for_dropdown_options(char *buff, uint8_t cnt);
 
 /**************************************************************
  *
  *	Global variables
  *
  ***************************************************************/
+extern const char *Eng_DayName_Short[7];
+
 static SemaphoreHandle_t alarms_popup_mutex_handle;
 
 static UI_PopupObj_t alarms_popup;
-static lv_obj_t *back_button, *ok_button, *alarm_text, *keyboard;
-
+static lv_obj_t *back_button, *ok_button, *alarm_text, *text_label, *time_label, *hours_dropdown, *minutes_dropdown, *keyboard;
+static lv_obj_t **weekday_checkboxes_array;
 
 /**************************************************************
  *
  * Public function definitions
  *
  ***************************************************************/
+
+/* initialize mutex for alarms popup operations */
 void UI_AlarmsPopup_MutexInit(void){
 
 	alarms_popup_mutex_handle = xSemaphoreCreateMutex();
 	assert(alarms_popup_mutex_handle);
 }
 
+/* create default popup where user can edit the alarm */
 void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 
 	BaseType_t res;
@@ -55,22 +70,32 @@ void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
 	if(pdFALSE == res) return;
 
+	// delete the old popup if exists
 	alarms_popup_delete();
 
+	// create base popup panel
 	alarms_popup_create_panel();
 
+	// delete the label, we don't need it
 	if(true == lv_obj_is_valid(alarms_popup.label)) {
 
 		lv_obj_del(alarms_popup.label);
 	}
 
 	// set bigger size
-	lv_obj_set_size(alarms_popup.panel, 320, 320);
+	lv_obj_set_size(alarms_popup.panel, 320, ALARMS_POPUP_HEIGH_FULL);
 
+	// two buttons
 	alarms_popup_create_buttons(idx);
-
+	// text area
 	alarms_popup_create_text_area();
-
+	// two labels on the left side ("Text: Hour:")
+	alarms_popup_create_labels();
+	// two dropdowns with hours and minutes chocie
+	alarms_popup_create_dropdowns();
+	// seven checkboxes with weekday's selection
+	alarms_popup_create_weekday_checkboxes();
+	// keyboard
 	alarms_popup_create_keyboard();
 
 	xSemaphoreGive(alarms_popup_mutex_handle);
@@ -184,12 +209,151 @@ static void alarms_popup_create_text_area(void){
     lv_textarea_set_password_mode(alarm_text, false);
     lv_textarea_set_one_line(alarm_text, true);
     lv_obj_set_width(alarm_text, lv_pct(80));
-    lv_obj_set_align(alarm_text, LV_ALIGN_TOP_MID);
-    lv_obj_set_y(alarm_text, 10);
+    lv_obj_set_align(alarm_text, LV_ALIGN_TOP_RIGHT);
+    lv_obj_set_y(alarm_text, 0);
 
 	lv_obj_add_flag(alarm_text, (LV_OBJ_FLAG_CLICKABLE | LV_OBJ_FLAG_CLICK_FOCUSABLE));
     lv_obj_add_event_cb(alarm_text, alarms_popup_event_handler, LV_EVENT_FOCUSED, NULL);
     lv_obj_add_event_cb(alarm_text, alarms_popup_event_handler, LV_EVENT_DEFOCUSED, NULL);
+}
+
+/* two labels that describe text area and dropdowns function */
+static void alarms_popup_create_labels(void){
+
+	if(false == lv_obj_is_valid(alarms_popup.panel)) return;
+
+	text_label = lv_label_create(alarms_popup.panel);
+	lv_obj_add_style(text_label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(text_label, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_y(text_label, 10);
+    lv_label_set_text(text_label, "Text:");
+
+	time_label = lv_label_create(alarms_popup.panel);
+	lv_obj_add_style(time_label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(time_label, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_y(time_label, 70);
+    lv_label_set_text(time_label, "Time:");
+}
+
+/* two dropdowns where user can choose the time of an alarm */
+static void alarms_popup_create_dropdowns(void){
+
+	lv_obj_t *dropdown_list;
+	char buff[256] = {0};
+
+	if(false == lv_obj_is_valid(alarms_popup.panel)) return;
+
+    hours_dropdown = lv_dropdown_create(alarms_popup.panel);
+    lv_obj_add_style(hours_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(hours_dropdown, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_add_style(hours_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_set_align(hours_dropdown, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_x(hours_dropdown, 100);
+    lv_obj_set_y(hours_dropdown, 60);
+    lv_obj_set_width(hours_dropdown, 80);
+
+    dropdown_list = lv_dropdown_get_list(hours_dropdown);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_SELECTED | LV_STATE_DEFAULT);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_SELECTED | LV_STATE_CHECKED);
+
+    fill_buffer_for_dropdown_options(buff, 24);
+    lv_dropdown_set_options(hours_dropdown, buff);
+
+    memset(buff, 0, 256);
+
+    minutes_dropdown = lv_dropdown_create(alarms_popup.panel);
+    lv_obj_add_style(minutes_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(minutes_dropdown, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
+    lv_obj_add_style(minutes_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_CHECKED);
+    lv_obj_set_align(minutes_dropdown, LV_ALIGN_TOP_LEFT);
+    lv_obj_set_x(minutes_dropdown, 200);
+    lv_obj_set_y(minutes_dropdown, 60);
+    lv_obj_set_width(minutes_dropdown, 80);
+
+    dropdown_list = lv_dropdown_get_list(minutes_dropdown);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_SELECTED | LV_STATE_DEFAULT);
+    lv_obj_add_style(dropdown_list, &UI_DropdownStyle, LV_PART_SELECTED | LV_STATE_CHECKED);
+
+    fill_buffer_for_dropdown_options(buff, 60);
+    lv_dropdown_set_options(minutes_dropdown, buff);
+}
+
+/* seven checkboxes which are used to select a weekdays when alarm will be repeated */
+static void alarms_popup_create_weekday_checkboxes(void){
+
+	uint8_t a;
+	char buff[3];
+
+	if(false == lv_obj_is_valid(alarms_popup.panel)) return;
+
+	alarms_popup_delete_weekday_checkboxes();
+
+	weekday_checkboxes_array = calloc(7, sizeof(lv_obj_t*));
+	if(0 == weekday_checkboxes_array) return;
+
+	for(a = 0; a < 7; a++){
+
+		memset(buff, 0, 3);
+
+		memcpy(buff, Eng_DayName_Short[a], 2);
+
+		UI_CheckboxCreate(&alarms_popup.panel, &weekday_checkboxes_array[a], buff, LV_ALIGN_OUT_BOTTOM_MID);
+		lv_obj_set_align(weekday_checkboxes_array[a], LV_ALIGN_TOP_LEFT);
+		lv_obj_set_x(weekday_checkboxes_array[a], ((a * 40U) + 15U));
+		lv_obj_set_y(weekday_checkboxes_array[a], 120);
+	}
+}
+
+/* delete all resources related to checkboxes */
+static void alarms_popup_delete_weekday_checkboxes(void){
+
+	if(0 == weekday_checkboxes_array) return;
+
+	uint8_t a;
+
+	for(a = 0; a < 7; a++){
+
+		if(weekday_checkboxes_array[a]){
+
+			if(true == lv_obj_is_valid(weekday_checkboxes_array[a])) {
+
+				lv_obj_del(weekday_checkboxes_array[a]);
+			}
+
+			weekday_checkboxes_array[a] = 0;
+		}
+	}
+
+	if(heap_caps_get_allocated_size(weekday_checkboxes_array)) free(weekday_checkboxes_array);
+	weekday_checkboxes_array = 0;
+}
+
+/* show or hide the checkboxes */
+static void alarms_popup_show_hide_weekday_checkboxes(uint8_t show_hide){
+
+	if(0 == weekday_checkboxes_array) return;
+
+	uint8_t a;
+
+	for(a = 0; a < 7; a++){
+
+		if(weekday_checkboxes_array[a]){
+
+			if(true == lv_obj_is_valid(weekday_checkboxes_array[a])) {
+
+				if(show_checkboxes == show_hide){
+
+					lv_obj_clear_flag(weekday_checkboxes_array[a], LV_OBJ_FLAG_HIDDEN);
+				}
+				else if(hide_checkboxes == show_hide){
+
+					lv_obj_add_flag(weekday_checkboxes_array[a], LV_OBJ_FLAG_HIDDEN);
+				}
+			}
+		}
+	}
 }
 
 /* create keyboard outside the screen */
@@ -204,7 +368,10 @@ static void alarms_popup_create_keyboard(void){
 /* show or hide keyboard on screen */
 static void alarms_popup_show_hide_keyboard(uint8_t show_hide){
 
+	if((false == lv_obj_is_valid(alarms_popup.panel)) || (false == lv_obj_is_valid(keyboard))) return;
+
 	lv_anim_t popup_move, kb_move, popup_resize;
+	uint32_t tmp = show_hide;
 
 	// create panel animation
 	lv_anim_init(&popup_move);
@@ -221,6 +388,7 @@ static void alarms_popup_show_hide_keyboard(uint8_t show_hide){
 	}
 	lv_anim_set_path_cb(&popup_move, lv_anim_path_ease_out);
 	lv_anim_set_ready_cb(&popup_move, wifi_popup_show_keyboard_animation_ready);
+	lv_anim_set_user_data(&popup_move, (void *)tmp);
 
 	lv_anim_init(&popup_resize);
 	lv_anim_set_exec_cb(&popup_resize, set_height);
@@ -228,11 +396,11 @@ static void alarms_popup_show_hide_keyboard(uint8_t show_hide){
 	lv_anim_set_time(&popup_resize, KEYBOARD_SHOW_HIDE_TIME_MS);
 	if(show_keyboard == show_hide){
 
-		lv_anim_set_values(&popup_resize, 320, 240);
+		lv_anim_set_values(&popup_resize, ALARMS_POPUP_HEIGH_FULL, ALARMS_POPUP_HEIGH_FOLDED);
 	}
 	else{
 
-		lv_anim_set_values(&popup_resize, 240, 320);
+		lv_anim_set_values(&popup_resize, ALARMS_POPUP_HEIGH_FOLDED, ALARMS_POPUP_HEIGH_FULL);
 	}
 	lv_anim_set_path_cb(&popup_resize, lv_anim_path_ease_out);
 
@@ -254,6 +422,10 @@ static void alarms_popup_show_hide_keyboard(uint8_t show_hide){
 	lv_anim_set_ready_cb(&kb_move, wifi_popup_show_keyboard_animation_ready);
 
 	// start both
+	if(show_keyboard == show_hide){
+
+		alarms_popup_show_hide_weekday_checkboxes(hide_checkboxes);
+	}
 	lv_anim_start(&popup_move);
 	lv_anim_start(&popup_resize);
 	lv_anim_start(&kb_move);
@@ -274,6 +446,45 @@ static void set_height(void *obj, int32_t val){
 /* callback when animation of sliding keyboard is done */
 static void wifi_popup_show_keyboard_animation_ready(struct _lv_anim_t *a){
 
-	if(a->var == alarms_popup.panel)lv_anim_del(alarms_popup.panel, NULL);
-	else if(a->var == keyboard)lv_anim_del(keyboard, NULL);
+	BaseType_t res;
+
+	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) return;
+
+	if(a->var == alarms_popup.panel) {
+
+		if(hide_keyboard == (uint32_t)a->user_data){
+
+			alarms_popup_show_hide_weekday_checkboxes(show_checkboxes);
+		}
+		lv_anim_del(alarms_popup.panel, NULL);
+	}
+	else if(a->var == keyboard){
+
+		lv_anim_del(keyboard, NULL);
+	}
+
+	xSemaphoreGive(alarms_popup_mutex_handle);
+}
+
+/* function that prepares the buffer to be set as a dropdown options list
+ *
+ * the format for LVGL dropdown is:
+ * "option1\noption2\noption3\n"
+ * the function prepares the list of cnt numbers, f.e. if cnt == 3 the lists is:
+ * "0\n1\n2\n3\n"
+ *
+ * */
+static void fill_buffer_for_dropdown_options(char *buff, uint8_t cnt){
+
+	uint8_t a;
+	char tmpbuff[5];
+
+	for(a = 0; a < cnt; a++){
+
+		memset(tmpbuff, 0, 5);
+		sprintf(tmpbuff, "%02d", a);
+    	strcat(buff, tmpbuff);
+    	strcat(buff, "\n");
+	}
 }

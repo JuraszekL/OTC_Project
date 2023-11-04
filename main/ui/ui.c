@@ -49,7 +49,7 @@ void UI_BackButtonCreate(lv_obj_t **parent, lv_obj_t **button){
     lv_obj_set_align(*button, LV_ALIGN_BOTTOM_LEFT);
 }
 
-void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label){
+void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label, lv_align_t label_align){
 
 	lv_obj_t *checkbox_label;
 
@@ -60,10 +60,22 @@ void UI_CheckboxCreate(lv_obj_t **parent, lv_obj_t **checkbox, char *label){
 	lv_obj_add_style(*checkbox, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_CHECKED);
 	lv_checkbox_set_text(*checkbox, "");
 
-	checkbox_label = lv_label_create(*checkbox);
-	lv_obj_align_to(checkbox_label, *checkbox, LV_ALIGN_OUT_RIGHT_MID, 2, 0);
-	lv_obj_add_style(checkbox_label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
-	lv_label_set_text(checkbox_label, label);
+	if(label){
+
+		checkbox_label = lv_label_create(*checkbox);
+		lv_obj_add_style(checkbox_label, &UI_Text16Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+		lv_label_set_text(checkbox_label, label);
+		if(LV_ALIGN_OUT_RIGHT_MID == label_align){
+
+			lv_obj_set_style_text_align(checkbox_label, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+			lv_obj_align_to(checkbox_label, *checkbox, label_align, 2, 0);
+		}
+		else if(LV_ALIGN_OUT_BOTTOM_MID == label_align){
+
+			lv_obj_set_style_text_align(checkbox_label, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+			lv_obj_align_to(checkbox_label, *checkbox, label_align, -3, 2);
+		}
+	}
 }
 
 void UI_PopupCreate(UI_PopupObj_t *popup){
