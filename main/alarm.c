@@ -77,6 +77,7 @@ void Alarm_RestoreFromSPIFFS(AlarmData_t *alarm, uint8_t idx){
 	}
 }
 
+/* set new status for selected alarm */
 void Alarm_SetStatus(uint8_t idx, bool status){
 
 	if((idx >= ALARMS_NUMBER)) return;
@@ -96,6 +97,44 @@ void Alarm_SetStatus(uint8_t idx, bool status){
 
 		xSemaphoreGive(alarm_mutex_handle);
 	}
+}
+
+/* set new values for selected alarm */
+void Alarm_SetValues(uint8_t idx, AlarmData_t *alarm){
+
+	if((0 == alarm) || (idx >= ALARMS_NUMBER)) goto error;
+	if((24U <= alarm->hour) || (60U <= alarm->minute) || (0 == alarm->text)) goto error;
+
+	AlarmData_t *current_values, *copy;
+	BaseType_t res;
+
+	res = xSemaphoreTake(alarm_mutex_handle, pdMS_TO_TICKS(50));
+	if(pdTRUE != res) goto error;
+
+	// store the old structure's pointer and replace it with the new one
+	current_values = alarms[idx];
+	alarms[idx] = alarm;
+
+	// copy the new structure and store it to SPIFFS
+	copy = alarm_get_copy(alarms[idx]);
+	SPIFFS_UpdateAlarm(idx, copy);
+
+	// free the old one structure
+	if(current_values->text){
+		if(heap_caps_get_allocated_size(current_values->text)) free(current_values->text);
+	}
+	if(heap_caps_get_allocated_size(current_values)) free(current_values);
+
+	xSemaphoreGive(alarm_mutex_handle);
+	return;
+
+	error:
+		if(alarm){
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
 }
 
 /**************************************************************

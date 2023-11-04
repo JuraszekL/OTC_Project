@@ -111,6 +111,11 @@ void UI_AlarmsScreen_EditAlarm(uint8_t idx){
 	}
 }
 
+void UI_AlarmScreen_RefreshPanel(uint8_t idx){
+
+	ui_alarm_refresh_panel(idx);
+}
+
 /**************************************************************
  *
  * Private function definitions

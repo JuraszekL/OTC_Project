@@ -22,5 +22,6 @@ const AlarmData_t* Alarm_GetDefaultValues(void);
 AlarmData_t* Alarm_GetCurrentValues(uint8_t idx);
 void Alarm_RestoreFromSPIFFS(AlarmData_t *alarm, uint8_t idx);
 void Alarm_SetStatus(uint8_t idx, bool status);
+void Alarm_SetValues(uint8_t idx, AlarmData_t *alarm);
 
 #endif /* MAIN_INCLUDE_ALARM_H_ */

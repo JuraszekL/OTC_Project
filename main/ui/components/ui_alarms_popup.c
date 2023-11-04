@@ -28,8 +28,10 @@ static void alarms_popup_create_dropdowns(uint8_t hour, uint8_t minute);
 static void alarms_popup_create_weekday_checkboxes(uint8_t flags);
 static void alarms_popup_delete_weekday_checkboxes(void);
 static void alarms_popup_show_hide_weekday_checkboxes(uint8_t show_hide);
+static uint8_t alarm_popup_get_weekdays_checkboxes_flags(void);
 static void alarms_popup_create_keyboard(void);
 static void alarms_popup_show_hide_keyboard(uint8_t show_hide);
+static void alarms_popup_set_new_alarm_values(uint8_t idx);
 
 static void set_y(void *obj, int32_t val);
 static void set_height(void *obj, int32_t val);
@@ -87,7 +89,7 @@ void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 	}
 
 	// set bigger size
-	lv_obj_set_size(alarms_popup.panel, 320, ALARMS_POPUP_HEIGH_FULL);
+	lv_obj_set_size(alarms_popup.panel, lv_pct(100), ALARMS_POPUP_HEIGH_FULL);
 
 	// two buttons
 	alarms_popup_create_buttons(idx);
@@ -123,6 +125,7 @@ static void alarms_popup_event_handler(lv_event_t * e){
 	lv_event_code_t code = lv_event_get_code(e);
 	lv_obj_t * obj = lv_event_get_target(e);
 	BaseType_t res;
+	uint32_t idx;
 
 	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
 	if(pdFALSE == res) return;
@@ -132,9 +135,13 @@ static void alarms_popup_event_handler(lv_event_t * e){
 		alarms_popup_delete();
 	}
 
+	// user request to change the alarm values
 	else if((obj == ok_button) && (LV_EVENT_RELEASED == code)){
 
-		//
+		idx = (uint32_t)lv_event_get_user_data(e);
+		alarms_popup_set_new_alarm_values(idx);
+		UI_ReportEvt(UI_EVT_ALARM_VALUES_CHANGED, (void *)idx);
+		alarms_popup_delete();
 	}
 
 	// event occured at password text area
@@ -166,6 +173,8 @@ static void alarms_popup_delete(void){
 
 		lv_anim_del(alarms_popup.panel, NULL);
 	}
+
+	alarms_popup_delete_weekday_checkboxes();
 
 	if(true == lv_obj_is_valid(alarms_popup.background)) {
 
@@ -264,7 +273,7 @@ static void alarms_popup_create_dropdowns(uint8_t hour, uint8_t minute){
     lv_obj_add_style(hours_dropdown, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_add_style(hours_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_CHECKED);
     lv_obj_set_align(hours_dropdown, LV_ALIGN_TOP_LEFT);
-    lv_obj_set_x(hours_dropdown, 100);
+    lv_obj_set_x(hours_dropdown, 70);
     lv_obj_set_y(hours_dropdown, 60);
     lv_obj_set_width(hours_dropdown, 80);
 
@@ -285,7 +294,7 @@ static void alarms_popup_create_dropdowns(uint8_t hour, uint8_t minute){
     lv_obj_add_style(minutes_dropdown, &UI_CheckboxStyle, LV_PART_INDICATOR | LV_STATE_DEFAULT);
     lv_obj_add_style(minutes_dropdown, &UI_DropdownStyle, LV_PART_MAIN | LV_STATE_CHECKED);
     lv_obj_set_align(minutes_dropdown, LV_ALIGN_TOP_LEFT);
-    lv_obj_set_x(minutes_dropdown, 200);
+    lv_obj_set_x(minutes_dropdown, 170);
     lv_obj_set_y(minutes_dropdown, 60);
     lv_obj_set_width(minutes_dropdown, 80);
 
@@ -321,7 +330,7 @@ static void alarms_popup_create_weekday_checkboxes(uint8_t flags){
 
 		UI_CheckboxCreate(&alarms_popup.panel, &weekday_checkboxes_array[a], buff, LV_ALIGN_OUT_BOTTOM_MID);
 		lv_obj_set_align(weekday_checkboxes_array[a], LV_ALIGN_TOP_LEFT);
-		lv_obj_set_x(weekday_checkboxes_array[a], ((a * 40U) + 15U));
+		lv_obj_set_x(weekday_checkboxes_array[a], (a * 40U));
 		lv_obj_set_y(weekday_checkboxes_array[a], 120);
 
 		if(flags & (1 << a)){
@@ -379,6 +388,24 @@ static void alarms_popup_show_hide_weekday_checkboxes(uint8_t show_hide){
 			}
 		}
 	}
+}
+
+/* chect states of all checkboxes and return as an uint8_t number */
+static uint8_t alarm_popup_get_weekdays_checkboxes_flags(void){
+
+	if(0 == weekday_checkboxes_array) return 0;
+
+	uint8_t a, flags = 0;
+
+	for(a = 0; a < 7; a++){
+
+		if(LV_STATE_CHECKED == lv_obj_get_state(weekday_checkboxes_array[a])){
+
+			flags |= (1U << a);
+		}
+	}
+
+	return flags;
 }
 
 /* create keyboard outside the screen */
@@ -454,6 +481,53 @@ static void alarms_popup_show_hide_keyboard(uint8_t show_hide){
 	lv_anim_start(&popup_move);
 	lv_anim_start(&popup_resize);
 	lv_anim_start(&kb_move);
+}
+
+/* report new values of an alarm */
+static void alarms_popup_set_new_alarm_values(uint8_t idx){
+
+	AlarmData_t *alarm;
+	const char *text;
+	int a;
+
+	// get the copy of existing values structure
+	alarm = Alarm_GetCurrentValues(idx);
+	if(0 == alarm) return;
+
+	// free memory where old text was stored
+	if(alarm->text){
+		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+	}
+
+	// set new values
+	alarm->hour = lv_dropdown_get_selected(hours_dropdown);
+	alarm->minute = lv_dropdown_get_selected(minutes_dropdown);
+
+	// get the text entered by user
+	text = lv_textarea_get_text(alarm_text);
+	if(0 == alarm_text) goto error;
+
+	// copy text to output data
+	a = strlen(text);
+	if(0 == a) goto error;
+	alarm->text = malloc(a + 1);
+	if(0 == alarm->text) goto error;
+	memcpy(alarm->text, text, a + 1);
+
+	// get values of checkoxes
+	alarm->flags = alarm_popup_get_weekdays_checkboxes_flags();
+
+	// report new values
+	Alarm_SetValues(idx, alarm);
+	return;
+
+	error:
+		if(alarm){
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
 }
 
 /* animate y position */
