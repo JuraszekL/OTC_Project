@@ -22,13 +22,13 @@
 #define BUZZER_CHANNEL_NR			LEDC_CHANNEL_1
 
 // basic notes frequencies
-#define C_NOTE_FREQ					262U
-#define D_NOTE_FREQ					294U
-#define E_NOTE_FREQ					330U
-#define F_NOTE_FREQ					349U
-#define G_NOTE_FREQ					392U
-#define A_NOTE_FREQ					440U
-#define B_NOTE_FREQ					494U
+#define C_NOTE_FREQ					2620U
+#define D_NOTE_FREQ					2940U
+#define E_NOTE_FREQ					3300U
+#define F_NOTE_FREQ					3490U
+#define G_NOTE_FREQ					3920U
+#define A_NOTE_FREQ					4400U
+#define B_NOTE_FREQ					4940U
 
 /**************************************************************
  *
@@ -37,7 +37,7 @@
  ***************************************************************/
 typedef enum {
 
-	buzzer_beep_1 = 0,
+	buzzer_alarm = 0,
 	buzzer_beep_2,
 
 } pwm_routine_type_t;
@@ -64,11 +64,11 @@ struct buzzer_sequence_data {
  ***************************************************************/
 static void pwm_routine_request(pwm_routine_type_t type, void *arg);
 
-static void pwm_beep1_routine(void *arg);
+static void pwm_alarm_routine(void *arg);
 static void pwm_beep2_routine(void *arg);
 
 static void buzzer_stop(void);
-static void buzzer_play_sequence(const struct buzzer_sequence_data *sequence);
+static void buzzer_play_sequence(const struct buzzer_sequence_data *seq, uint8_t repeats);
 static void buzzer_set_freq(uint16_t freq);
 static void buzzer_set_duty(uint8_t duty);
 
@@ -82,27 +82,42 @@ static TaskHandle_t pwm_task_handle;
 
 static const pwm_routine pwm_routines_tab[] = {
 
-		[buzzer_beep_1] = pwm_beep1_routine,
+		[buzzer_alarm] = pwm_alarm_routine,
 		[buzzer_beep_2] = pwm_beep2_routine,
 };
 
-// example sound played by buzzer
-static const struct buzzer_sequence_data ok_sound[] = {
+// alarm sound played by buzzer
+static const struct buzzer_sequence_data alarm_sound[] = {
 
 		{
 				.freq = C_NOTE_FREQ,
-				.time_ms = 200,
-				.buzzer_duty = BUZZER_PWM_ON,
-		},
-		{
-				.freq = E_NOTE_FREQ,
-				.time_ms = 200,
+				.time_ms = 100,
 				.buzzer_duty = BUZZER_PWM_ON,
 		},
 		{
 				.freq = C_NOTE_FREQ,
-				.time_ms = 200,
+				.time_ms = 100,
+				.buzzer_duty = BUZZER_PWM_OFF,
+		},
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 100,
 				.buzzer_duty = BUZZER_PWM_ON,
+		},
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 100,
+				.buzzer_duty = BUZZER_PWM_OFF,
+		},
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 100,
+				.buzzer_duty = BUZZER_PWM_ON,
+		},
+		{
+				.freq = C_NOTE_FREQ,
+				.time_ms = 1000,
+				.buzzer_duty = BUZZER_PWM_OFF,
 		},
 		{
 
@@ -219,11 +234,16 @@ void PWM_SetBacklight(uint8_t backlight_percent){
 	ledc_update_duty(PWM_SPEED_MODE, LCD_BACKLIGHT_CHANNEL_NR);
 }
 
-/* example of buzzer sound */
-void Buzzer_Beep1(void){
+/* Start and Stop playing alarm sound */
+void Buzzer_AlarmStart(void){
 
 	buzzer_stop();
-	pwm_routine_request(buzzer_beep_1, NULL);
+	pwm_routine_request(buzzer_alarm, NULL);
+}
+
+void Buzzer_AlarmStop(void){
+
+	buzzer_stop();
 }
 
 /**************************************************************
@@ -243,10 +263,10 @@ static void pwm_routine_request(pwm_routine_type_t type, void *arg){
 	xQueueOverwrite(pwm_queue_handle, &data);
 }
 
-/* example sound */
-static void pwm_beep1_routine(void *arg){
+/* alarm sound */
+static void pwm_alarm_routine(void *arg){
 
-	buzzer_play_sequence(ok_sound);
+	buzzer_play_sequence(alarm_sound, 100);
 }
 
 static void pwm_beep2_routine(void *arg){
@@ -268,7 +288,7 @@ static void buzzer_stop(void){
 }
 
 /* play the sequence */
-static void buzzer_play_sequence(const struct buzzer_sequence_data *seq){
+static void buzzer_play_sequence(const struct buzzer_sequence_data *seq, uint8_t repeats){
 
 	uint8_t a;
 	uint32_t notification_value;
@@ -276,16 +296,20 @@ static void buzzer_play_sequence(const struct buzzer_sequence_data *seq){
 	// clear any pending notification
 	ulTaskNotifyTake(pdTRUE, 0);
 
-	// set every value to buzzer step by step
-	for(a = 0; (0 != seq[a].freq); a++){
+	// repeat the sequence in according to "repeats" value
+	for( ; repeats > 0; repeats--){
 
-		buzzer_set_freq(seq[a].freq);
-		buzzer_set_duty(seq[a].buzzer_duty);
-		notification_value = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(seq[a].time_ms));	// wait untill time ends
-		if(0 != notification_value){													// or notification comes
+		// set every value to buzzer step by step
+		for(a = 0; (0 != seq[a].freq); a++){
 
-			buzzer_set_duty(BUZZER_PWM_OFF);
-			return;
+			buzzer_set_freq(seq[a].freq);
+			buzzer_set_duty(seq[a].buzzer_duty);
+			notification_value = ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(seq[a].time_ms));	// wait untill time ends
+			if(0 != notification_value){													// or notification comes
+
+				buzzer_set_duty(BUZZER_PWM_OFF);
+				return;
+			}
 		}
 	}
 

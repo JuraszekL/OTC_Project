@@ -149,7 +149,7 @@ void UI_AlarmsPopup_AlarmRun(uint8_t idx){
 
 	xSemaphoreGive(alarms_popup_mutex_handle);
 
-	// buzzer_on //TODO
+	Buzzer_AlarmStart();
 
 	if(alarm->text){
 		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
@@ -192,7 +192,7 @@ static void alarms_popup_event_handler(lv_event_t * e){
 	else if((obj == alarms_popup.panel) && (LV_EVENT_LONG_PRESSED == code)){
 
 		alarms_popup_delete();
-		// buzzer_off //TODO
+		Buzzer_AlarmStop();
 	}
 
 	// user request to change the alarm values
