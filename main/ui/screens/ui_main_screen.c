@@ -1,4 +1,5 @@
 #include "ui.h"
+#include "components/ui_alarms_popup.h"
 
 /**************************************************************
  *
@@ -240,6 +241,15 @@ void UI_MainScreen_UpdateTimeAndDate(struct tm *changed_time){
 		}
 }
 
+void UI_MainScreen_AlarmRun(uint8_t idx){
+
+	if(ui_MainScreen != lv_scr_act()){
+
+		lv_scr_load(ui_MainScreen);
+	}
+
+	UI_AlarmsPopup_AlarmRun(idx);
+}
 /**************************************************************
  *
  * Private function definitions

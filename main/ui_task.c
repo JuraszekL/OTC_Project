@@ -52,6 +52,7 @@ static void ui_event_alarms_scr_back_btn_clicked(void *arg);
 static void ui_event_main_scr_clock_clicked(void *arg);
 static void ui_event_alarm_panel_clicked(void *arg);
 static void ui_event_alarm_values_changed(void *arg);
+static void ui_event_alarm_run(void *arg);
 
 static void ui_event_run_startup_screen(void *arg);
 
@@ -88,6 +89,7 @@ const ui_event event_tab[] = {
 		[UI_EVT_MAINSCR_CLOCK_CLICKED] = ui_event_main_scr_clock_clicked,
 		[UI_EVT_ALARM_PANEL_CLICKED] = ui_event_alarm_panel_clicked,
 		[UI_EVT_ALARM_VALUES_CHANGED] = ui_event_alarm_values_changed,
+		[UI_EVT_ALARM_RUN] = ui_event_alarm_run,
 
 		[UI_EVT_RUN_STARTUP_SCREEN] = ui_event_run_startup_screen,
 };
@@ -421,4 +423,11 @@ static void ui_event_alarm_values_changed(void *arg){
 	uint32_t idx = (uint32_t)arg;
 
 	UI_AlarmScreen_RefreshPanel(idx);
+}
+
+static void ui_event_alarm_run(void *arg){
+
+	uint32_t idx = (uint32_t)arg;
+
+	UI_MainScreen_AlarmRun(idx);
 }

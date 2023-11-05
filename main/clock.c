@@ -219,10 +219,12 @@ static void clock_refresh_routine(void *arg){
 
 	case clock_not_sync:
 		 clock_not_sync_job();
+		 Alarm_CheckRoutine(main_clock.timeinfo.tm_wday, main_clock.timeinfo.tm_hour, main_clock.timeinfo.tm_min);
 		break;
 
 	case clock_sync:
 		 clock_sync_job();
+		 Alarm_CheckRoutine(main_clock.timeinfo.tm_wday, main_clock.timeinfo.tm_hour, main_clock.timeinfo.tm_min);
 		break;
 
 	default:

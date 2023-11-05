@@ -18,5 +18,6 @@ void UI_MainScreen_UpdateWeatherIcon(char *icon_path);
 void UI_MainScreen_UpdateWeatherData(int temp, int press, int hum);
 void UI_MainScreen_SetTopIcon(UI_TopIconType_t type, char icon);
 void UI_MainScreen_UpdateTimeAndDate(struct tm *changed_time);
+void UI_MainScreen_AlarmRun(uint8_t idx);
 
 #endif /* MAIN_UI_SCREENS_UI_MAIN_SCREEN_H_ */

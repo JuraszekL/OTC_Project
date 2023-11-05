@@ -1,6 +1,5 @@
 #include "main.h"
 #include <string.h>
-#include <sys/time.h>
 
 /**************************************************************
  *
@@ -8,6 +7,7 @@
  *
  ***************************************************************/
 static AlarmData_t* alarm_get_copy(AlarmData_t *org_alarm);
+static void alarm_play(uint8_t idx);
 
 /**************************************************************
  *
@@ -137,6 +137,32 @@ void Alarm_SetValues(uint8_t idx, AlarmData_t *alarm){
 		}
 }
 
+/* check all alarms if should be played (function called by clock task every minute) */
+void Alarm_CheckRoutine(uint8_t weekday, uint8_t hour, uint8_t minute){
+
+	uint8_t a;
+	BaseType_t res;
+
+	res = xSemaphoreTake(alarm_mutex_handle, pdMS_TO_TICKS(50));
+	if(pdTRUE != res) return;
+
+	for(a = 0; a < ALARMS_NUMBER; a++){
+
+		if(true == alarms[a]->status){		// if alarm is active
+
+			if((alarms[a]->hour == hour) && (alarms[a]->minute == minute)){		// if hour and minute fit
+
+				if((alarms[a]->flags & (1 << weekday)) || (0 == alarms[a]->flags)){		// if the day of repeat fits or a single alarm is set
+
+					alarm_play(a);
+				}
+			}
+		}
+	}
+
+	xSemaphoreGive(alarm_mutex_handle);
+}
+
 /**************************************************************
  *
  * Private function definitions
@@ -172,4 +198,22 @@ static AlarmData_t* alarm_get_copy(AlarmData_t *org_alarm){
 			if(heap_caps_get_allocated_size(return_alarm)) free(return_alarm);
 		}
 		return 0;
+}
+
+/* deactivate if one time alarm, and run UI to play it */
+static void alarm_play(uint8_t idx){
+
+	AlarmData_t *alarm;
+	uint32_t tmp = idx;
+
+	if(0 == alarms[idx]->flags){
+
+		// if one time alarm needs to be played, it should be deactivated as well
+		alarms[idx]->status = false;
+		alarm = alarm_get_copy(alarms[idx]);
+		SPIFFS_UpdateAlarm(idx, alarm);
+		UI_ReportEvt(UI_EVT_ALARM_VALUES_CHANGED, (void *)tmp);
+	}
+
+	UI_ReportEvt(UI_EVT_ALARM_RUN, (void *)tmp);
 }

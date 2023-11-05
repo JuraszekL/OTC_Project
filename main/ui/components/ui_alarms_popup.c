@@ -74,7 +74,7 @@ void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 	if(0 == alarm) return;
 
 	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
-	if(pdFALSE == res) return;
+	if(pdFALSE == res) goto error;
 
 	// delete the old popup if exists
 	alarms_popup_delete();
@@ -110,8 +110,62 @@ void UI_AlarmsPopup_EditAlarm(uint8_t idx){
 		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
 	}
 	free(alarm);
+	return;
+
+	error:
+		if(alarm){
+
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
 }
 
+/* Run (play) an alarm on the main screen */
+void UI_AlarmsPopup_AlarmRun(uint8_t idx){
+
+	BaseType_t res;
+	AlarmData_t *alarm;
+
+	alarm = Alarm_GetCurrentValues(idx);
+	if(0 == alarm) return;
+
+	res = xSemaphoreTake(alarms_popup_mutex_handle, pdMS_TO_TICKS(ALARMS_POPUP_MUTEX_TIMEOUT_MS));
+	if(pdFALSE == res) goto error;
+
+	// delete the old popup if exists
+	alarms_popup_delete();
+
+	// create base popup panel
+	alarms_popup_create_panel();
+	lv_obj_set_width(alarms_popup.panel, lv_pct(100));
+	lv_obj_add_style(alarms_popup.label, &UI_Text30Style, LV_PART_MAIN | LV_STATE_DEFAULT);
+    lv_obj_set_align(alarms_popup.label, LV_ALIGN_CENTER);
+    lv_obj_set_width(alarms_popup.label, lv_pct(80));
+    lv_label_set_long_mode(alarms_popup.label, LV_LABEL_LONG_WRAP);
+	lv_label_set_text(alarms_popup.label, alarm->text);
+	lv_obj_add_event_cb(alarms_popup.panel, alarms_popup_event_handler, LV_EVENT_LONG_PRESSED, 0);
+
+	xSemaphoreGive(alarms_popup_mutex_handle);
+
+	// buzzer_on //TODO
+
+	if(alarm->text){
+		if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+	}
+	free(alarm);
+	return;
+
+	error:
+		if(alarm){
+
+			if(alarm->text){
+				if(heap_caps_get_allocated_size(alarm->text)) free(alarm->text);
+			}
+			if(heap_caps_get_allocated_size(alarm)) free(alarm);
+		}
+}
 
 /**************************************************************
  *
@@ -133,6 +187,12 @@ static void alarms_popup_event_handler(lv_event_t * e){
 	if((obj == back_button) && (LV_EVENT_RELEASED == code)){
 
 		alarms_popup_delete();
+	}
+
+	else if((obj == alarms_popup.panel) && (LV_EVENT_LONG_PRESSED == code)){
+
+		alarms_popup_delete();
+		// buzzer_off //TODO
 	}
 
 	// user request to change the alarm values
