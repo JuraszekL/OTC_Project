@@ -35,27 +35,32 @@ This project is for learning purposes only. Feel free to use it.
 
 # Functionality
 
-Current version - v1.0.0
+Current version - v1.1.0
 
 In this version OTC is able to:
+
 - search for available wifi access points and represent the results on the screen. Each one AP within the list shows SSID name, signal strength and informs that AP is protected or not.
 - connect with chosen AP, show details about connected AP
-- ask user to enter AP password, save encrypted password, search and decrypt saved password if exists
+- ask user to enter AP password, save encrypted password to internal file
+- search, decrypt and use saved password to connect with AP 
 - delete saved password for chosen AP
 - get current time, timezone and basic weather data for current location
 - get detailed weather data for current location
-- change color theme without reseting the device
-- change backlight brightness from UI
-- store various settings in Non-Volatile Storage memory and load it during startup
-- play simple sounds with buzzer
+- change and store color theme without reseting the device
+- change and stotre backlight brightness from UI
+- change, store, and play 4 different alarms with buzzer sound
 
 # Milestones
 
 The project is still under development. Next milestones are:
-- add alarm function
+
+- add OTA firmware update
+
+
+The features that might be add in future are:
+
 - add RTC and low-power support
 - add Li-Ion battery management
-- add OTA firmware update
 - add statistics screen
 - add logfile
 
@@ -100,6 +105,11 @@ The folowing tasks are created in this project:
   - store encrypted password with all data needed do decrypt (as JSON object)
   - delete the password and all related data if needed
 
+  The same partition is used to store all alarms data. For that, the task do the following:
+
+  - create, restore, make backup  and check correctness of alarms files
+  - store all data in this file as JSON object, and load them to RAM
+
   The NVS partition is used to store OTC config. For that, the *SPIFFS_Task* is able to do the following:
 
   - create config structure in RAM and then copy stored values from NVS to the config
@@ -125,6 +135,7 @@ The folowing tasks are created in this project:
   - update time displayed by UI every minute
   - monitor clock synchronization status and report it to UI
   - send synchronization requests
+  - check every minute if any alarm should be played
 
 - **UI_Task**
 
@@ -149,25 +160,22 @@ The folowing tasks are created in this project:
 
 - **PWM_Task**
 
-  The task is used to perform any operation related to buzzer. It recieves requests to play simple sound, then executes the sequence stored in flash. 
+  The task is used to perform any operation related to Buzzer. It recieves requests to play simple sound, then executes the sequence stored in flash.
 
 ## Most important functions
 
 **Clock set/synchronize**
 
-System clock may be in one of 4 states:
+System clock may be in one of 3 states:
 
   - *clock_not_set*  \
   If the system date is before 2020, it means that clock was not set properly. In this case, on the main screen, the time is represented by "--:--" value, and nothing else is displayed. The *Clock_Task* sends *ONLINEREQ_TIME_UPDATE* request every minute until the date is valid.
 
   - *clock_not_sync*  \
-  If the system date is after 2020, it may be possible that clock was set properly, but synchronization is required. In this case, the *Clock_Task* sends requests to update time from SNTP service, and timezone from HTTP API. Next to it, the clock changes its state to *clock_sync_pending*
-
-  - *clock_sync_pending*  \
-  The *Clock_Task* waits for synchronization of time and timezone. If any of them was not completed before waiting time expires, the clock goes back to *clock_not_sync* state. If both of them were completed, that means the clock changes its state to *clock_sync*.
+  If the system date is after 2020, it may be possible that clock was set properly, but synchronization is required. In this case, the *Clock_Task* sends requests to update time from SNTP service, and timezone from HTTP API. If both of them were synchronised, clock changes it's state to *clock_sync*
 
   - *clock_sync*  \
-  The *Clock_Task* checks every minute if the time for synchornization has come (synchronization is performed once per hour). If yes, it sends synchroniztion requests, and changes the clock state to *clock_sync_pending*.
+  The *Clock_Task* checks every minute if the time for synchornization has come (synchronization is performed once per hour). If yes, it sends synchroniztion requests, and changes the clock state to *clock_not_sync*.
 
 To perform any action every minute, the *Clock_Task* calculates time in seconds to next full minute, and sets the timer to notify it exactly when the minute changes to the next.
   
@@ -289,6 +297,15 @@ The RSSI value is shown by a number value that is placed inside an interactive A
 The pictures below shows some examples of different access points:
 
 ![OTC High RSSI](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_HighRSSI.png) ![OTC Medium RSSI](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_MedRSSI.png) ![OTC Low RSSI](https://raw.githubusercontent.com/JuraszekL/OTC_Project/master/Resources/OTC_LowRSSI.png)
+
+**Set/run alarm**
+
+To set an alarm user should click the clock label on the main screen. A new screen shows summary information about all 4 alarms that are availiable to set. Every alarm can be activated and deactivated by simple switch on the right side, or modified by ckicking everywhere else on panel. By clicking on a panel, a new popup with detailed alarm values are created. User can set the time, text to be displayed when alarm plays, and days when alarm will be repeated. All the informations together with status od activation will be then stored in SPIFFS, so the alarm will stay active even after the OTC will restart.
+
+To run an alarm, the *clock_task* check every minute if any of them should be played. If yes, it creates new popup on the main screen ans starts buzzer to play *alarm_sound*. The alarm can be turned off by press and hold the alarm panel for a few seconds.
+
+Video is comming soon.
+[![Video link](https://img.youtube.com/vi//0.jpg)](https://www.youtube.com/watch?v= "Click to viev")
 
 # List of external tools/resources
 
